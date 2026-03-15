@@ -1,0 +1,311 @@
+// ──────────────────────────────────────────
+// VowGrid — Prisma Schema
+// The canonical data model for the trust layer
+// ──────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Workspace & Identity ─────────────────
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  users       User[]
+  agents      Agent[]
+  intents     Intent[]
+  policies    Policy[]
+  connectors  Connector[]
+  apiKeys     ApiKey[]
+  auditEvents AuditEvent[]
+
+  @@map("workspaces")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String
+  role        String   @default("member") // owner, admin, member, viewer
+  workspaceId String   @map("workspace_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace          Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  approvalDecisions  ApprovalDecision[]
+
+  @@index([workspaceId])
+  @@map("users")
+}
+
+model ApiKey {
+  id           String    @id @default(cuid())
+  name         String
+  keyHash      String    @unique @map("key_hash")
+  keyPrefix    String    @map("key_prefix") // first 8 chars for identification
+  workspaceId  String    @map("workspace_id")
+  scopes       String[]  @default(["*"])
+  expiresAt    DateTime? @map("expires_at")
+  lastUsedAt   DateTime? @map("last_used_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  revokedAt    DateTime? @map("revoked_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([keyHash])
+  @@map("api_keys")
+}
+
+// ── Agents ───────────────────────────────
+
+model Agent {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  type          String   @default("external") // external, internal, system
+  workspaceId   String   @map("workspace_id")
+  metadata      Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  intents   Intent[]
+
+  @@index([workspaceId])
+  @@map("agents")
+}
+
+// ── Intents ──────────────────────────────
+
+model Intent {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  action          String   // e.g. "send_message", "create_record", "deploy"
+  connectorId     String?  @map("connector_id")
+  agentId         String   @map("agent_id")
+  workspaceId     String   @map("workspace_id")
+  status          String   @default("draft") // draft, proposed, simulated, pending_approval, approved, rejected, queued, executing, succeeded, failed, rollback_pending, rolled_back, rollback_failed
+  parameters      Json?    // action-specific parameters
+  environment     String   @default("production") // production, staging, sandbox
+  idempotencyKey  String?  @unique @map("idempotency_key")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  agent            Agent             @relation(fields: [agentId], references: [id])
+  connector        Connector?        @relation(fields: [connectorId], references: [id])
+  simulationResult SimulationResult?
+  approvalRequest  ApprovalRequest?
+  executionJob     ExecutionJob?
+  receipts         Receipt[]
+  rollbackAttempts RollbackAttempt[]
+  auditEvents      AuditEvent[]
+
+  @@index([workspaceId])
+  @@index([status])
+  @@index([agentId])
+  @@index([connectorId])
+  @@map("intents")
+}
+
+// ── Simulation ───────────────────────────
+
+model SimulationResult {
+  id                String   @id @default(cuid())
+  intentId          String   @unique @map("intent_id")
+  summary           String
+  estimatedImpact   String   @map("estimated_impact") // low, medium, high, critical
+  riskLevel         String   @map("risk_level") // low, medium, high, critical
+  reversibility     String   // full, partial, none
+  affectedResources Json     @default("[]") @map("affected_resources")
+  diffPreview       Json?    @map("diff_preview")
+  warnings          String[] @default([])
+  metadata          Json?
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  intent Intent @relation(fields: [intentId], references: [id], onDelete: Cascade)
+
+  @@map("simulation_results")
+}
+
+// ── Policies ─────────────────────────────
+
+model Policy {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        String   // amount_threshold, action_restriction, connector_restriction, environment_restriction, role_constraint
+  rules       Json     // structured rule definition
+  priority    Int      @default(0)
+  enabled     Boolean  @default(true)
+  workspaceId String   @map("workspace_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  policyDecisions PolicyDecision[]
+
+  @@index([workspaceId])
+  @@index([enabled])
+  @@map("policies")
+}
+
+model PolicyDecision {
+  id        String   @id @default(cuid())
+  policyId  String   @map("policy_id")
+  intentId  String   @map("intent_id")
+  result    String   // allow, deny, require_approval
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  policy Policy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@index([intentId])
+  @@index([policyId])
+  @@map("policy_decisions")
+}
+
+// ── Approvals ────────────────────────────
+
+model ApprovalRequest {
+  id              String   @id @default(cuid())
+  intentId        String   @unique @map("intent_id")
+  status          String   @default("pending") // pending, approved, rejected, expired
+  requiredCount   Int      @default(1) @map("required_count")
+  currentCount    Int      @default(0) @map("current_count")
+  expiresAt       DateTime? @map("expires_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  intent    Intent             @relation(fields: [intentId], references: [id], onDelete: Cascade)
+  decisions ApprovalDecision[]
+
+  @@map("approval_requests")
+}
+
+model ApprovalDecision {
+  id                String   @id @default(cuid())
+  approvalRequestId String   @map("approval_request_id")
+  userId            String   @map("user_id")
+  decision          String   // approved, rejected
+  rationale         String?
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  approvalRequest ApprovalRequest @relation(fields: [approvalRequestId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id])
+
+  @@index([approvalRequestId])
+  @@map("approval_decisions")
+}
+
+// ── Execution ────────────────────────────
+
+model ExecutionJob {
+  id              String    @id @default(cuid())
+  intentId        String    @unique @map("intent_id")
+  status          String    @default("queued") // queued, processing, completed, failed
+  attempts        Int       @default(0)
+  maxAttempts     Int       @default(3) @map("max_attempts")
+  idempotencyKey  String?   @unique @map("idempotency_key")
+  result          Json?
+  error           String?
+  startedAt       DateTime? @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  intent Intent @relation(fields: [intentId], references: [id], onDelete: Cascade)
+
+  @@map("execution_jobs")
+}
+
+// ── Connectors ───────────────────────────
+
+model Connector {
+  id               String   @id @default(cuid())
+  name             String
+  type             String   // mock, slack, github, http, custom
+  description      String?
+  config           Json?    // connector-specific configuration (encrypted at rest in production)
+  rollbackSupport  String   @default("unsupported") @map("rollback_support") // supported, partial, unsupported
+  workspaceId      String   @map("workspace_id")
+  enabled          Boolean  @default(true)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  intents   Intent[]
+
+  @@index([workspaceId])
+  @@map("connectors")
+}
+
+// ── Receipts ─────────────────────────────
+
+model Receipt {
+  id           String   @id @default(cuid())
+  intentId     String   @map("intent_id")
+  type         String   // execution, rollback, simulation
+  summary      String
+  data         Json     // structured proof of what happened
+  duration     Int?     // milliseconds
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  intent Intent @relation(fields: [intentId], references: [id], onDelete: Cascade)
+
+  @@index([intentId])
+  @@map("receipts")
+}
+
+// ── Audit Trail ──────────────────────────
+
+model AuditEvent {
+  id          String   @id @default(cuid())
+  action      String   // intent.created, intent.simulated, approval.approved, execution.completed, etc.
+  entityType  String   @map("entity_type") // intent, approval, policy, connector, etc.
+  entityId    String   @map("entity_id")
+  actorType   String   @map("actor_type") // user, agent, system
+  actorId     String   @map("actor_id")
+  workspaceId String   @map("workspace_id")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  intent    Intent?   @relation(fields: [entityId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([entityType, entityId])
+  @@index([actorType, actorId])
+  @@index([createdAt])
+  @@map("audit_events")
+}
+
+// ── Rollback ─────────────────────────────
+
+model RollbackAttempt {
+  id        String    @id @default(cuid())
+  intentId  String    @map("intent_id")
+  status    String    @default("pending") // pending, in_progress, completed, failed
+  reason    String?
+  result    Json?
+  startedAt DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  intent Intent @relation(fields: [intentId], references: [id], onDelete: Cascade)
+
+  @@index([intentId])
+  @@map("rollback_attempts")
+}
