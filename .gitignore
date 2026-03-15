@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+apps/*/node_modules/
+packages/*/node_modules/
+
+# Build
+dist/
+apps/*/dist/
+packages/*/dist/
+apps/*/.next/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+apps/*/.env
+apps/*/.env.local
+apps/*/.env.*.local
+!.env.example
+!apps/*/.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Prisma
+apps/api/prisma/*.db
+
+# Docker
+infra/data/
+
+# Coverage
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Local verification output
+test-output.txt
+web-live-output*.txt
+
+# Local Git backup
+.git-backup/
+apps/web/.git-backup/

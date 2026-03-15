@@ -1,0 +1,31 @@
+{
+  "name": "vowgrid",
+  "version": "0.1.0",
+  "private": true,
+  "description": "VowGrid - The trust layer between AI agents and real-world actions",
+  "scripts": {
+    "dev": "pnpm --filter @vowgrid/api dev",
+    "dev:api": "pnpm --filter @vowgrid/api dev",
+    "dev:web": "pnpm --filter web dev",
+    "build": "pnpm --filter @vowgrid/contracts build && pnpm --filter @vowgrid/api build && pnpm --filter web build",
+    "lint": "pnpm --filter @vowgrid/api lint && pnpm --filter web lint",
+    "typecheck": "pnpm --filter @vowgrid/contracts typecheck && pnpm --filter @vowgrid/ui typecheck && pnpm --filter @vowgrid/api typecheck && pnpm --filter web typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\"",
+    "test": "pnpm --filter @vowgrid/api test",
+    "test:unit": "pnpm --filter @vowgrid/api test:unit",
+    "migrate": "pnpm --filter @vowgrid/api migrate",
+    "migrate:reset": "pnpm --filter @vowgrid/api migrate:reset",
+    "generate": "pnpm --filter @vowgrid/api generate",
+    "seed": "pnpm --filter @vowgrid/api seed",
+    "db:studio": "pnpm --filter @vowgrid/api db:studio",
+    "docker:up": "docker compose -f infra/docker-compose.yml up -d",
+    "docker:down": "docker compose -f infra/docker-compose.yml down",
+    "docker:reset": "docker compose -f infra/docker-compose.yml down -v && docker compose -f infra/docker-compose.yml up -d"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.4"
+}
