@@ -1,0 +1,94 @@
+@import "tailwindcss";
+@source "../../../packages/ui/src/**/*.{ts,tsx}";
+
+:root {
+  --color-bg: #0b1020;
+  --color-bg-elevated: #121a2b;
+  --color-panel: rgba(18, 26, 43, 0.88);
+  --color-panel-alt: rgba(20, 31, 52, 0.94);
+  --color-surface: rgba(247, 249, 252, 0.04);
+  --color-border: rgba(125, 148, 192, 0.16);
+  --color-border-strong: rgba(125, 148, 192, 0.24);
+  --color-border-highlight: rgba(79, 124, 255, 0.46);
+  --color-text-primary: #f7f9fc;
+  --color-text-secondary: rgba(231, 237, 247, 0.78);
+  --color-text-dim: rgba(177, 190, 214, 0.64);
+  --color-accent: #4f7cff;
+  --color-accent-soft: #a8bcff;
+  --color-success: #2ed3b7;
+  --color-warning: #f5b942;
+  --color-danger: #f55959;
+  --color-white: #f7f9fc;
+  --radius-shell: 32px;
+}
+
+@theme inline {
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(79, 124, 255, 0.22), transparent 38%),
+    radial-gradient(circle at 80% 0%, rgba(46, 211, 183, 0.12), transparent 30%),
+    linear-gradient(180deg, #10182a 0%, var(--color-bg) 32%, #070b15 100%);
+  color: var(--color-text-primary);
+  font-family: var(--font-inter), sans-serif;
+}
+
+body::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  opacity: 0.32;
+  background-image:
+    linear-gradient(rgba(141, 163, 201, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(141, 163, 201, 0.08) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(circle at center, black 28%, transparent 82%);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(79, 124, 255, 0.32);
+  color: var(--color-white);
+}
+
+.prose-muted {
+  color: var(--color-text-secondary);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.surface-ring {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 24px 70px rgba(5, 7, 14, 0.34);
+}
+
+.mono {
+  font-family: var(--font-jetbrains-mono), monospace;
+}
