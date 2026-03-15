@@ -1,6 +1,8 @@
-# VowGrid
+# VOWGRID-API
 
 VowGrid is the trust layer between AI agents and real-world actions.
+
+Case study: https://saviocodes.github.io/saviofilho.dev/work/vowgrid-api/
 
 The product flow is:
 
