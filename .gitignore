@@ -21,7 +21,9 @@ apps/*/.env.*.local
 !apps/*/.env.example
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/css-custom-data.json
 .idea/
 *.swp
 *.swo
