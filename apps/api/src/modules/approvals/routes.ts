@@ -11,6 +11,7 @@ import {
 } from './service.js';
 import { success } from '../../common/response.js';
 import { ValidationError } from '../../common/errors.js';
+import { getActorId, getActorType } from '../../plugins/auth.plugin.js';
 
 export async function approvalRoutes(app: FastifyInstance): Promise<void> {
   // ── Submit for approval ──────────────
@@ -32,7 +33,8 @@ export async function approvalRoutes(app: FastifyInstance): Promise<void> {
         intentId,
         request.auth.workspaceId,
         parsed.data.requiredCount,
-        request.auth.apiKeyId ?? 'system',
+        getActorId(request.auth),
+        getActorType(request.auth),
       );
 
       return reply.status(200).send(success(result));
@@ -57,9 +59,16 @@ export async function approvalRoutes(app: FastifyInstance): Promise<void> {
         throw new ValidationError('Invalid approval data', parsed.error.flatten());
       }
 
+      const resolvedUserId = request.auth.userId ?? parsed.data.userId;
+      if (!resolvedUserId) {
+        throw new ValidationError(
+          'Approval decisions require a session-authenticated user or an explicit userId.',
+        );
+      }
+
       const result = await processApprovalDecision(
         approvalRequestId,
-        parsed.data.userId,
+        resolvedUserId,
         'approved',
         parsed.data.rationale,
         request.auth.workspaceId,
@@ -87,9 +96,16 @@ export async function approvalRoutes(app: FastifyInstance): Promise<void> {
         throw new ValidationError('Invalid rejection data', parsed.error.flatten());
       }
 
+      const resolvedUserId = request.auth.userId ?? parsed.data.userId;
+      if (!resolvedUserId) {
+        throw new ValidationError(
+          'Approval decisions require a session-authenticated user or an explicit userId.',
+        );
+      }
+
       const result = await processApprovalDecision(
         approvalRequestId,
-        parsed.data.userId,
+        resolvedUserId,
         'rejected',
         parsed.data.rationale,
         request.auth.workspaceId,

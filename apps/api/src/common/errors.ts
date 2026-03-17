@@ -46,6 +46,18 @@ export class ForbiddenError extends AppError {
   }
 }
 
+export class PaymentRequiredError extends AppError {
+  constructor(message: string, code = 'PAYMENT_REQUIRED', details?: unknown) {
+    super(message, 402, code, details);
+  }
+}
+
+export class BillingConfigurationError extends AppError {
+  constructor(message: string, details?: unknown) {
+    super(message, 503, 'BILLING_PROVIDER_NOT_CONFIGURED', details);
+  }
+}
+
 export class InvalidStateTransitionError extends AppError {
   constructor(from: string, to: string) {
     super(

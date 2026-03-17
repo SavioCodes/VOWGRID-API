@@ -6,6 +6,7 @@ import { prisma } from '../../lib/prisma.js';
 import { z } from 'zod';
 import { NotFoundError } from '../../common/errors.js';
 import { toPrismaJsonValue } from '../../common/json.js';
+import { assertCanCreatePolicy } from '../billing/entitlements.js';
 
 export const createPolicySchema = z.object({
   name: z.string().min(1).max(255),
@@ -25,6 +26,8 @@ export const createPolicySchema = z.object({
 export type CreatePolicyInput = z.infer<typeof createPolicySchema>;
 
 export async function createPolicy(workspaceId: string, input: CreatePolicyInput) {
+  await assertCanCreatePolicy(workspaceId, input.type);
+
   return prisma.policy.create({
     data: {
       name: input.name,

@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 const configDir = dirname(fileURLToPath(import.meta.url));
@@ -20,23 +20,43 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().default('redis://localhost:6379'),
 
-  JWT_SECRET: z.string().min(16),
+  SESSION_SECRET: z.string().min(16).optional(),
+  JWT_SECRET: z.string().min(16).optional(),
   API_KEY_SALT: z.string().min(16),
+
+  MERCADO_PAGO_ACCESS_TOKEN: z.string().min(1).optional(),
+  MERCADO_PAGO_API_BASE_URL: z.string().url().default('https://api.mercadopago.com'),
+  MERCADO_PAGO_WEBHOOK_SECRET: z.string().min(1).optional(),
+  MERCADO_PAGO_WEBHOOK_URL: z.string().url().optional(),
+  MERCADO_PAGO_RETURN_URL: z.string().url().optional(),
 
   RATE_LIMIT_MAX: z.coerce.number().default(100),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60_000),
 });
 
-export type Env = z.infer<typeof envSchema>;
+export type Env = z.infer<typeof envSchema> & {
+  SESSION_SECRET: string;
+};
 
 export function loadEnv(): Env {
   const result = envSchema.safeParse(process.env);
   if (!result.success) {
-    console.error('❌ Invalid environment variables:');
+    console.error('Invalid environment variables:');
     console.error(result.error.format());
     process.exit(1);
   }
-  return result.data;
+
+  const sessionSecret = result.data.SESSION_SECRET ?? result.data.JWT_SECRET;
+
+  if (!sessionSecret) {
+    console.error('Invalid environment variables: SESSION_SECRET is required.');
+    process.exit(1);
+  }
+
+  return {
+    ...result.data,
+    SESSION_SECRET: sessionSecret,
+  };
 }
 
 export const env = loadEnv();

@@ -84,7 +84,7 @@ export type SubmitForApprovalInput = z.infer<typeof submitForApprovalSchema>;
 export const approvalDecisionSchema = z.object({
   decision: z.enum(['approved', 'rejected']),
   rationale: z.string().max(2000).optional(),
-  userId: z.string().cuid(),
+  userId: z.string().cuid().optional(),
 });
 
 export type ApprovalDecisionInput = z.infer<typeof approvalDecisionSchema>;

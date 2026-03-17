@@ -7,6 +7,7 @@ import { NotFoundError, ValidationError, ConflictError } from '../../common/erro
 import { transitionIntent } from '../intents/service.js';
 import { evaluatePolicies } from '../policies/engine.js';
 import { emitAuditEvent } from '../audits/service.js';
+import { assertCanRequireApprovalCount } from '../billing/entitlements.js';
 import { z } from 'zod';
 
 export const submitForApprovalSchema = z.object({
@@ -16,7 +17,7 @@ export const submitForApprovalSchema = z.object({
 export const approvalDecisionSchema = z.object({
   decision: z.enum(['approved', 'rejected']),
   rationale: z.string().max(2000).optional(),
-  userId: z.string().cuid(),
+  userId: z.string().cuid().optional(),
 });
 
 export async function submitForApproval(
@@ -24,7 +25,10 @@ export async function submitForApproval(
   workspaceId: string,
   requiredCount: number,
   actorId: string,
+  actorType: 'user' | 'agent',
 ) {
+  await assertCanRequireApprovalCount(workspaceId, requiredCount);
+
   const intent = await prisma.intent.findFirst({
     where: { id: intentId, workspaceId },
     include: { connector: true },
@@ -63,7 +67,7 @@ export async function submitForApproval(
 
   // If policy denies, reject the intent
   if (policyResult.overallResult === 'deny') {
-    await transitionIntent(intentId, workspaceId, 'rejected', actorId, 'system');
+    await transitionIntent(intentId, workspaceId, 'rejected', actorId, actorType);
     return {
       approved: false,
       policyResult: policyResult.overallResult,
@@ -81,13 +85,13 @@ export async function submitForApproval(
   });
 
   // Transition intent
-  await transitionIntent(intentId, workspaceId, 'pending_approval', actorId, 'system');
+  await transitionIntent(intentId, workspaceId, 'pending_approval', actorId, actorType);
 
   await emitAuditEvent({
     action: 'approval.requested',
     entityType: 'intent',
     entityId: intentId,
-    actorType: 'system',
+    actorType,
     actorId,
     workspaceId,
     metadata: {

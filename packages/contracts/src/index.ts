@@ -1,5 +1,25 @@
 export { INTENT_STATES, STATE_TRANSITIONS } from './intent-states.js';
 export type { IntentState } from './intent-states.js';
+export { loginSchema, signupSchema } from './auth.js';
+export {
+  BILLING_PLAN_KEYS,
+  SELF_SERVE_BILLING_PLAN_KEYS,
+  BILLING_CYCLES,
+  BILLING_SUBSCRIPTION_STATUSES,
+  BILLING_PROVIDER_KEYS,
+  TRIAL_STATUSES,
+  SUPPORT_TIERS,
+  APPROVALS_MODES,
+  USAGE_METRIC_KEYS,
+  USAGE_METRIC_STATUSES,
+  ENTITLEMENT_SOURCES,
+  PLAN_CATALOG,
+  BILLING_TRIAL_DAYS,
+  BILLING_WARNING_RATIO,
+  TRIAL_EFFECTIVE_PLAN_KEY,
+  createCheckoutSchema,
+  cancelSubscriptionSchema,
+} from './billing.js';
 export {
   ENVIRONMENTS,
   createIntentSchema,
@@ -9,6 +29,17 @@ export {
   approvalDecisionSchema,
   rollbackSchema,
 } from './schemas.js';
+export type {
+  AuthenticatedUserResponse,
+  AuthenticatedWorkspaceResponse,
+  AuthSessionResponse,
+  AuthSuccessResponse,
+  CurrentSessionResponse,
+  CurrentSessionSummaryResponse,
+  LoginInput,
+  LogoutResponse,
+  SignupInput,
+} from './auth.js';
 export type {
   Environment,
   CreateIntentInput,
@@ -49,3 +80,28 @@ export type {
   ConnectorResponse,
   HealthResponse,
 } from './schemas.js';
+export type {
+  ApprovalsMode,
+  BillingAccountResponse,
+  BillingCheckoutResponse,
+  BillingCustomerResponse,
+  BillingCycle,
+  BillingPlanCatalogEntry,
+  BillingPlanKey,
+  BillingPlanLimits,
+  BillingProviderKey,
+  BillingProviderStateResponse,
+  BillingSubscriptionStatus,
+  CancelSubscriptionInput,
+  CreateCheckoutInput,
+  EntitlementSource,
+  EntitlementSnapshotResponse,
+  SelfServeBillingPlanKey,
+  SupportTier,
+  TrialStateResponse,
+  TrialStatus,
+  UsageMetricKey,
+  UsageMetricResponse,
+  UsageMetricStatus,
+  WorkspaceSubscriptionResponse,
+} from './billing.js';

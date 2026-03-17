@@ -15,50 +15,79 @@ datasource db {
 // ── Workspace & Identity ─────────────────
 
 model Workspace {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  users       User[]
-  agents      Agent[]
-  intents     Intent[]
-  policies    Policy[]
-  connectors  Connector[]
-  apiKeys     ApiKey[]
-  auditEvents AuditEvent[]
+  users           User[]
+  sessions        UserSession[]
+  agents          Agent[]
+  intents         Intent[]
+  policies        Policy[]
+  connectors      Connector[]
+  apiKeys         ApiKey[]
+  auditEvents     AuditEvent[]
+  billingCustomer BillingCustomer?
+  subscription    WorkspaceSubscription?
+  billingEvents   BillingEvent[]
+  usageCounters   UsageCounter[]
+  trialState      TrialState?
 
   @@map("workspaces")
 }
 
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  name        String
-  role        String   @default("member") // owner, admin, member, viewer
-  workspaceId String   @map("workspace_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  role         String    @default("member") // owner, admin, member, viewer
+  passwordHash String?   @map("password_hash")
+  lastLoginAt  DateTime? @map("last_login_at")
+  workspaceId  String    @map("workspace_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  workspace          Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  approvalDecisions  ApprovalDecision[]
+  workspace         Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessions          UserSession[]
+  approvalDecisions ApprovalDecision[]
 
   @@index([workspaceId])
   @@map("users")
 }
 
+model UserSession {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  workspaceId String    @map("workspace_id")
+  tokenHash   String    @unique @map("token_hash")
+  expiresAt   DateTime  @map("expires_at")
+  lastUsedAt  DateTime? @map("last_used_at")
+  revokedAt   DateTime? @map("revoked_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
 model ApiKey {
-  id           String    @id @default(cuid())
-  name         String
-  keyHash      String    @unique @map("key_hash")
-  keyPrefix    String    @map("key_prefix") // first 8 chars for identification
-  workspaceId  String    @map("workspace_id")
-  scopes       String[]  @default(["*"])
-  expiresAt    DateTime? @map("expires_at")
-  lastUsedAt   DateTime? @map("last_used_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  revokedAt    DateTime? @map("revoked_at")
+  id          String    @id @default(cuid())
+  name        String
+  keyHash     String    @unique @map("key_hash")
+  keyPrefix   String    @map("key_prefix") // first 8 chars for identification
+  workspaceId String    @map("workspace_id")
+  scopes      String[]  @default(["*"])
+  expiresAt   DateTime? @map("expires_at")
+  lastUsedAt  DateTime? @map("last_used_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  revokedAt   DateTime? @map("revoked_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -67,17 +96,123 @@ model ApiKey {
   @@map("api_keys")
 }
 
+model BillingCustomer {
+  id                    String   @id @default(cuid())
+  workspaceId           String   @unique @map("workspace_id")
+  email                 String
+  legalName             String?  @map("legal_name")
+  mercadoPagoCustomerId String?  @unique @map("mercado_pago_customer_id")
+  metadata              Json?
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  workspace    Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subscription WorkspaceSubscription?
+
+  @@map("billing_customers")
+}
+
+model WorkspaceSubscription {
+  id                       String    @id @default(cuid())
+  workspaceId              String    @unique @map("workspace_id")
+  billingCustomerId        String?   @unique @map("billing_customer_id")
+  provider                 String    @default("mercado_pago")
+  planKey                  String?   @map("plan_key")
+  billingCycle             String?   @map("billing_cycle")
+  status                   String    @default("incomplete")
+  mercadoPagoPreapprovalId String?   @unique @map("mercado_pago_preapproval_id")
+  mercadoPagoPlanId        String?   @map("mercado_pago_plan_id")
+  checkoutUrl              String?   @map("checkout_url")
+  externalReference        String?   @map("external_reference")
+  currentPeriodStart       DateTime? @map("current_period_start")
+  currentPeriodEnd         DateTime? @map("current_period_end")
+  startedAt                DateTime? @map("started_at")
+  canceledAt               DateTime? @map("canceled_at")
+  cancelAtPeriodEnd        Boolean   @default(false) @map("cancel_at_period_end")
+  lastProviderSyncAt       DateTime? @map("last_provider_sync_at")
+  providerMetadata         Json?     @map("provider_metadata")
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  billingCustomer BillingCustomer? @relation(fields: [billingCustomerId], references: [id], onDelete: SetNull)
+  events          BillingEvent[]
+
+  @@index([status])
+  @@index([planKey])
+  @@map("workspace_subscriptions")
+}
+
+model BillingEvent {
+  id                String    @id @default(cuid())
+  workspaceId       String?   @map("workspace_id")
+  subscriptionId    String?   @map("subscription_id")
+  source            String    @default("mercado_pago")
+  eventKey          String    @unique @map("event_key")
+  eventType         String    @map("event_type")
+  providerReference String?   @map("provider_reference")
+  status            String    @default("received")
+  payload           Json
+  processedAt       DateTime? @map("processed_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  workspace    Workspace?             @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  subscription WorkspaceSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([subscriptionId])
+  @@index([source, eventType])
+  @@map("billing_events")
+}
+
+model UsageCounter {
+  id                 String    @id @default(cuid())
+  workspaceId        String    @map("workspace_id")
+  metric             String
+  periodStart        DateTime  @map("period_start")
+  periodEnd          DateTime  @map("period_end")
+  count              Int       @default(0)
+  warningTriggeredAt DateTime? @map("warning_triggered_at")
+  limitReachedAt     DateTime? @map("limit_reached_at")
+  lastIncrementAt    DateTime? @map("last_increment_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, metric, periodStart])
+  @@index([workspaceId, metric])
+  @@map("usage_counters")
+}
+
+model TrialState {
+  id          String    @id @default(cuid())
+  workspaceId String    @unique @map("workspace_id")
+  status      String    @default("active")
+  startsAt    DateTime  @map("starts_at")
+  endsAt      DateTime  @map("ends_at")
+  convertedAt DateTime? @map("converted_at")
+  expiredAt   DateTime? @map("expired_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("trial_states")
+}
+
 // ── Agents ───────────────────────────────
 
 model Agent {
-  id            String   @id @default(cuid())
-  name          String
-  description   String?
-  type          String   @default("external") // external, internal, system
-  workspaceId   String   @map("workspace_id")
-  metadata      Json?
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        String   @default("external") // external, internal, system
+  workspaceId String   @map("workspace_id")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   intents   Intent[]
@@ -89,19 +224,19 @@ model Agent {
 // ── Intents ──────────────────────────────
 
 model Intent {
-  id              String   @id @default(cuid())
-  title           String
-  description     String?
-  action          String   // e.g. "send_message", "create_record", "deploy"
-  connectorId     String?  @map("connector_id")
-  agentId         String   @map("agent_id")
-  workspaceId     String   @map("workspace_id")
-  status          String   @default("draft") // draft, proposed, simulated, pending_approval, approved, rejected, queued, executing, succeeded, failed, rollback_pending, rolled_back, rollback_failed
-  parameters      Json?    // action-specific parameters
-  environment     String   @default("production") // production, staging, sandbox
-  idempotencyKey  String?  @unique @map("idempotency_key")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(cuid())
+  title          String
+  description    String?
+  action         String // e.g. "send_message", "create_record", "deploy"
+  connectorId    String?  @map("connector_id")
+  agentId        String   @map("agent_id")
+  workspaceId    String   @map("workspace_id")
+  status         String   @default("draft") // draft, proposed, simulated, pending_approval, approved, rejected, queued, executing, succeeded, failed, rollback_pending, rolled_back, rollback_failed
+  parameters     Json? // action-specific parameters
+  environment    String   @default("production") // production, staging, sandbox
+  idempotencyKey String?  @unique @map("idempotency_key")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   agent            Agent             @relation(fields: [agentId], references: [id])
@@ -128,7 +263,7 @@ model SimulationResult {
   summary           String
   estimatedImpact   String   @map("estimated_impact") // low, medium, high, critical
   riskLevel         String   @map("risk_level") // low, medium, high, critical
-  reversibility     String   // full, partial, none
+  reversibility     String // full, partial, none
   affectedResources Json     @default("[]") @map("affected_resources")
   diffPreview       Json?    @map("diff_preview")
   warnings          String[] @default([])
@@ -146,8 +281,8 @@ model Policy {
   id          String   @id @default(cuid())
   name        String
   description String?
-  type        String   // amount_threshold, action_restriction, connector_restriction, environment_restriction, role_constraint
-  rules       Json     // structured rule definition
+  type        String // amount_threshold, action_restriction, connector_restriction, environment_restriction, role_constraint
+  rules       Json // structured rule definition
   priority    Int      @default(0)
   enabled     Boolean  @default(true)
   workspaceId String   @map("workspace_id")
@@ -166,7 +301,7 @@ model PolicyDecision {
   id        String   @id @default(cuid())
   policyId  String   @map("policy_id")
   intentId  String   @map("intent_id")
-  result    String   // allow, deny, require_approval
+  result    String // allow, deny, require_approval
   reason    String?
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -180,14 +315,14 @@ model PolicyDecision {
 // ── Approvals ────────────────────────────
 
 model ApprovalRequest {
-  id              String   @id @default(cuid())
-  intentId        String   @unique @map("intent_id")
-  status          String   @default("pending") // pending, approved, rejected, expired
-  requiredCount   Int      @default(1) @map("required_count")
-  currentCount    Int      @default(0) @map("current_count")
-  expiresAt       DateTime? @map("expires_at")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id            String    @id @default(cuid())
+  intentId      String    @unique @map("intent_id")
+  status        String    @default("pending") // pending, approved, rejected, expired
+  requiredCount Int       @default(1) @map("required_count")
+  currentCount  Int       @default(0) @map("current_count")
+  expiresAt     DateTime? @map("expires_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
   intent    Intent             @relation(fields: [intentId], references: [id], onDelete: Cascade)
   decisions ApprovalDecision[]
@@ -199,7 +334,7 @@ model ApprovalDecision {
   id                String   @id @default(cuid())
   approvalRequestId String   @map("approval_request_id")
   userId            String   @map("user_id")
-  decision          String   // approved, rejected
+  decision          String // approved, rejected
   rationale         String?
   createdAt         DateTime @default(now()) @map("created_at")
 
@@ -213,18 +348,18 @@ model ApprovalDecision {
 // ── Execution ────────────────────────────
 
 model ExecutionJob {
-  id              String    @id @default(cuid())
-  intentId        String    @unique @map("intent_id")
-  status          String    @default("queued") // queued, processing, completed, failed
-  attempts        Int       @default(0)
-  maxAttempts     Int       @default(3) @map("max_attempts")
-  idempotencyKey  String?   @unique @map("idempotency_key")
-  result          Json?
-  error           String?
-  startedAt       DateTime? @map("started_at")
-  completedAt     DateTime? @map("completed_at")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id             String    @id @default(cuid())
+  intentId       String    @unique @map("intent_id")
+  status         String    @default("queued") // queued, processing, completed, failed
+  attempts       Int       @default(0)
+  maxAttempts    Int       @default(3) @map("max_attempts")
+  idempotencyKey String?   @unique @map("idempotency_key")
+  result         Json?
+  error          String?
+  startedAt      DateTime? @map("started_at")
+  completedAt    DateTime? @map("completed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
   intent Intent @relation(fields: [intentId], references: [id], onDelete: Cascade)
 
@@ -234,16 +369,16 @@ model ExecutionJob {
 // ── Connectors ───────────────────────────
 
 model Connector {
-  id               String   @id @default(cuid())
-  name             String
-  type             String   // mock, slack, github, http, custom
-  description      String?
-  config           Json?    // connector-specific configuration (encrypted at rest in production)
-  rollbackSupport  String   @default("unsupported") @map("rollback_support") // supported, partial, unsupported
-  workspaceId      String   @map("workspace_id")
-  enabled          Boolean  @default(true)
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(cuid())
+  name            String
+  type            String // mock, github, http, custom
+  description     String?
+  config          Json? // connector-specific configuration (encrypted at rest in production)
+  rollbackSupport String   @default("unsupported") @map("rollback_support") // supported, partial, unsupported
+  workspaceId     String   @map("workspace_id")
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   intents   Intent[]
@@ -255,13 +390,13 @@ model Connector {
 // ── Receipts ─────────────────────────────
 
 model Receipt {
-  id           String   @id @default(cuid())
-  intentId     String   @map("intent_id")
-  type         String   // execution, rollback, simulation
-  summary      String
-  data         Json     // structured proof of what happened
-  duration     Int?     // milliseconds
-  createdAt    DateTime @default(now()) @map("created_at")
+  id        String   @id @default(cuid())
+  intentId  String   @map("intent_id")
+  type      String // execution, rollback, simulation
+  summary   String
+  data      Json // structured proof of what happened
+  duration  Int? // milliseconds
+  createdAt DateTime @default(now()) @map("created_at")
 
   intent Intent @relation(fields: [intentId], references: [id], onDelete: Cascade)
 
@@ -273,7 +408,7 @@ model Receipt {
 
 model AuditEvent {
   id          String   @id @default(cuid())
-  action      String   // intent.created, intent.simulated, approval.approved, execution.completed, etc.
+  action      String // intent.created, intent.simulated, approval.approved, execution.completed, etc.
   entityType  String   @map("entity_type") // intent, approval, policy, connector, etc.
   entityId    String   @map("entity_id")
   actorType   String   @map("actor_type") // user, agent, system
@@ -283,7 +418,7 @@ model AuditEvent {
   createdAt   DateTime @default(now()) @map("created_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  intent    Intent?   @relation(fields: [entityId], references: [id], onDelete: SetNull)
+  intent    Intent?   @relation(fields: [entityId], references: [id], onDelete: NoAction)
 
   @@index([workspaceId])
   @@index([entityType, entityId])
@@ -295,14 +430,14 @@ model AuditEvent {
 // ── Rollback ─────────────────────────────
 
 model RollbackAttempt {
-  id        String    @id @default(cuid())
-  intentId  String    @map("intent_id")
-  status    String    @default("pending") // pending, in_progress, completed, failed
-  reason    String?
-  result    Json?
-  startedAt DateTime? @map("started_at")
+  id          String    @id @default(cuid())
+  intentId    String    @map("intent_id")
+  status      String    @default("pending") // pending, in_progress, completed, failed
+  reason      String?
+  result      Json?
+  startedAt   DateTime? @map("started_at")
   completedAt DateTime? @map("completed_at")
-  createdAt DateTime  @default(now()) @map("created_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
   intent Intent @relation(fields: [intentId], references: [id], onDelete: Cascade)
 

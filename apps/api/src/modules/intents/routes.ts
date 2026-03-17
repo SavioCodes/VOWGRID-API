@@ -5,6 +5,7 @@
 import { FastifyInstance } from 'fastify';
 import { ValidationError } from '../../common/errors.js';
 import { paginated, success } from '../../common/response.js';
+import { getActorId, getActorType } from '../../plugins/auth.plugin.js';
 import { createIntentSchema, listIntentsSchema } from './schemas.js';
 import { createIntent, getIntent, listIntents, proposeIntent } from './service.js';
 
@@ -22,7 +23,12 @@ export async function intentRoutes(app: FastifyInstance): Promise<void> {
         throw new ValidationError('Invalid intent data', parsed.error.flatten());
       }
 
-      const intent = await createIntent(request.auth.workspaceId, parsed.data, parsed.data.agentId);
+      const intent = await createIntent(
+        request.auth.workspaceId,
+        parsed.data,
+        getActorId(request.auth),
+        getActorType(request.auth),
+      );
 
       return reply.status(201).send(success(intent));
     },
@@ -40,7 +46,8 @@ export async function intentRoutes(app: FastifyInstance): Promise<void> {
       const intent = await proposeIntent(
         intentId,
         request.auth.workspaceId,
-        request.auth.apiKeyId ?? 'system',
+        getActorId(request.auth),
+        getActorType(request.auth),
       );
 
       return reply.send(success(intent));

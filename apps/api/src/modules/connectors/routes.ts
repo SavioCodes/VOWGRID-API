@@ -8,6 +8,7 @@ import { success } from '../../common/response.js';
 import { ValidationError } from '../../common/errors.js';
 import { toPrismaNullableJsonValue } from '../../common/json.js';
 import { connectorRegistry } from './framework/connector.registry.js';
+import { assertCanCreateConnector } from '../billing/entitlements.js';
 import { z } from 'zod';
 
 const createConnectorSchema = z.object({
@@ -32,6 +33,8 @@ export async function connectorRoutes(app: FastifyInstance): Promise<void> {
       if (!parsed.success) {
         throw new ValidationError('Invalid connector data', parsed.error.flatten());
       }
+
+      await assertCanCreateConnector(request.auth.workspaceId, parsed.data.enabled);
 
       const connector = await prisma.connector.create({
         data: {

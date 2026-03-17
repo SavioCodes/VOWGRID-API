@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
+import { BILLING_TRIAL_DAYS } from '@vowgrid/contracts';
+import { hashPassword } from '../src/modules/auth/security.js';
 
 const prisma = new PrismaClient();
 
@@ -8,15 +10,24 @@ const seedIds = {
   agentId: 'cmg0000000000000000000002',
   reviewerId: 'cmg0000000000000000000003',
   connectorId: 'cmg0000000000000000000004',
-  slackConnectorId: 'cmg0000000000000000000005',
   policyThresholdId: 'cmg0000000000000000000006',
   policyDeleteGuardId: 'cmg0000000000000000000007',
 };
 
 const localApiKey = 'vowgrid_local_dev_key';
+const localDashboardPassword = 'vowgrid_local_password';
 
 function hashApiKey(key: string, salt: string) {
   return createHash('sha256').update(`${salt}:${key}`).digest('hex');
+}
+
+function addDays(date: Date, days: number) {
+  return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+function getCurrentMonthlyWindow(now = new Date()) {
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
+  return { start, end: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0)) };
 }
 
 async function main() {
@@ -25,6 +36,8 @@ async function main() {
   if (!salt) {
     throw new Error('API_KEY_SALT is required to seed a local API key.');
   }
+
+  const reviewerPasswordHash = await hashPassword(localDashboardPassword);
 
   await prisma.workspace.upsert({
     where: { slug: 'primary-trust-workspace' },
@@ -43,6 +56,7 @@ async function main() {
     update: {
       name: 'Local Reviewer',
       role: 'admin',
+      passwordHash: reviewerPasswordHash,
       workspaceId: seedIds.workspaceId,
     },
     create: {
@@ -50,6 +64,7 @@ async function main() {
       email: 'reviewer@vowgrid.local',
       name: 'Local Reviewer',
       role: 'admin',
+      passwordHash: reviewerPasswordHash,
       workspaceId: seedIds.workspaceId,
     },
   });
@@ -106,30 +121,10 @@ async function main() {
     },
   });
 
-  await prisma.connector.upsert({
-    where: { id: seedIds.slackConnectorId },
-    update: {
-      name: 'Slack Operations',
-      type: 'slack',
-      description: 'Local placeholder for Slack connector visibility.',
-      rollbackSupport: 'partial',
+  await prisma.connector.deleteMany({
+    where: {
       workspaceId: seedIds.workspaceId,
-      enabled: true,
-      config: {
-        webhookUrl: 'https://example.test/webhook',
-      },
-    },
-    create: {
-      id: seedIds.slackConnectorId,
-      name: 'Slack Operations',
       type: 'slack',
-      description: 'Local placeholder for Slack connector visibility.',
-      rollbackSupport: 'partial',
-      workspaceId: seedIds.workspaceId,
-      enabled: true,
-      config: {
-        webhookUrl: 'https://example.test/webhook',
-      },
     },
   });
 
@@ -209,11 +204,95 @@ async function main() {
     },
   });
 
+  const billingCustomer = await prisma.billingCustomer.upsert({
+    where: { workspaceId: seedIds.workspaceId },
+    update: {
+      email: 'reviewer@vowgrid.local',
+      legalName: 'Primary Trust Workspace',
+    },
+    create: {
+      workspaceId: seedIds.workspaceId,
+      email: 'reviewer@vowgrid.local',
+      legalName: 'Primary Trust Workspace',
+    },
+  });
+
+  const trialStartsAt = addDays(new Date(), -3);
+  const trialEndsAt = addDays(trialStartsAt, BILLING_TRIAL_DAYS);
+
+  await prisma.trialState.upsert({
+    where: { workspaceId: seedIds.workspaceId },
+    update: {
+      status: 'active',
+      startsAt: trialStartsAt,
+      endsAt: trialEndsAt,
+      convertedAt: null,
+      expiredAt: null,
+    },
+    create: {
+      workspaceId: seedIds.workspaceId,
+      status: 'active',
+      startsAt: trialStartsAt,
+      endsAt: trialEndsAt,
+    },
+  });
+
+  const { start, end } = getCurrentMonthlyWindow();
+
+  await prisma.usageCounter.upsert({
+    where: {
+      workspaceId_metric_periodStart: {
+        workspaceId: seedIds.workspaceId,
+        metric: 'intents',
+        periodStart: start,
+      },
+    },
+    update: {
+      count: 1240,
+      periodEnd: end,
+      lastIncrementAt: new Date(),
+    },
+    create: {
+      workspaceId: seedIds.workspaceId,
+      metric: 'intents',
+      periodStart: start,
+      periodEnd: end,
+      count: 1240,
+      lastIncrementAt: new Date(),
+    },
+  });
+
+  await prisma.usageCounter.upsert({
+    where: {
+      workspaceId_metric_periodStart: {
+        workspaceId: seedIds.workspaceId,
+        metric: 'executed_actions',
+        periodStart: start,
+      },
+    },
+    update: {
+      count: 121,
+      periodEnd: end,
+      lastIncrementAt: new Date(),
+    },
+    create: {
+      workspaceId: seedIds.workspaceId,
+      metric: 'executed_actions',
+      periodStart: start,
+      periodEnd: end,
+      count: 121,
+      lastIncrementAt: new Date(),
+    },
+  });
+
   console.log('Seed complete.');
   console.log(`Workspace ID: ${seedIds.workspaceId}`);
   console.log(`Agent ID: ${seedIds.agentId}`);
   console.log(`Reviewer ID: ${seedIds.reviewerId}`);
+  console.log('Dashboard email: reviewer@vowgrid.local');
+  console.log(`Dashboard password: ${localDashboardPassword}`);
   console.log(`Mock connector ID: ${seedIds.connectorId}`);
+  console.log(`Billing customer ID: ${billingCustomer.id}`);
   console.log(`API key: ${localApiKey}`);
 }
 

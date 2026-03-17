@@ -1,6 +1,6 @@
-// ──────────────────────────────────────────
-// VowGrid — Fastify Server Bootstrap
-// ──────────────────────────────────────────
+// --------------------------------------------------------------------------
+// VowGrid - Fastify Server Bootstrap
+// --------------------------------------------------------------------------
 
 import Fastify, { type FastifyError } from 'fastify';
 import cors from '@fastify/cors';
@@ -8,36 +8,31 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
+import { AppError } from './common/errors.js';
+import { error as errorResponse } from './common/response.js';
 import { env } from './config/env.js';
+import { startExecutionWorker } from './jobs/execution.worker.js';
 import { logger } from './lib/logger.js';
 import { prisma, disconnectPrisma } from './lib/prisma.js';
 import { disconnectRedis } from './lib/redis.js';
-import authPlugin from './plugins/auth.plugin.js';
-import { AppError } from './common/errors.js';
-import { error as errorResponse } from './common/response.js';
-
-// Module routes
-import { healthRoutes } from './modules/health/routes.js';
-import { intentRoutes } from './modules/intents/routes.js';
-import { simulationRoutes } from './modules/simulations/routes.js';
-import { policyRoutes } from './modules/policies/routes.js';
-import { approvalRoutes } from './modules/approvals/routes.js';
-import { executionRoutes } from './modules/executions/routes.js';
-import { connectorRoutes } from './modules/connectors/routes.js';
-import { receiptRoutes } from './modules/receipts/routes.js';
 import { auditRoutes } from './modules/audits/routes.js';
-
-// Connector registration
+import { authRoutes } from './modules/auth/routes.js';
+import { approvalRoutes } from './modules/approvals/routes.js';
+import { billingRoutes } from './modules/billing/routes.js';
+import { connectorRoutes } from './modules/connectors/routes.js';
 import { connectorRegistry } from './modules/connectors/framework/connector.registry.js';
 import { MockConnector } from './modules/connectors/framework/mock.connector.js';
-import { SlackConnector } from './modules/connectors/framework/slack.connector.js';
-
-// Workers
-import { startExecutionWorker } from './jobs/execution.worker.js';
+import { executionRoutes } from './modules/executions/routes.js';
+import { healthRoutes } from './modules/health/routes.js';
+import { intentRoutes } from './modules/intents/routes.js';
+import { policyRoutes } from './modules/policies/routes.js';
+import { receiptRoutes } from './modules/receipts/routes.js';
+import { simulationRoutes } from './modules/simulations/routes.js';
+import authPlugin from './plugins/auth.plugin.js';
 
 export async function buildServer() {
   const app = Fastify({
-    logger: false, // We use our own pino instance
+    logger: false,
     genReqId: () => crypto.randomUUID(),
     ajv: {
       customOptions: {
@@ -48,7 +43,6 @@ export async function buildServer() {
     },
   });
 
-  // ── Global plugins ─────────────────────
   await app.register(cors, {
     origin: env.NODE_ENV === 'production' ? false : true,
     credentials: true,
@@ -63,7 +57,6 @@ export async function buildServer() {
     timeWindow: env.RATE_LIMIT_WINDOW_MS,
   });
 
-  // ── OpenAPI / Swagger ──────────────────
   await app.register(swagger, {
     openapi: {
       info: {
@@ -84,9 +77,14 @@ export async function buildServer() {
             name: 'X-Api-Key',
             in: 'header',
           },
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'OpaqueSessionToken',
+          },
         },
       },
-      security: [{ apiKey: [] }],
+      security: [{ apiKey: [] }, { bearerAuth: [] }],
     },
   });
 
@@ -98,10 +96,8 @@ export async function buildServer() {
     },
   });
 
-  // ── Auth plugin ────────────────────────
   await app.register(authPlugin);
 
-  // ── Request logging ────────────────────
   app.addHook('onRequest', async (request) => {
     request.log = logger.child({ requestId: request.id });
   });
@@ -119,7 +115,6 @@ export async function buildServer() {
     );
   });
 
-  // ── Error handler ──────────────────────
   app.setErrorHandler(async (err: FastifyError, request, reply) => {
     if (err instanceof AppError) {
       logger.warn(
@@ -129,7 +124,6 @@ export async function buildServer() {
       return reply.status(err.statusCode).send(errorResponse(err.code, err.message, err.details));
     }
 
-    // Fastify validation errors
     if (err.validation) {
       return reply
         .status(400)
@@ -142,7 +136,6 @@ export async function buildServer() {
         .send(errorResponse(err.code ?? 'REQUEST_ERROR', err.message));
     }
 
-    // Rate limit errors
     if (err.statusCode === 429) {
       return reply
         .status(429)
@@ -153,8 +146,8 @@ export async function buildServer() {
     return reply.status(500).send(errorResponse('INTERNAL_ERROR', 'An internal error occurred'));
   });
 
-  // ── Module routes ──────────────────────
   await app.register(healthRoutes, { prefix: '/v1' });
+  await app.register(authRoutes, { prefix: '/v1' });
   await app.register(intentRoutes, { prefix: '/v1' });
   await app.register(simulationRoutes, { prefix: '/v1' });
   await app.register(policyRoutes, { prefix: '/v1' });
@@ -163,32 +156,26 @@ export async function buildServer() {
   await app.register(connectorRoutes, { prefix: '/v1' });
   await app.register(receiptRoutes, { prefix: '/v1' });
   await app.register(auditRoutes, { prefix: '/v1' });
+  await app.register(billingRoutes, { prefix: '/v1' });
 
   return app;
 }
 
-// ── Start ────────────────────────────────
-
 async function start() {
   try {
-    // Register connectors
     connectorRegistry.register('mock', new MockConnector());
-    connectorRegistry.register('slack', new SlackConnector());
 
     const app = await buildServer();
 
-    // Verify database connection
     await prisma.$connect();
-    logger.info('✅ Database connected');
+    logger.info('Database connected');
 
-    // Start execution worker
     startExecutionWorker();
 
     await app.listen({ port: env.PORT, host: env.HOST });
-    logger.info(`🚀 VowGrid API running at http://${env.HOST}:${env.PORT}`);
-    logger.info(`📖 Swagger UI at http://${env.HOST}:${env.PORT}/v1/docs`);
+    logger.info(`VowGrid API running at http://${env.HOST}:${env.PORT}`);
+    logger.info(`Swagger UI at http://${env.HOST}:${env.PORT}/v1/docs`);
 
-    // Graceful shutdown
     const shutdown = async (signal: string) => {
       logger.info(`${signal} received. Shutting down gracefully...`);
       await app.close();

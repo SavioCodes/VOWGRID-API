@@ -7,8 +7,14 @@ import { executionQueue } from '../../lib/queue.js';
 import { NotFoundError, ValidationError, ConflictError } from '../../common/errors.js';
 import { transitionIntent } from '../intents/service.js';
 import { emitAuditEvent } from '../audits/service.js';
+import { assertCanQueueExecution, trackExecutionStart } from '../billing/entitlements.js';
 
-export async function queueExecution(intentId: string, workspaceId: string, actorId: string) {
+export async function queueExecution(
+  intentId: string,
+  workspaceId: string,
+  actorId: string,
+  actorType: 'user' | 'agent' = 'agent',
+) {
   const intent = await prisma.intent.findFirst({
     where: { id: intentId, workspaceId },
   });
@@ -32,6 +38,8 @@ export async function queueExecution(intentId: string, workspaceId: string, acto
     throw new ConflictError('Execution job already exists for this intent');
   }
 
+  const billing = await assertCanQueueExecution(workspaceId);
+
   // Create execution job record
   const executionJob = await prisma.executionJob.create({
     data: {
@@ -42,7 +50,7 @@ export async function queueExecution(intentId: string, workspaceId: string, acto
   });
 
   // Transition intent to queued
-  await transitionIntent(intentId, workspaceId, 'queued', actorId, 'system');
+  await transitionIntent(intentId, workspaceId, 'queued', actorId, actorType);
 
   // Add to BullMQ queue
   await executionQueue.add(
@@ -63,16 +71,24 @@ export async function queueExecution(intentId: string, workspaceId: string, acto
     action: 'execution.queued',
     entityType: 'intent',
     entityId: intentId,
-    actorType: 'system',
+    actorType,
     actorId,
     workspaceId,
     metadata: { executionJobId: executionJob.id },
   });
 
+  await trackExecutionStart(workspaceId, billing.entitlements.limits);
+
   return executionJob;
 }
 
-export async function requestRollback(intentId: string, workspaceId: string, actorId: string, reason?: string) {
+export async function requestRollback(
+  intentId: string,
+  workspaceId: string,
+  actorId: string,
+  actorType: 'user' | 'agent' = 'user',
+  reason?: string,
+) {
   const intent = await prisma.intent.findFirst({
     where: { id: intentId, workspaceId },
     include: { connector: true },
@@ -103,13 +119,13 @@ export async function requestRollback(intentId: string, workspaceId: string, act
     },
   });
 
-  await transitionIntent(intentId, workspaceId, 'rollback_pending', actorId, 'user');
+  await transitionIntent(intentId, workspaceId, 'rollback_pending', actorId, actorType);
 
   await emitAuditEvent({
     action: 'rollback.requested',
     entityType: 'intent',
     entityId: intentId,
-    actorType: 'user',
+    actorType,
     actorId,
     workspaceId,
     metadata: { rollbackAttemptId: rollbackAttempt.id, reason },

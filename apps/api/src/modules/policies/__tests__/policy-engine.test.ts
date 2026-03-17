@@ -153,7 +153,7 @@ describe('Policy Engine', () => {
         });
         const intent = makeIntent();
 
-        const result = evaluatePolicy(policy, intent, { connectorType: 'slack' });
+        const result = evaluatePolicy(policy, intent, { connectorType: 'mock' });
         expect(result.result).toBe('allow');
       });
     });

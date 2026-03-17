@@ -7,6 +7,7 @@ import { queueExecution, requestRollback } from './service.js';
 import { success } from '../../common/response.js';
 import { z } from 'zod';
 import { ValidationError } from '../../common/errors.js';
+import { getActorId, getActorType } from '../../plugins/auth.plugin.js';
 
 const rollbackSchema = z.object({
   reason: z.string().max(2000).optional(),
@@ -25,7 +26,8 @@ export async function executionRoutes(app: FastifyInstance): Promise<void> {
       const job = await queueExecution(
         intentId,
         request.auth.workspaceId,
-        request.auth.apiKeyId ?? 'system',
+        getActorId(request.auth),
+        getActorType(request.auth),
       );
       return reply.status(202).send(success(job));
     },
@@ -47,7 +49,8 @@ export async function executionRoutes(app: FastifyInstance): Promise<void> {
       const rollback = await requestRollback(
         intentId,
         request.auth.workspaceId,
-        request.auth.apiKeyId ?? 'system',
+        getActorId(request.auth),
+        getActorType(request.auth),
         parsed.data.reason,
       );
       return reply.status(202).send(success(rollback));

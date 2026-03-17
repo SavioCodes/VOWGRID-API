@@ -9,7 +9,12 @@ import { transitionIntent } from '../intents/service.js';
 import { connectorRegistry } from '../connectors/framework/connector.registry.js';
 import { emitAuditEvent } from '../audits/service.js';
 
-export async function simulateIntent(intentId: string, workspaceId: string, actorId: string) {
+export async function simulateIntent(
+  intentId: string,
+  workspaceId: string,
+  actorId: string,
+  actorType: 'user' | 'agent' = 'agent',
+) {
   const intent = await prisma.intent.findFirst({
     where: { id: intentId, workspaceId },
     include: { connector: true },
@@ -65,13 +70,13 @@ export async function simulateIntent(intentId: string, workspaceId: string, acto
   });
 
   // Transition intent to simulated
-  await transitionIntent(intentId, workspaceId, 'simulated', actorId, 'system');
+  await transitionIntent(intentId, workspaceId, 'simulated', actorId, actorType);
 
   await emitAuditEvent({
     action: 'intent.simulated',
     entityType: 'intent',
     entityId: intentId,
-    actorType: 'system',
+    actorType,
     actorId,
     workspaceId,
     metadata: {

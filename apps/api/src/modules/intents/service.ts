@@ -8,8 +8,14 @@ import { toPrismaNullableJsonValue } from '../../common/json.js';
 import { isValidTransition, type IntentState } from './state-machine.js';
 import type { CreateIntentInput, ListIntentsInput } from './schemas.js';
 import { emitAuditEvent } from '../audits/service.js';
+import { assertCanCreateIntent, trackIntentCreation } from '../billing/entitlements.js';
 
-export async function createIntent(workspaceId: string, input: CreateIntentInput, actorId: string) {
+export async function createIntent(
+  workspaceId: string,
+  input: CreateIntentInput,
+  actorId: string,
+  actorType: 'user' | 'agent' = 'agent',
+) {
   // Idempotency check
   if (input.idempotencyKey) {
     const existing = await prisma.intent.findUnique({
@@ -19,6 +25,8 @@ export async function createIntent(workspaceId: string, input: CreateIntentInput
       return existing;
     }
   }
+
+  const billing = await assertCanCreateIntent(workspaceId);
 
   const intent = await prisma.intent.create({
     data: {
@@ -42,11 +50,13 @@ export async function createIntent(workspaceId: string, input: CreateIntentInput
     action: 'intent.created',
     entityType: 'intent',
     entityId: intent.id,
-    actorType: 'agent',
+    actorType,
     actorId,
     workspaceId,
     metadata: { title: intent.title, action: intent.action },
   });
+
+  await trackIntentCreation(workspaceId, billing.entitlements.limits);
 
   return intent;
 }
@@ -154,6 +164,11 @@ export async function transitionIntent(
   return updated;
 }
 
-export async function proposeIntent(id: string, workspaceId: string, actorId: string) {
-  return transitionIntent(id, workspaceId, 'proposed', actorId, 'agent');
+export async function proposeIntent(
+  id: string,
+  workspaceId: string,
+  actorId: string,
+  actorType: 'user' | 'agent' = 'agent',
+) {
+  return transitionIntent(id, workspaceId, 'proposed', actorId, actorType);
 }
