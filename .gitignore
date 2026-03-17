@@ -17,8 +17,12 @@ apps/*/.next/
 apps/*/.env
 apps/*/.env.local
 apps/*/.env.*.local
+infra/.env
+infra/.env.local
+infra/.env.*.local
 !.env.example
 !apps/*/.env.example
+!infra/.env.example
 
 # IDE
 .vscode/*
@@ -49,6 +53,9 @@ pnpm-debug.log*
 # Local verification output
 test-output.txt
 web-live-output*.txt
+.codex-*.pid
+.codex-*.out
+.codex-*.err
 
 # Local Git backup
 .git-backup/

@@ -8,7 +8,7 @@ http://localhost:4000/v1
 
 ## Authentication
 
-All endpoints except `/health` require `X-Api-Key`.
+All endpoints except `/health`, `/billing/plans`, and the Mercado Pago webhook require `X-Api-Key`.
 
 ```bash
 curl -H "X-Api-Key: vowgrid_local_dev_key" http://localhost:4000/v1/intents
@@ -19,6 +19,11 @@ curl -H "X-Api-Key: vowgrid_local_dev_key" http://localhost:4000/v1/intents
 | Method | Path | Auth | Description |
 | --- | --- | --- | --- |
 | `GET` | `/v1/health` | No | System health check |
+| `GET` | `/v1/billing/plans` | No | List the internal launch plan catalog |
+| `GET` | `/v1/billing/account` | Yes | Return billing, trial, usage, entitlement, and provider state for the current workspace |
+| `POST` | `/v1/billing/checkout` | Yes | Start a Mercado Pago subscription checkout for Launch, Pro, or Business |
+| `POST` | `/v1/billing/subscription/cancel` | Yes | Cancel immediately or mark the subscription to end at period boundary |
+| `POST` | `/v1/billing/webhooks/mercado-pago` | No | Receive Mercado Pago subscription events |
 | `POST` | `/v1/intents` | Yes | Create a draft intent |
 | `POST` | `/v1/intents/:intentId/propose` | Yes | Promote a draft intent to `proposed` |
 | `GET` | `/v1/intents` | Yes | List intents |
@@ -50,9 +55,12 @@ curl -H "X-Api-Key: vowgrid_local_dev_key" http://localhost:4000/v1/intents
 
 ## Important Notes
 
+- Billing truth is internal to VowGrid. Frontend logic should depend on `/v1/billing/account`, not on raw provider payloads.
+- `POST /v1/billing/checkout` returns a provider configuration error until Mercado Pago envs are configured.
+- Billing enforcement can return `402 Payment Required` when a workspace is in read-only mode or has hit a hard commercial limit.
 - `POST /v1/intents` creates `draft`.
 - `POST /v1/intents/:intentId/propose` is the supported way to enter the simulation path.
-- Intent detail now includes `policyEvaluations`.
+- Intent detail includes `policyEvaluations`.
 - Rollback currently stops at visibility and pending attempts; there is no rollback worker yet.
 
 ## Swagger

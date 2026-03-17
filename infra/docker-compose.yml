@@ -1,28 +1,41 @@
+name: infra
+
 services:
   postgres:
     image: postgres:16-alpine
     container_name: vowgrid-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: vowgrid
-      POSTGRES_PASSWORD: vowgrid_dev
-      POSTGRES_DB: vowgrid
+      POSTGRES_USER: ${VOWGRID_POSTGRES_USER:-vowgrid}
+      POSTGRES_PASSWORD: ${VOWGRID_POSTGRES_PASSWORD:-vowgrid_dev}
+      POSTGRES_DB: ${VOWGRID_POSTGRES_DB:-vowgrid}
     ports:
-      - "5432:5432"
+      - "${VOWGRID_POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vowgrid"]
+      test: ["CMD-SHELL", "pg_isready -U ${VOWGRID_POSTGRES_USER:-vowgrid} -d ${VOWGRID_POSTGRES_DB:-vowgrid}"]
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      com.vowgrid.project: vowgrid
+      com.vowgrid.stack: infra
+      com.vowgrid.service: postgres
 
   redis:
     image: redis:7-alpine
     container_name: vowgrid-redis
     restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "${VOWGRID_REDIS_PORT:-6379}:6379"
     volumes:
       - redisdata:/data
     healthcheck:
@@ -30,7 +43,26 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      com.vowgrid.project: vowgrid
+      com.vowgrid.stack: infra
+      com.vowgrid.service: redis
+
+networks:
+  default:
+    name: infra_default
+    labels:
+      com.vowgrid.project: vowgrid
+      com.vowgrid.stack: infra
 
 volumes:
   pgdata:
+    name: infra_pgdata
   redisdata:
+    name: infra_redisdata

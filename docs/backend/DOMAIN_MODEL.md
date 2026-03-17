@@ -2,71 +2,145 @@
 
 ## Entity Relationship Overview
 
-```
-Workspace ──┬── Users
-            ├── Agents ──── Intents
-            ├── ApiKeys
-            ├── Policies
-            ├── Connectors
-            └── AuditEvents
+```text
+Workspace
+|- Users
+|- Agents
+|- ApiKeys
+|- Policies
+|- Connectors
+|- Intents
+|- AuditEvents
+|- BillingCustomer
+|- WorkspaceSubscription
+|- BillingEvents
+|- UsageCounters
+`- TrialState
 
-Intent ──┬── SimulationResult (1:1)
-         ├── ApprovalRequest (1:1) ── ApprovalDecisions (1:N)
-         ├── ExecutionJob (1:1)
-         ├── Receipts (1:N)
-         └── RollbackAttempts (1:N)
+Intent
+|- SimulationResult
+|- ApprovalRequest
+|  `- ApprovalDecisions
+|- ExecutionJob
+|- Receipts
+`- RollbackAttempts
 
-Policy ──── PolicyDecisions (1:N)
+Policy
+`- PolicyDecisions
 ```
 
 ## Core Entities
 
 ### Workspace
-Multi-tenant root entity. All data is workspace-scoped.
 
-### Intent (Central Entity)
-Represents an action an AI agent wants to perform. Carries the full lifecycle through 13 states.
+Multi-tenant root entity. All operational and billing data is scoped to a workspace.
 
-**State Machine:**
-```
-draft → proposed → simulated → pending_approval → approved → queued → executing → succeeded
-                        ↓              ↓              ↓                              ↓
-                    rejected       rejected       rejected                    rollback_pending
-                                                                                ↓         ↓
-                                                                          rolled_back  rollback_failed
-                                                                                          ↓
-                                                            failed → queued (retry)  rollback_pending (retry)
-```
+### Intent
+
+Represents an action an AI agent wants to perform. It moves through the trust workflow:
+
+`draft -> proposed -> simulated -> pending_approval -> approved -> queued -> executing -> succeeded`
+
+Rejection, failure, and rollback states branch off that core path.
 
 ### SimulationResult
-Persisted output of connector simulation. Includes: summary, estimated impact, risk level, reversibility, affected resources, diff preview.
+
+Persisted simulation output for an intent. It holds summary, estimated impact, risk level, reversibility, affected resources, and diff preview.
 
 ### Policy
-Rule definitions that gate intent progression. Types: `amount_threshold`, `action_restriction`, `connector_restriction`, `environment_restriction`, `role_constraint`.
 
-### ApprovalRequest + ApprovalDecision
-Multi-step approval support. Each decision records: actor, timestamp, rationale.
+Rule definition used during approval submission. Current policy types include:
+
+- `amount_threshold`
+- `action_restriction`
+- `connector_restriction`
+- `environment_restriction`
+- `role_constraint`
+
+### ApprovalRequest And ApprovalDecision
+
+Approval workflow state and individual reviewer decisions.
 
 ### ExecutionJob
-BullMQ job record. Tracks: status, attempts, results, errors.
+
+Execution queue record. Tracks queue status, attempts, results, and execution errors.
 
 ### Connector
-Pluggable action executor. Each connector declares: type, rollback support (`supported`/`partial`/`unsupported`).
+
+Pluggable action executor. Each connector declares rollback posture as `supported`, `partial`, or `unsupported`.
 
 ### Receipt
-Immutable proof of execution. Contains full metadata of what happened.
+
+Immutable proof surface for completed execution work.
 
 ### AuditEvent
-Every important action emits an audit event. Indexed for fast querying by entity, actor, and timestamp.
 
-### RollbackAttempt
-Tracks rollback attempts with status and results. Supports retry.
+Queryable activity log emitted throughout the product lifecycle, including billing events that affect workspace state.
 
-## Key Design Choices
+## Billing Entities
 
-- **cuid** IDs — sortable, collision-resistant, URL-safe
-- **snake_case** column names in PostgreSQL via `@@map`
-- **JSON columns** for parameters, config, metadata — appropriate for schema-flexible data
-- **Relational design** for structured data (states, relationships, approvals)
-- **Cascading deletes** from Workspace — clean teardown
-- **Indexed columns** — status, workspaceId, timestamps for fast queries
+### BillingCustomer
+
+Workspace billing identity. Stores the billing contact email, legal name, and the mapped Mercado Pago customer identifier when available.
+
+### WorkspaceSubscription
+
+Internal subscription record. This is the canonical subscription state used by the product, even when Mercado Pago is the external billing provider.
+
+It stores:
+
+- internal plan key
+- billing cycle
+- internal subscription status
+- provider subscription identifier
+- current period information
+- cancel-at-period-end flag
+- last provider sync metadata
+
+### BillingEvent
+
+Idempotent record of provider-originated events. Used for webhook processing, debugging, and safe replay protection.
+
+### UsageCounter
+
+Monthly counters for usage metrics such as `intents` and `executed_actions`.
+
+### TrialState
+
+Application-managed 14-day free trial state. Trial behavior is owned by the VowGrid backend, not Mercado Pago.
+
+Current launch behavior:
+
+- trial starts automatically for new workspaces
+- active trial currently maps to the `pro` entitlement profile
+- trial becomes `converted` when a paid subscription becomes active
+- expired trial puts the workspace into read-only billing mode
+
+## Entitlement Model
+
+Entitlements are resolved from internal state in this order:
+
+1. active paid subscription
+2. non-active subscription
+3. active trial
+4. expired trial or no billing state
+
+The resolved entitlement snapshot drives:
+
+- usage meters
+- warning states
+- hard commercial blocks for critical write actions
+- plan and support presentation in the dashboard
+
+## Enforcement Boundaries
+
+The current implementation actively enforces:
+
+- connector limits for enabled connectors
+- monthly intent limits
+- monthly executed action limits
+- advanced policy availability
+- advanced approval availability
+- read-only mode after trial expiry or inactive subscription state
+
+Internal user and workspace limits are modeled and surfaced in billing, but there are no self-serve provisioning paths yet that require dedicated hard enforcement on those surfaces.

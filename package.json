@@ -19,9 +19,12 @@
     "generate": "pnpm --filter @vowgrid/api generate",
     "seed": "pnpm --filter @vowgrid/api seed",
     "db:studio": "pnpm --filter @vowgrid/api db:studio",
-    "docker:up": "docker compose -f infra/docker-compose.yml up -d",
-    "docker:down": "docker compose -f infra/docker-compose.yml down",
-    "docker:reset": "docker compose -f infra/docker-compose.yml down -v && docker compose -f infra/docker-compose.yml up -d"
+    "docker:up": "docker compose -f infra/docker-compose.yml up -d --remove-orphans",
+    "docker:down": "docker compose -f infra/docker-compose.yml down --remove-orphans",
+    "docker:logs": "docker compose -f infra/docker-compose.yml logs --tail=200",
+    "docker:status": "docker compose -f infra/docker-compose.yml ps",
+    "docker:config": "docker compose -f infra/docker-compose.yml config",
+    "docker:reset": "docker compose -f infra/docker-compose.yml down --remove-orphans -v && docker compose -f infra/docker-compose.yml up -d"
   },
   "engines": {
     "node": ">=22.0.0",
