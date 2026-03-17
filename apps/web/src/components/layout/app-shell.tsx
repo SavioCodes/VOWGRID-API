@@ -15,10 +15,15 @@ export function AppShell({
       <Sidebar
         workspaceName={snapshot.workspaceName}
         workspaceId={snapshot.workspaceId}
+        currentUser={snapshot.currentUser}
         integration={snapshot.integration}
       />
       <div className="flex-1 space-y-6">
-        <Topbar integration={snapshot.integration} intents={snapshot.intents} />
+        <Topbar
+          integration={snapshot.integration}
+          intents={snapshot.intents}
+          currentUser={snapshot.currentUser}
+        />
         <main className="space-y-6">{children}</main>
       </div>
     </div>

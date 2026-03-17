@@ -36,6 +36,7 @@ export function CommandBar({ intents }: { intents: IntentResponse[] }) {
       { label: 'Intents', href: '/app/intents', meta: 'Lifecycle queue' },
       { label: 'Approvals', href: '/app/approvals', meta: 'Human review center' },
       { label: 'Executions', href: '/app/executions', meta: 'Runtime monitoring' },
+      { label: 'Billing', href: '/app/billing', meta: 'Plans, trial, and usage' },
       { label: 'Policies', href: '/app/policies', meta: 'Policy catalog' },
       { label: 'Connectors', href: '/app/connectors', meta: 'Connector management' },
       { label: 'Audit Trail', href: '/app/audit', meta: 'Queryable audit log' },
@@ -43,7 +44,7 @@ export function CommandBar({ intents }: { intents: IntentResponse[] }) {
       ...intents.slice(0, 8).map((intent) => ({
         label: intent.title,
         href: `/app/intents/${intent.id}`,
-        meta: `${intent.action} · ${intent.environment}`,
+        meta: `${intent.action} | ${intent.environment}`,
         intent,
       })),
     ],

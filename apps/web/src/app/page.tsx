@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Badge, Button, Card, CardContent, MetricCard } from '@vowgrid/ui';
+import { billingPlans, formatPlanPrice } from '@/lib/vowgrid/billing';
 
 const workflow = [
   'Propose',
@@ -36,8 +37,8 @@ export default function Home() {
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <Badge tone="accent">Enterprise control plane</Badge>
-              <Link href="/app">
-                <Button>Open product</Button>
+              <Link href="/login">
+                <Button>Log in</Button>
               </Link>
             </div>
           </div>
@@ -55,8 +56,14 @@ export default function Home() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Link href="/app">
-                <Button>Enter control plane</Button>
+              <Link href="/signup">
+                <Button>Start 14-day trial</Button>
+              </Link>
+              <Link href="/login">
+                <Button tone="secondary">Log in to dashboard</Button>
+              </Link>
+              <Link href="/pricing">
+                <Button tone="secondary">See pricing</Button>
               </Link>
               <Link href="#workflow">
                 <Button tone="secondary">See the trust workflow</Button>
@@ -149,6 +156,40 @@ export default function Home() {
               </div>
             </CardContent>
           </Card>
+        </section>
+
+        <section className="space-y-6">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-[var(--color-accent-soft)]">Launch pricing</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-[var(--color-text-primary)]">
+                Accessible enough for market entry, disciplined enough for B2B trust infrastructure.
+              </h2>
+            </div>
+            <Link href="/pricing">
+              <Button tone="secondary">Open full pricing</Button>
+            </Link>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-4">
+            {billingPlans.map((plan) => (
+              <Card key={plan.key}>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-xl font-semibold tracking-[-0.03em] text-[var(--color-text-primary)]">
+                      {plan.label}
+                    </h3>
+                    <Badge tone={plan.key === 'pro' ? 'accent' : 'neutral'}>{plan.badge}</Badge>
+                  </div>
+                  <p className="text-lg font-semibold text-[var(--color-text-primary)]">
+                    {formatPlanPrice(plan, 'monthly')}
+                  </p>
+                  <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
+                    {plan.limits.executedActionsPerMonth ?? 'Custom'} executed actions / month
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </section>
       </div>
     </div>

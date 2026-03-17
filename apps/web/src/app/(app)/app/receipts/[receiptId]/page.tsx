@@ -56,7 +56,7 @@ export default async function ReceiptPage({
       </section>
       <PayloadViewer
         title="Receipt payload"
-        description="Structured execution proof returned by the backend or the provisional adapter."
+        description="Structured execution proof returned by the current adapter."
         payload={receipt.data}
       />
     </div>

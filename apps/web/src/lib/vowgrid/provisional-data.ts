@@ -1,5 +1,6 @@
 import type {
   AuditEventResponse,
+  BillingAccountResponse,
   HealthResponse,
   IntentDetailResponse,
   ListConnectorsResponse,
@@ -20,6 +21,7 @@ export interface ProvisionalWorkspaceData {
   workspaceName: string;
   notes: string[];
   health: HealthResponse;
+  billingAccount: BillingAccountResponse;
   directory: DirectoryEntry[];
   connectors: ListConnectorsResponse;
   policies: PolicyResponse[];
@@ -49,21 +51,9 @@ const connectors: ListConnectorsResponse = {
       createdAt: '2026-03-15T08:10:00.000Z',
       updatedAt: '2026-03-15T08:10:00.000Z',
     },
-    {
-      id: 'conn_slack_ops',
-      name: 'Slack Operations',
-      type: 'slack',
-      description: 'Connector skeleton for notifications and approval escalations.',
-      rollbackSupport: 'partial',
-      workspaceId,
-      enabled: true,
-      createdAt: '2026-03-15T08:20:00.000Z',
-      updatedAt: '2026-03-15T08:20:00.000Z',
-    },
   ],
   registeredTypes: [
     { type: 'mock', rollbackSupport: 'supported' },
-    { type: 'slack', rollbackSupport: 'partial' },
   ],
 };
 
@@ -94,10 +84,10 @@ const policies: PolicyResponse[] = [
   },
   {
     id: 'pol_connector_scope',
-    name: 'Slack actions require visibility',
-    description: 'Slack changes must remain inspectable and partially reversible.',
+    name: 'Connector actions require visibility',
+    description: 'Connector changes must remain inspectable and rollback-aware.',
     type: 'connector_restriction',
-    rules: { allowedConnectors: ['mock', 'slack'] },
+    rules: { allowedConnectors: ['mock'] },
     priority: 80,
     enabled: true,
     workspaceId,
@@ -113,7 +103,7 @@ const intents: ProvisionalIntentRecord[] = [
     description:
       'Draft intent created from the console and intentionally held at the earliest lifecycle stage.',
     action: 'send_notice',
-    connectorId: 'conn_slack_ops',
+    connectorId: 'conn_mock_primary',
     agentId: 'agent_risk_copilot',
     workspaceId,
     status: 'draft',
@@ -129,7 +119,7 @@ const intents: ProvisionalIntentRecord[] = [
       createdAt: '2026-03-15T07:40:00.000Z',
       updatedAt: '2026-03-15T07:40:00.000Z',
     },
-    connector: connectors.connectors[1],
+    connector: connectors.connectors[0],
     receipts: [],
     rollbackAttempts: [],
   },
@@ -138,7 +128,7 @@ const intents: ProvisionalIntentRecord[] = [
     title: 'Send staged approval reminder',
     description: 'Notify stakeholders that an approval gate is about to open.',
     action: 'send_message',
-    connectorId: 'conn_slack_ops',
+    connectorId: 'conn_mock_primary',
     agentId: 'agent_risk_copilot',
     workspaceId,
     status: 'proposed',
@@ -154,7 +144,7 @@ const intents: ProvisionalIntentRecord[] = [
       createdAt: '2026-03-15T07:40:00.000Z',
       updatedAt: '2026-03-15T07:40:00.000Z',
     },
-    connector: connectors.connectors[1],
+    connector: connectors.connectors[0],
     receipts: [],
     rollbackAttempts: [],
   },
@@ -198,7 +188,7 @@ const intents: ProvisionalIntentRecord[] = [
     policyEvaluations: [
       {
         policyId: 'pol_connector_scope',
-        policyName: 'Slack actions require visibility',
+        policyName: 'Connector actions require visibility',
         result: 'allow',
         reason: 'Mock connector remains within the allowed catalog.',
       },
@@ -278,7 +268,7 @@ const intents: ProvisionalIntentRecord[] = [
       },
       {
         policyId: 'pol_connector_scope',
-        policyName: 'Slack actions require visibility',
+        policyName: 'Connector actions require visibility',
         result: 'allow',
         reason: 'Connector is allowed for tracked changes.',
       },
@@ -467,7 +457,7 @@ const intents: ProvisionalIntentRecord[] = [
     description:
       'A rollback attempt failed because the remote endpoint remained locked.',
     action: 'restore_webhook',
-    connectorId: 'conn_slack_ops',
+    connectorId: 'conn_mock_primary',
     agentId: 'agent_risk_copilot',
     workspaceId,
     status: 'rollback_failed',
@@ -483,7 +473,7 @@ const intents: ProvisionalIntentRecord[] = [
       createdAt: '2026-03-15T07:40:00.000Z',
       updatedAt: '2026-03-15T07:40:00.000Z',
     },
-    connector: connectors.connectors[1],
+    connector: connectors.connectors[0],
     simulationResult: {
       id: 'sim_rb_001',
       intentId: 'intent_rb_001',
@@ -540,7 +530,7 @@ const intents: ProvisionalIntentRecord[] = [
         summary: 'Webhook restored before rollback was requested.',
         data: {
           action: 'restore_webhook',
-          connectorType: 'slack',
+          connectorType: 'mock',
           result: { webhook: 'alerts-primary', state: 'enabled' },
         },
         duration: 62000,
@@ -552,7 +542,7 @@ const intents: ProvisionalIntentRecord[] = [
         id: 'rollback_001',
         intentId: 'intent_rb_001',
         status: 'failed',
-        reason: 'Remote webhook endpoint was still locked by Slack.',
+        reason: 'Remote webhook endpoint remained locked during rollback.',
         result: {
           error:
             'Connector rollback is partial and the endpoint lock prevented reversal.',
@@ -645,6 +635,128 @@ const auditEvents: AuditEventResponse[] = [
   },
 ];
 
+const billingAccount: BillingAccountResponse = {
+  workspaceId,
+  customer: {
+    id: 'bill_customer_001',
+    workspaceId,
+    email: 'reviewer@vowgrid.local',
+    legalName: 'Primary Trust Workspace',
+    providerCustomerId: null,
+    createdAt: '2026-03-12T09:00:00.000Z',
+    updatedAt: '2026-03-15T09:00:00.000Z',
+  },
+  subscription: null,
+  trial: {
+    status: 'active',
+    startedAt: '2026-03-12T09:00:00.000Z',
+    endsAt: '2026-03-26T09:00:00.000Z',
+    convertedAt: null,
+    daysRemaining: 11,
+    isActive: true,
+    isExpired: false,
+  },
+  entitlements: {
+    source: 'trial',
+    effectivePlanKey: 'pro',
+    readOnlyMode: false,
+    selfServeCheckout: true,
+    supportTier: 'priority_email',
+    advancedPolicies: true,
+    approvalsMode: 'advanced',
+    limits: {
+      workspaces: 3,
+      internalUsers: 10,
+      activeConnectors: 8,
+      intentsPerMonth: 15000,
+      executedActionsPerMonth: 3000,
+      auditRetentionDays: 90,
+    },
+    warnings: ['Free trial active: 11 day(s) remaining.'],
+    blocks: [],
+  },
+  usage: {
+    metrics: [
+      {
+        key: 'workspaces',
+        label: 'Workspaces',
+        unit: 'workspaces',
+        period: 'current',
+        used: 1,
+        limit: 3,
+        remaining: 2,
+        warningThreshold: 0.8,
+        status: 'ok',
+        hardLimit: true,
+        resetsAt: null,
+      },
+      {
+        key: 'internal_users',
+        label: 'Internal users',
+        unit: 'users',
+        period: 'current',
+        used: 2,
+        limit: 10,
+        remaining: 8,
+        warningThreshold: 0.8,
+        status: 'ok',
+        hardLimit: true,
+        resetsAt: null,
+      },
+      {
+        key: 'active_connectors',
+        label: 'Active connectors',
+        unit: 'connectors',
+        period: 'current',
+        used: 2,
+        limit: 8,
+        remaining: 6,
+        warningThreshold: 0.8,
+        status: 'ok',
+        hardLimit: true,
+        resetsAt: null,
+      },
+      {
+        key: 'intents',
+        label: 'Intents this month',
+        unit: 'intents',
+        period: 'monthly',
+        used: 1240,
+        limit: 15000,
+        remaining: 13760,
+        warningThreshold: 0.8,
+        status: 'ok',
+        hardLimit: true,
+        resetsAt: '2026-04-01T00:00:00.000Z',
+      },
+      {
+        key: 'executed_actions',
+        label: 'Executed actions this month',
+        unit: 'actions',
+        period: 'monthly',
+        used: 121,
+        limit: 3000,
+        remaining: 2879,
+        warningThreshold: 0.8,
+        status: 'ok',
+        hardLimit: true,
+        resetsAt: '2026-04-01T00:00:00.000Z',
+      },
+    ],
+  },
+  provider: {
+    name: 'mercado_pago',
+    configured: false,
+    checkoutEnabled: false,
+    manualSetupRequired: [
+      'Set MERCADO_PAGO_ACCESS_TOKEN in apps/api/.env.',
+      'Configure MERCADO_PAGO_WEBHOOK_SECRET after enabling webhook signatures.',
+      'Set MERCADO_PAGO_WEBHOOK_URL to your public /v1/billing/webhooks/mercado-pago endpoint.',
+      'Set MERCADO_PAGO_RETURN_URL so Mercado Pago can return users to the VowGrid billing surface.',
+    ],
+  },
+};
+
 export const provisionalWorkspaceData: ProvisionalWorkspaceData = {
   workspaceId,
   workspaceName: 'Primary Trust Workspace',
@@ -658,6 +770,7 @@ export const provisionalWorkspaceData: ProvisionalWorkspaceData = {
     services: { database: 'healthy', redis: 'healthy' },
     version: '0.1.0',
   },
+  billingAccount,
   directory,
   connectors,
   policies,

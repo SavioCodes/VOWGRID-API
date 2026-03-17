@@ -8,6 +8,7 @@ const navItems = [
   { href: '/app/intents', label: 'Intents', note: 'Trust workflow queue' },
   { href: '/app/approvals', label: 'Approvals', note: 'Review gates' },
   { href: '/app/executions', label: 'Executions', note: 'Runtime status' },
+  { href: '/app/billing', label: 'Billing', note: 'Plans, usage, trial' },
   { href: '/app/policies', label: 'Policies', note: 'Governance rules' },
   { href: '/app/connectors', label: 'Connectors', note: 'Action surfaces' },
   { href: '/app/audit', label: 'Audit trail', note: 'Immutable visibility' },
@@ -17,10 +18,15 @@ const navItems = [
 export function Sidebar({
   workspaceName,
   workspaceId,
+  currentUser,
   integration,
 }: {
   workspaceName: string;
   workspaceId: string;
+  currentUser: {
+    name: string;
+    role: string;
+  };
   integration: IntegrationState;
 }) {
   return (
@@ -42,6 +48,7 @@ export function Sidebar({
         <WorkspaceSwitcher
           workspaceName={workspaceName}
           workspaceId={workspaceId}
+          currentUser={currentUser}
           integration={integration}
         />
       </div>

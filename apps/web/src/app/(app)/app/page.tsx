@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { Badge, Button, Card, CardContent, EmptyState, MetricCard } from '@vowgrid/ui';
 import { AuditEventTable } from '@/components/vowgrid/audit-event-table';
+import { BillingStatusBadge } from '@/components/vowgrid/billing-status-badge';
 import { IntegrationBanner } from '@/components/vowgrid/integration-banner';
 import { IntentCard } from '@/components/vowgrid/intent-card';
 import { PageHeader } from '@/components/vowgrid/page-header';
+import { getCurrentPlan, getWorkspaceBillingStatus } from '@/lib/vowgrid/billing';
 import { getWorkspaceSnapshot } from '@/lib/vowgrid/repository';
 
 export default async function OverviewPage() {
@@ -17,6 +19,8 @@ export default async function OverviewPage() {
   const rollbackExposure = snapshot.connectors.connectors.filter(
     (connector) => connector.rollbackSupport !== 'supported',
   ).length;
+  const currentPlan = getCurrentPlan(snapshot.billingAccount);
+  const billingStatus = getWorkspaceBillingStatus(snapshot.billingAccount);
 
   return (
     <div className="space-y-6">
@@ -84,7 +88,7 @@ export default async function OverviewPage() {
                   {snapshot.health?.status ?? 'Unknown'}
                 </p>
                 <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                  Database: {snapshot.health?.services.database ?? 'n/a'} · Redis: {snapshot.health?.services.redis ?? 'n/a'}
+                  Database: {snapshot.health?.services.database ?? 'n/a'} / Redis: {snapshot.health?.services.redis ?? 'n/a'}
                 </p>
               </div>
               <div className="rounded-[22px] border border-[var(--color-border)] p-4">
@@ -103,6 +107,20 @@ export default async function OverviewPage() {
                 </p>
                 <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
                   Active governance rules visible to the operator.
+                </p>
+              </div>
+              <div className="rounded-[22px] border border-[var(--color-border)] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Billing</p>
+                  <BillingStatusBadge status={billingStatus} />
+                </div>
+                <p className="mt-2 text-xl font-semibold text-[var(--color-text-primary)]">
+                  {currentPlan?.label ?? 'Upgrade required'}
+                </p>
+                <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                  {snapshot.billingAccount?.trial.isActive
+                    ? `${snapshot.billingAccount.trial.daysRemaining} day(s) left in trial.`
+                    : 'Usage and plan pressure visible in the billing surface.'}
                 </p>
               </div>
             </div>

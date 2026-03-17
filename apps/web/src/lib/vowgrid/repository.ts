@@ -1,21 +1,26 @@
-import { cache } from 'react';
 import type {
   AuditEventResponse,
+  BillingAccountResponse,
+  BillingCheckoutResponse,
+  CancelSubscriptionInput,
+  CreateCheckoutInput,
+  CurrentSessionResponse,
   HealthResponse,
   IntentDetailResponse,
   IntentResponse,
   ListConnectorsResponse,
-  PolicyEvaluationResponse,
   PolicyResponse,
   ReceiptDetailResponse,
 } from '@vowgrid/contracts';
+import { fetchApiEnvelope, fetchPublicJson, getApiBaseUrl } from './api';
+import { getDashboardSessionToken, requireCurrentSession } from './auth';
 import {
   provisionalReceipts,
   provisionalWorkspaceData,
   type DirectoryEntry,
 } from './provisional-data';
 
-export type IntegrationMode = 'live' | 'provisional';
+export type IntegrationMode = 'live' | 'preview';
 
 export interface IntegrationState {
   mode: IntegrationMode;
@@ -27,280 +32,137 @@ export interface IntegrationState {
 
 export interface WorkspaceSnapshot {
   integration: IntegrationState;
+  currentUser: CurrentSessionResponse['user'];
   workspaceId: string;
   workspaceName: string;
   directory: DirectoryEntry[];
   health: HealthResponse | null;
+  billingAccount: BillingAccountResponse | null;
   intents: IntentResponse[];
   connectors: ListConnectorsResponse;
   policies: PolicyResponse[];
   auditEvents: AuditEventResponse[];
 }
 
-interface DataSource {
-  integration: IntegrationState;
-  getWorkspaceId(): Promise<string>;
-  getWorkspaceName(): Promise<string>;
-  getDirectory(): Promise<DirectoryEntry[]>;
-  getHealth(): Promise<HealthResponse | null>;
-  listIntents(): Promise<IntentResponse[]>;
-  getIntent(intentId: string): Promise<IntentDetailResponse | null>;
-  getPolicyEvaluations(intentId: string): Promise<PolicyEvaluationResponse[] | null>;
-  listPolicies(): Promise<PolicyResponse[]>;
-  listConnectors(): Promise<ListConnectorsResponse>;
-  listAuditEvents(): Promise<AuditEventResponse[]>;
-  getReceipt(receiptId: string): Promise<ReceiptDetailResponse | null>;
+function getPreviewEnabled() {
+  return process.env.VOWGRID_ENABLE_PROVISIONAL_DATA === 'true';
 }
 
-function getConfig() {
+function getLiveIntegration(): IntegrationState {
   return {
-    apiBaseUrl: process.env.VOWGRID_API_BASE_URL?.replace(/\/$/, ''),
-    apiKey: process.env.VOWGRID_API_KEY,
-    allowProvisional: process.env.VOWGRID_ENABLE_PROVISIONAL_DATA !== 'false',
+    mode: 'live',
+    label: 'Live session adapter',
+    description: 'Rendering authenticated `/v1` data through the dashboard session cookie.',
+    notes: [
+      'Protected app routes require a valid dashboard session.',
+      'Agent and machine traffic still uses API keys directly against the backend.',
+    ],
+    apiBaseUrl: getApiBaseUrl(),
   };
 }
 
-async function fetchEnvelope<T>(path: string, init?: RequestInit): Promise<T> {
-  const { apiBaseUrl, apiKey } = getConfig();
+async function getSessionTokenOrThrow() {
+  const token = await getDashboardSessionToken();
 
-  if (!apiBaseUrl || !apiKey) {
-    throw new Error('Missing VOWGRID_API_BASE_URL or VOWGRID_API_KEY.');
+  if (!token) {
+    throw new Error('Missing dashboard session token.');
   }
 
-  const headers = new Headers(init?.headers);
-  headers.set('X-Api-Key', apiKey);
+  return token;
+}
 
-  if (init?.body !== undefined) {
-    headers.set('Content-Type', 'application/json');
-  }
-
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+async function fetchSessionEnvelope<T>(path: string, init?: RequestInit) {
+  const token = await getSessionTokenOrThrow();
+  return fetchApiEnvelope<T>(path, {
     ...init,
-    headers,
-    cache: 'no-store',
+    auth: { kind: 'session', token },
   });
-
-  const json = (await response.json()) as {
-    success?: boolean;
-    data?: T;
-    error?: { message?: string };
-  };
-
-  if (!response.ok || !json.success) {
-    throw new Error(json.error?.message ?? `Request to ${path} failed.`);
-  }
-
-  return json.data as T;
 }
 
 async function fetchHealth() {
-  const { apiBaseUrl, apiKey } = getConfig();
-
-  if (!apiBaseUrl || !apiKey) {
+  try {
+    return await fetchPublicJson<HealthResponse>('/v1/health');
+  } catch {
     return null;
   }
+}
 
-  const response = await fetch(`${apiBaseUrl}/v1/health`, {
-    headers: {
-      'X-Api-Key': apiKey,
+function buildDirectory(session: CurrentSessionResponse): DirectoryEntry[] {
+  return [
+    {
+      id: session.user.id,
+      label: session.user.name,
+      role: session.user.role,
     },
-    cache: 'no-store',
-  });
-
-  if (!response.ok && response.status !== 503) {
-    throw new Error('Unable to reach the VowGrid health endpoint.');
-  }
-
-  return (await response.json()) as HealthResponse;
+    {
+      id: 'system',
+      label: 'VowGrid system',
+      role: 'System',
+    },
+  ];
 }
 
-class LiveDataSource implements DataSource {
-  integration: IntegrationState;
+export async function getWorkspaceSnapshot(session?: CurrentSessionResponse): Promise<WorkspaceSnapshot> {
+  const currentSession = session ?? (await requireCurrentSession());
 
-  constructor(apiBaseUrl: string) {
-    this.integration = {
-      mode: 'live',
-      label: 'Live contract adapter',
-      description: 'Rendering from real `/v1` routes using the configured API key.',
-      notes: ['Rendering the current backend workflow and contract surfaces directly.'],
-      apiBaseUrl,
-    };
-  }
-
-  async getWorkspaceId() {
-    const intents = await this.listIntents();
-    return intents[0]?.workspaceId ?? 'connected-workspace';
-  }
-
-  async getWorkspaceName() {
-    return 'Connected workspace';
-  }
-
-  async getDirectory() {
-    return [];
-  }
-
-  async getHealth() {
-    return fetchHealth();
-  }
-
-  async listIntents() {
-    const data = await fetchEnvelope<IntentResponse[]>('/v1/intents?pageSize=100');
-    return data ?? [];
-  }
-
-  async getIntent(intentId: string) {
-    return fetchEnvelope<IntentDetailResponse>(`/v1/intents/${intentId}`);
-  }
-
-  async getPolicyEvaluations(intentId: string) {
-    const intent = await this.getIntent(intentId);
-    return intent?.policyEvaluations ?? null;
-  }
-
-  async listPolicies() {
-    return fetchEnvelope<PolicyResponse[]>('/v1/policies');
-  }
-
-  async listConnectors() {
-    return fetchEnvelope<ListConnectorsResponse>('/v1/connectors');
-  }
-
-  async listAuditEvents() {
-    const data = await fetchEnvelope<AuditEventResponse[]>('/v1/audit-events?pageSize=100');
-    return data ?? [];
-  }
-
-  async getReceipt(receiptId: string) {
-    return fetchEnvelope<ReceiptDetailResponse>(`/v1/receipts/${receiptId}`);
-  }
-}
-
-class ProvisionalDataSource implements DataSource {
-  integration: IntegrationState;
-
-  constructor(notes: string[]) {
-    this.integration = {
-      mode: 'provisional',
-      label: 'Provisional adapter',
-      description: 'Rendering from isolated demo data that mirrors backend contracts.',
-      notes,
-    };
-  }
-
-  async getWorkspaceId() {
-    return provisionalWorkspaceData.workspaceId;
-  }
-
-  async getWorkspaceName() {
-    return provisionalWorkspaceData.workspaceName;
-  }
-
-  async getDirectory() {
-    return provisionalWorkspaceData.directory;
-  }
-
-  async getHealth() {
-    return provisionalWorkspaceData.health;
-  }
-
-  async listIntents() {
-    return provisionalWorkspaceData.intents;
-  }
-
-  async getIntent(intentId: string) {
-    return provisionalWorkspaceData.intents.find((intent) => intent.id === intentId) ?? null;
-  }
-
-  async getPolicyEvaluations(intentId: string) {
-    const intent = provisionalWorkspaceData.intents.find((item) => item.id === intentId);
-    return intent?.policyEvaluations ?? null;
-  }
-
-  async listPolicies() {
-    return provisionalWorkspaceData.policies;
-  }
-
-  async listConnectors() {
-    return provisionalWorkspaceData.connectors;
-  }
-
-  async listAuditEvents() {
-    return provisionalWorkspaceData.auditEvents;
-  }
-
-  async getReceipt(receiptId: string) {
-    return provisionalReceipts.find((receipt) => receipt.id === receiptId) ?? null;
-  }
-}
-
-const getDataSource = cache(async (): Promise<DataSource> => {
-  const { apiBaseUrl, apiKey, allowProvisional } = getConfig();
-
-  if (apiBaseUrl && apiKey) {
-    try {
-      const live = new LiveDataSource(apiBaseUrl);
-      await live.getHealth();
-      return live;
-    } catch (error) {
-      if (!allowProvisional) {
-        throw error;
-      }
-
-      return new ProvisionalDataSource([
-        `Live adapter fallback: ${error instanceof Error ? error.message : 'Unknown connection error.'}`,
-        ...provisionalWorkspaceData.notes,
-      ]);
-    }
-  }
-
-  return new ProvisionalDataSource([
-    'VOWGRID_API_BASE_URL and VOWGRID_API_KEY are not set for the web app.',
-    ...provisionalWorkspaceData.notes,
+  const [health, billingAccount, intents, connectors, policies, auditEvents] = await Promise.all([
+    fetchHealth(),
+    fetchSessionEnvelope<BillingAccountResponse>('/v1/billing/account'),
+    fetchSessionEnvelope<IntentResponse[]>('/v1/intents?pageSize=100'),
+    fetchSessionEnvelope<ListConnectorsResponse>('/v1/connectors'),
+    fetchSessionEnvelope<PolicyResponse[]>('/v1/policies'),
+    fetchSessionEnvelope<AuditEventResponse[]>('/v1/audit-events?pageSize=100'),
   ]);
-});
-
-export const getWorkspaceSnapshot = cache(async (): Promise<WorkspaceSnapshot> => {
-  const dataSource = await getDataSource();
-
-  const [workspaceId, workspaceName, directory, health, intents, connectors, policies, auditEvents] =
-    await Promise.all([
-      dataSource.getWorkspaceId(),
-      dataSource.getWorkspaceName(),
-      dataSource.getDirectory(),
-      dataSource.getHealth(),
-      dataSource.listIntents(),
-      dataSource.listConnectors(),
-      dataSource.listPolicies(),
-      dataSource.listAuditEvents(),
-    ]);
 
   return {
-    integration: dataSource.integration,
-    workspaceId,
-    workspaceName,
-    directory,
+    integration: getLiveIntegration(),
+    currentUser: currentSession.user,
+    workspaceId: currentSession.workspace.id,
+    workspaceName: currentSession.workspace.name,
+    directory: buildDirectory(currentSession),
     health,
-    intents,
+    billingAccount,
+    intents: intents ?? [],
     connectors,
     policies,
-    auditEvents,
+    auditEvents: auditEvents ?? [],
   };
-});
+}
 
 export async function getIntentRecord(intentId: string) {
-  const dataSource = await getDataSource();
-  return dataSource.getIntent(intentId);
+  await requireCurrentSession();
+  return fetchSessionEnvelope<IntentDetailResponse>(`/v1/intents/${intentId}`);
 }
 
 export async function getIntentPolicyEvaluations(intentId: string) {
-  const dataSource = await getDataSource();
-  return dataSource.getPolicyEvaluations(intentId);
+  const intent = await getIntentRecord(intentId);
+  return intent.policyEvaluations ?? null;
 }
 
 export async function getReceiptRecord(receiptId: string) {
-  const dataSource = await getDataSource();
-  return dataSource.getReceipt(receiptId);
+  await requireCurrentSession();
+  return fetchSessionEnvelope<ReceiptDetailResponse>(`/v1/receipts/${receiptId}`);
+}
+
+export async function getBillingAccountRecord() {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<BillingAccountResponse>('/v1/billing/account');
+}
+
+export async function startWorkspaceCheckout(input: CreateCheckoutInput) {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<BillingCheckoutResponse>('/v1/billing/checkout', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function cancelWorkspaceSubscription(input: CancelSubscriptionInput) {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<BillingAccountResponse>('/v1/billing/subscription/cancel', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
 }
 
 export async function getApprovalQueue() {
@@ -333,7 +195,7 @@ export async function getExecutionQueue() {
 
 export async function getPolicyReviewContext(intentId: string) {
   const [snapshot, intent] = await Promise.all([getWorkspaceSnapshot(), getIntentRecord(intentId)]);
-  const evaluations = intent?.policyEvaluations ?? (await getIntentPolicyEvaluations(intentId));
+  const evaluations = intent.policyEvaluations ?? (await getIntentPolicyEvaluations(intentId));
 
   return {
     policies: snapshot.policies,
@@ -352,4 +214,48 @@ export function findDirectoryLabel(directory: DirectoryEntry[], id: string) {
 
 export function getReceiptLinkCandidate(intent: IntentDetailResponse) {
   return intent.receipts[0]?.id ?? null;
+}
+
+export async function getPreviewSnapshot() {
+  if (!getPreviewEnabled()) {
+    throw new Error('Preview mode is disabled. Set VOWGRID_ENABLE_PROVISIONAL_DATA=true to use /preview.');
+  }
+
+  return {
+    integration: {
+      mode: 'preview' as const,
+      label: 'Explicit preview adapter',
+      description: 'Rendering isolated preview data outside the authenticated product flow.',
+      notes: [
+        'This path is for local UI exploration only.',
+        ...provisionalWorkspaceData.notes,
+      ],
+    },
+    currentUser: {
+      id: 'preview-user',
+      email: 'preview@vowgrid.local',
+      name: 'Preview Operator',
+      role: 'preview',
+      workspaceId: provisionalWorkspaceData.workspaceId,
+      createdAt: '2026-03-15T00:00:00.000Z',
+      updatedAt: '2026-03-15T00:00:00.000Z',
+    },
+    workspaceId: provisionalWorkspaceData.workspaceId,
+    workspaceName: provisionalWorkspaceData.workspaceName,
+    directory: provisionalWorkspaceData.directory,
+    health: provisionalWorkspaceData.health,
+    billingAccount: provisionalWorkspaceData.billingAccount,
+    intents: provisionalWorkspaceData.intents,
+    connectors: provisionalWorkspaceData.connectors,
+    policies: provisionalWorkspaceData.policies,
+    auditEvents: provisionalWorkspaceData.auditEvents,
+  } satisfies WorkspaceSnapshot;
+}
+
+export async function getPreviewReceiptRecord(receiptId: string) {
+  if (!getPreviewEnabled()) {
+    throw new Error('Preview mode is disabled.');
+  }
+
+  return provisionalReceipts.find((receipt) => receipt.id === receiptId) ?? null;
 }

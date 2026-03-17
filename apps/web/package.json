@@ -6,8 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "postinstall": "next typegen",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typegen": "next typegen",
+    "typecheck": "pnpm --filter @vowgrid/contracts build && next typegen && tsc --noEmit"
   },
   "dependencies": {
     "@vowgrid/contracts": "workspace:*",
