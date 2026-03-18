@@ -38,8 +38,8 @@
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Mercado Pago account setup | Code path exists, but checkout remains disabled until provider envs are configured                                                                                           |
 | Social login               | GitHub and Google OAuth flows exist, but require provider envs before the buttons become active                                                                              |
-| Deploy automation          | GitHub Actions workflows, release compose, and Dockerfiles exist, but require real secrets, registry setup, and targets                                                      |
-| Infrastructure as Code     | Terraform scaffold exists for an AWS VPS-style environment, but still needs real values and hardening for production                                                         |
+| Deploy automation          | GitHub Actions workflows now target a concrete AWS VPS + Compose + Caddy path, but still require real secrets, registry setup, and hosts                                     |
+| Infrastructure as Code     | Terraform scaffold exists for the chosen AWS VPS launch topology, but still needs real values and hardening for production                                                   |
 | Enterprise contact path    | Enterprise is sales-assisted and now env-configurable, but still depends on manual commercial handling                                                                       |
 | Preview mode               | Available only through explicit `/preview` access when `VOWGRID_ENABLE_PROVISIONAL_DATA=true`                                                                                |
 | Observability vendor sinks | Self-hosted metrics, dashboards, and alert rules exist, but Datadog/Sentry/New Relic style integrations remain optional                                                      |
@@ -47,9 +47,9 @@
 
 ## Not Implemented Yet
 
-| Area                             | Gap                                                                               |
-| -------------------------------- | --------------------------------------------------------------------------------- |
-| SSO beyond GitHub/Google OAuth   | Enterprise identity providers and SAML/OIDC setup are not implemented             |
-| Advanced tax and invoice systems | No jurisdiction-aware invoicing or full compliance engine exists                  |
-| Hosted observability vendors     | Datadog, Sentry, New Relic, or managed log/trace sinks are not preconfigured      |
-| Production-grade deploy setup    | Workflows and Terraform scaffold need real secrets, infra values, and host wiring |
+| Area                             | Gap                                                                                                             |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| SSO beyond GitHub/Google OAuth   | Enterprise identity providers and SAML/OIDC setup are not implemented                                           |
+| Advanced tax and invoice systems | No jurisdiction-aware invoicing or full compliance engine exists                                                |
+| Hosted observability vendors     | Datadog, Sentry, New Relic, or managed log/trace sinks are not preconfigured                                    |
+| Production-grade deploy setup    | The path is now chosen, but workflows and Terraform still need real secrets, DNS, infra values, and host wiring |

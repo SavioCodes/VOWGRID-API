@@ -34,6 +34,7 @@ flowchart LR
 - Provisional data still exists, but only behind the explicit dev-only `/preview` route when enabled.
 - CI now validates typecheck, lint, unit tests, integration tests, coverage, build, and deep E2E paths that cover auth, invites, billing surfaces, execution, receipts, rollback, and observability assertions.
 - A Prometheus-compatible metrics endpoint exists at `/v1/metrics`, and a self-hosted observability stack now lives in `infra/observability` with Prometheus, Alertmanager, and Grafana wiring for both local and release-style environments.
+- The chosen launch-stage production path is now explicit: AWS VPS, Docker Compose, Caddy TLS termination, one primary domain, and only `80` / `443` exposed publicly.
 
 ## Monorepo
 
@@ -145,6 +146,7 @@ Launch billing notes:
 - `pnpm docker:obs:down`
 - `pnpm docker:obs:status`
 - `pnpm docker:obs:logs`
+- `pnpm docker:release:config`
 
 Useful live endpoints:
 
@@ -160,7 +162,11 @@ Current docs:
 - `docs/TECH_CHOICES.md`
 - `docs/ENVIRONMENT_STRATEGY.md`
 - `docs/DEPLOYMENT_FLOW.md`
+- `docs/PRODUCTION_BLUEPRINT.md`
 - `docs/OBSERVABILITY_STACK.md`
+- `docs/GO_LIVE_CHECKLIST.md`
+- `docs/EXTERNAL_SETUP_STATUS.md`
+- `docs/AGENT_INTEGRATION_GUIDE.md`
 - `docs/TROUBLESHOOTING.md`
 - `docs/REAL_WORLD_SCENARIOS.md`
 - `docs/ROADMAP.md`
@@ -193,4 +199,4 @@ Historical reports:
 - Social login requires real GitHub or Google OAuth credentials before the provider buttons become usable.
 - Advanced tax handling and full invoice compliance workflows are not implemented yet.
 - The self-hosted observability stack is included, but external notification receivers and vendor-specific sinks still require environment-specific setup if you want Datadog, Sentry, or similar tools.
-- Deploy automation and Terraform scaffolding exist, but they still require real GitHub secrets, registry setup, and target infrastructure values before they can be treated as production-ready.
+- Deploy automation and Terraform scaffolding now encode a concrete production path, but they still require real GitHub secrets, DNS, registry setup, remote env files, and target infrastructure values before they can be treated as production-ready.

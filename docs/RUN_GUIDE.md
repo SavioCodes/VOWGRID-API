@@ -130,10 +130,35 @@ Workspace admin auth:
 - Stop infra containers: `pnpm docker:down`
 - Recreate infra volumes from scratch: `pnpm docker:reset`
 - Render the resolved compose file: `pnpm docker:config`
+- Render the production release compose file: `pnpm docker:release:config`
 
 The compose stack only manages Postgres and Redis. Persistent data lives in the named volumes `infra_pgdata` and `infra_redisdata`.
 
 The observability overlay adds Prometheus, Alertmanager, and Grafana volumes on top of the same `infra` compose project without changing the base database/Redis services.
+
+## Production Layout
+
+The chosen launch-stage production path is:
+
+- one AWS Ubuntu VPS
+- Docker Compose release stack
+- Caddy terminating TLS on `80` and `443`
+- API and web kept internal to the Compose network
+- optional observability services bound to `127.0.0.1`
+
+Remote runtime files should live under `infra/` on the target host:
+
+- `infra/.env`
+- `infra/api.env`
+- `infra/web.env`
+
+Recommended bootstrap:
+
+- copy `infra/.env.production.example` to `infra/.env`
+- copy `infra/api.env.example` to `infra/api.env`
+- copy `infra/web.env.example` to `infra/web.env`
+
+See `docs/PRODUCTION_BLUEPRINT.md` for the full decision record.
 
 ## Test Commands
 
