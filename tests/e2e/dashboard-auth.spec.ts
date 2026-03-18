@@ -21,5 +21,6 @@ test('public site renders and signup leads into the protected app', async ({ pag
   await expect(page.getByRole('heading', { name: /trust workflow queue/i })).toBeVisible();
 
   await page.goto('/app/settings');
+  await expect(page.getByRole('heading', { name: /workspace members/i })).toBeVisible();
   await expect(page.getByRole('heading', { name: /workspace api keys/i })).toBeVisible();
 });

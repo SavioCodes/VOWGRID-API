@@ -1,8 +1,10 @@
 import type {
   BillingAccountResponse,
   BillingCycle,
+  BillingInvoiceResponse,
   BillingPlanCatalogEntry,
   BillingPlanKey,
+  BillingProrationPreviewResponse,
   BillingSubscriptionStatus,
   UsageMetricResponse,
 } from '@vowgrid/contracts';
@@ -11,13 +13,18 @@ import { PLAN_CATALOG } from '@vowgrid/contracts';
 export const billingPlans = Object.values(PLAN_CATALOG);
 
 export function getEnterpriseContactHref() {
+  const url = process.env.NEXT_PUBLIC_VOWGRID_ENTERPRISE_CONTACT_URL?.trim();
   const email = process.env.NEXT_PUBLIC_VOWGRID_ENTERPRISE_CONTACT_EMAIL?.trim();
 
-  if (!email) {
-    return null;
+  if (url) {
+    return url;
   }
 
-  return `mailto:${email}?subject=VowGrid%20Enterprise`;
+  if (email) {
+    return `mailto:${email}?subject=VowGrid%20Enterprise`;
+  }
+
+  return null;
 }
 
 export function formatBrlAmount(amount: number | null) {
@@ -118,6 +125,10 @@ export function formatMetricSummary(metric: UsageMetricResponse) {
     return `${metric.used} ${metric.unit}`;
   }
 
+  if (metric.overageUnits > 0) {
+    return `${metric.used.toLocaleString('pt-BR')} used (${metric.overageUnits.toLocaleString('pt-BR')} overage)`;
+  }
+
   return `${metric.used.toLocaleString('pt-BR')} / ${metric.limit.toLocaleString('pt-BR')} ${metric.unit}`;
 }
 
@@ -133,4 +144,33 @@ export function getUpgradeRecommendation(account: BillingAccountResponse | null)
   }
 
   return 'enterprise';
+}
+
+export function formatBrlCents(value: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value / 100);
+}
+
+export function formatInvoiceTitle(invoice: BillingInvoiceResponse) {
+  if (invoice.lineItems.some((item) => item.type === 'overage')) {
+    return 'Automatic overage invoice';
+  }
+
+  if (invoice.lineItems.some((item) => item.type.startsWith('proration'))) {
+    return 'Plan change proration';
+  }
+
+  return 'Workspace invoice';
+}
+
+export function formatProrationSummary(proration: BillingProrationPreviewResponse | null) {
+  if (!proration) {
+    return null;
+  }
+
+  return `${formatBrlCents(proration.chargeBrlCents)} charge, ${formatBrlCents(proration.creditBrlCents)} credit, ${formatBrlCents(proration.netBrlCents)} net`;
 }

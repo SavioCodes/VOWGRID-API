@@ -1,10 +1,12 @@
-import { Badge } from '@vowgrid/ui';
+import { Badge, Button } from '@vowgrid/ui';
 import type { IntegrationState } from '@/lib/vowgrid/repository';
+import { switchWorkspaceAction } from '@/lib/vowgrid/auth-actions';
 
 export function WorkspaceSwitcher({
   workspaceName,
   workspaceId,
   currentUser,
+  availableWorkspaces,
   integration,
 }: {
   workspaceName: string;
@@ -13,6 +15,15 @@ export function WorkspaceSwitcher({
     name: string;
     role: string;
   };
+  availableWorkspaces: Array<{
+    workspaceId: string;
+    name: string;
+    slug: string;
+    role: string;
+    status: string;
+    isDefault: boolean;
+    disabledAt: string | null;
+  }>;
   integration: IntegrationState;
 }) {
   return (
@@ -39,9 +50,32 @@ export function WorkspaceSwitcher({
           {currentUser.role}
         </p>
       </div>
-      <p className="mt-4 text-sm leading-6 text-[var(--color-text-secondary)]">
-        Multi-workspace switching stays hidden until membership and switching routes are real.
-      </p>
+      {availableWorkspaces.length > 1 ? (
+        <div className="mt-4 space-y-3">
+          <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+            Available workspaces
+          </p>
+          <div className="space-y-2">
+            {availableWorkspaces.map((workspace) => (
+              <form key={workspace.workspaceId} action={switchWorkspaceAction}>
+                <input type="hidden" name="workspaceId" value={workspace.workspaceId} />
+                <Button
+                  type="submit"
+                  block
+                  tone={workspace.workspaceId === workspaceId ? 'secondary' : 'ghost'}
+                  disabled={workspace.workspaceId === workspaceId || workspace.status !== 'active'}
+                >
+                  {workspace.name} · {workspace.role}
+                </Button>
+              </form>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="mt-4 text-sm leading-6 text-[var(--color-text-secondary)]">
+          This account currently has access to a single workspace.
+        </p>
+      )}
     </div>
   );
 }

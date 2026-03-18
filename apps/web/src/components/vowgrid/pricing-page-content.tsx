@@ -37,7 +37,7 @@ const faqItems = [
   {
     question: 'Do you charge overages automatically?',
     answer:
-      'Not in this release. VowGrid tracks usage, warns near limits, and blocks new critical execution attempts after hard limits instead of silently auto-charging.',
+      'Paid subscriptions can accrue automatic overage billing for executed actions and intents after the included allowance is exceeded. Trials still stop at their included limits.',
   },
   {
     question: 'Why is Enterprise marked as contact sales?',

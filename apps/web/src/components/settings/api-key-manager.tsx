@@ -133,7 +133,7 @@ export function ApiKeyManager({ apiKeys }: { apiKeys: WorkspaceApiKeyResponse[] 
           >
             <Input name="name" placeholder="Production automation key" required />
             <Input name="expiresAt" type="datetime-local" />
-            <Button block disabled={pending && activeKeyId === 'create'}>
+            <Button type="submit" block disabled={pending && activeKeyId === 'create'}>
               {pending && activeKeyId === 'create' ? 'Creating...' : 'Create API key'}
             </Button>
           </form>
@@ -146,8 +146,10 @@ export function ApiKeyManager({ apiKeys }: { apiKeys: WorkspaceApiKeyResponse[] 
             <TableHeaderCell>Name</TableHeaderCell>
             <TableHeaderCell>Status</TableHeaderCell>
             <TableHeaderCell>Prefix</TableHeaderCell>
+            <TableHeaderCell>Created</TableHeaderCell>
             <TableHeaderCell>Last used</TableHeaderCell>
             <TableHeaderCell>Expires</TableHeaderCell>
+            <TableHeaderCell>Revoked</TableHeaderCell>
             <TableHeaderCell className="text-right">Actions</TableHeaderCell>
           </tr>
         </TableHead>
@@ -155,12 +157,7 @@ export function ApiKeyManager({ apiKeys }: { apiKeys: WorkspaceApiKeyResponse[] 
           {apiKeys.map((apiKey) => (
             <TableRow key={apiKey.id}>
               <TableCell>
-                <div className="space-y-1">
-                  <p className="font-medium text-[var(--color-text-primary)]">{apiKey.name}</p>
-                  <p className="text-xs text-[var(--color-text-dim)]">
-                    Scopes: {apiKey.scopes.join(', ')}
-                  </p>
-                </div>
+                <p className="font-medium text-[var(--color-text-primary)]">{apiKey.name}</p>
               </TableCell>
               <TableCell>
                 <Badge tone={getStatusTone(apiKey.status)}>{apiKey.status}</Badge>
@@ -170,8 +167,10 @@ export function ApiKeyManager({ apiKeys }: { apiKeys: WorkspaceApiKeyResponse[] 
                   {apiKey.keyPrefix}
                 </span>
               </TableCell>
+              <TableCell>{formatDate(apiKey.createdAt)}</TableCell>
               <TableCell>{formatDate(apiKey.lastUsedAt)}</TableCell>
               <TableCell>{formatDate(apiKey.expiresAt)}</TableCell>
+              <TableCell>{formatDate(apiKey.revokedAt)}</TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
                   <Button
@@ -194,7 +193,7 @@ export function ApiKeyManager({ apiKeys }: { apiKeys: WorkspaceApiKeyResponse[] 
           ))}
           {apiKeys.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6}>
+              <TableCell colSpan={8}>
                 No workspace API keys exist yet. Create one above for agents, CI tasks, or trusted
                 automation.
               </TableCell>

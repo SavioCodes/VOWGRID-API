@@ -4,6 +4,8 @@ import type {
   BillingCheckoutResponse,
   CancelSubscriptionInput,
   CreateWorkspaceApiKeyInput,
+  CreateWorkspaceInviteInput,
+  CreateWorkspaceMemberInput,
   CreateCheckoutInput,
   CurrentSessionResponse,
   HealthResponse,
@@ -13,8 +15,13 @@ import type {
   PolicyResponse,
   RevokeWorkspaceApiKeyResponse,
   ReceiptDetailResponse,
+  UpdateWorkspaceMemberInput,
   WorkspaceApiKeyResponse,
   WorkspaceApiKeySecretResponse,
+  WorkspaceInviteResponse,
+  WorkspaceInviteSecretResponse,
+  WorkspaceMemberMutationResponse,
+  WorkspaceMemberResponse,
 } from '@vowgrid/contracts';
 import { fetchApiEnvelope, fetchPublicJson, getApiBaseUrl } from './api';
 import { getDashboardSessionToken, requireCurrentSession } from './auth';
@@ -37,6 +44,7 @@ export interface IntegrationState {
 export interface WorkspaceSnapshot {
   integration: IntegrationState;
   currentUser: CurrentSessionResponse['user'];
+  availableWorkspaces: CurrentSessionResponse['availableWorkspaces'];
   workspaceId: string;
   workspaceName: string;
   directory: DirectoryEntry[];
@@ -123,6 +131,7 @@ export async function getWorkspaceSnapshot(
   return {
     integration: getLiveIntegration(),
     currentUser: currentSession.user,
+    availableWorkspaces: currentSession.availableWorkspaces,
     workspaceId: currentSession.workspace.id,
     workspaceName: currentSession.workspace.name,
     directory: buildDirectory(currentSession),
@@ -176,12 +185,79 @@ export async function listWorkspaceApiKeys() {
   return fetchSessionEnvelope<WorkspaceApiKeyResponse[]>('/v1/workspace/api-keys');
 }
 
+export async function listWorkspaceMembers() {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<WorkspaceMemberResponse[]>('/v1/workspace/members');
+}
+
+export async function createWorkspaceMember(input: CreateWorkspaceMemberInput) {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<WorkspaceMemberMutationResponse>('/v1/workspace/members', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateWorkspaceMember(userId: string, input: UpdateWorkspaceMemberInput) {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<WorkspaceMemberMutationResponse>(`/v1/workspace/members/${userId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function disableWorkspaceMember(userId: string) {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<WorkspaceMemberMutationResponse>(
+    `/v1/workspace/members/${userId}/disable`,
+    {
+      method: 'POST',
+      body: JSON.stringify({}),
+    },
+  );
+}
+
+export async function enableWorkspaceMember(userId: string) {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<WorkspaceMemberMutationResponse>(
+    `/v1/workspace/members/${userId}/enable`,
+    {
+      method: 'POST',
+      body: JSON.stringify({}),
+    },
+  );
+}
+
 export async function createWorkspaceApiKey(input: CreateWorkspaceApiKeyInput) {
   await requireCurrentSession();
   return fetchSessionEnvelope<WorkspaceApiKeySecretResponse>('/v1/workspace/api-keys', {
     method: 'POST',
     body: JSON.stringify(input),
   });
+}
+
+export async function listWorkspaceInvites() {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<WorkspaceInviteResponse[]>('/v1/workspace/invites');
+}
+
+export async function createWorkspaceInvite(input: CreateWorkspaceInviteInput) {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<WorkspaceInviteSecretResponse>('/v1/workspace/invites', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function revokeWorkspaceInvite(inviteId: string) {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<{ revoked: boolean; invite: WorkspaceInviteResponse }>(
+    `/v1/workspace/invites/${inviteId}/revoke`,
+    {
+      method: 'POST',
+      body: JSON.stringify({}),
+    },
+  );
 }
 
 export async function rotateWorkspaceApiKey(apiKeyId: string) {
@@ -282,9 +358,21 @@ export async function getPreviewSnapshot() {
       name: 'Preview Operator',
       role: 'preview',
       workspaceId: provisionalWorkspaceData.workspaceId,
+      emailVerifiedAt: '2026-03-15T00:00:00.000Z',
       createdAt: '2026-03-15T00:00:00.000Z',
       updatedAt: '2026-03-15T00:00:00.000Z',
     },
+    availableWorkspaces: [
+      {
+        workspaceId: provisionalWorkspaceData.workspaceId,
+        name: provisionalWorkspaceData.workspaceName,
+        slug: 'preview-workspace',
+        role: 'preview',
+        status: 'active',
+        isDefault: true,
+        disabledAt: null,
+      },
+    ],
     workspaceId: provisionalWorkspaceData.workspaceId,
     workspaceName: provisionalWorkspaceData.workspaceName,
     directory: provisionalWorkspaceData.directory,

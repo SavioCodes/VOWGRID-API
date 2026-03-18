@@ -1,9 +1,20 @@
 import type {
+  AcceptWorkspaceInviteInput,
   AuthSuccessResponse,
+  CompleteOauthSignupInput,
   CurrentSessionResponse,
+  EmailVerificationResponse,
   LoginInput,
   LogoutResponse,
+  OAuthCompleteInput,
+  OAuthCompletionResponse,
+  PasswordResetConfirmInput,
+  PasswordResetConfirmResponse,
+  PasswordResetRequestInput,
+  PasswordResetRequestResponse,
+  RequestEmailVerificationResponse,
   SignupInput,
+  WorkspaceSwitchResponse,
 } from '@vowgrid/contracts';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -56,6 +67,81 @@ export async function signupWithPassword(input: SignupInput) {
   });
 }
 
+export async function requestPasswordReset(input: PasswordResetRequestInput) {
+  return fetchApiEnvelope<PasswordResetRequestResponse>('/v1/auth/password-reset/request', {
+    method: 'POST',
+    body: JSON.stringify(input),
+    auth: { kind: 'none' },
+  });
+}
+
+export async function confirmPasswordReset(input: PasswordResetConfirmInput) {
+  return fetchApiEnvelope<PasswordResetConfirmResponse>('/v1/auth/password-reset/confirm', {
+    method: 'POST',
+    body: JSON.stringify(input),
+    auth: { kind: 'none' },
+  });
+}
+
+export async function requestEmailVerification() {
+  const token = await getDashboardSessionToken();
+
+  if (!token) {
+    throw new Error('Missing dashboard session token.');
+  }
+
+  return fetchApiEnvelope<RequestEmailVerificationResponse>('/v1/auth/email-verification/request', {
+    method: 'POST',
+    auth: { kind: 'session', token },
+  });
+}
+
+export async function verifyEmailToken(tokenValue: string) {
+  return fetchApiEnvelope<EmailVerificationResponse>('/v1/auth/email-verification/verify', {
+    method: 'POST',
+    body: JSON.stringify({ token: tokenValue }),
+    auth: { kind: 'none' },
+  });
+}
+
+export async function acceptWorkspaceInvite(input: AcceptWorkspaceInviteInput) {
+  return fetchApiEnvelope<AuthSuccessResponse>('/v1/auth/invites/accept', {
+    method: 'POST',
+    body: JSON.stringify(input),
+    auth: { kind: 'none' },
+  });
+}
+
+export async function completeOauthProfile(input: OAuthCompleteInput) {
+  return fetchApiEnvelope<OAuthCompletionResponse>('/v1/auth/oauth/complete', {
+    method: 'POST',
+    body: JSON.stringify(input),
+    auth: { kind: 'none' },
+  });
+}
+
+export async function completeOauthSignup(input: CompleteOauthSignupInput) {
+  return fetchApiEnvelope<AuthSuccessResponse>('/v1/auth/oauth/signup/complete', {
+    method: 'POST',
+    body: JSON.stringify(input),
+    auth: { kind: 'none' },
+  });
+}
+
+export async function switchWorkspace(workspaceId: string) {
+  const token = await getDashboardSessionToken();
+
+  if (!token) {
+    throw new Error('Missing dashboard session token.');
+  }
+
+  return fetchApiEnvelope<WorkspaceSwitchResponse>('/v1/auth/switch-workspace', {
+    method: 'POST',
+    body: JSON.stringify({ workspaceId }),
+    auth: { kind: 'session', token },
+  });
+}
+
 export async function getCurrentSession(): Promise<CurrentSessionResponse | null> {
   const token = await getDashboardSessionToken();
 
@@ -82,6 +168,16 @@ export async function requireCurrentSession() {
 
   if (!session) {
     redirect('/login');
+  }
+
+  return session;
+}
+
+export async function requireVerifiedCurrentSession() {
+  const session = await requireCurrentSession();
+
+  if (session.emailVerificationRequired) {
+    redirect('/verify-email');
   }
 
   return session;

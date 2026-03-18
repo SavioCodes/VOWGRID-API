@@ -3,8 +3,14 @@
 import { revalidatePath } from 'next/cache';
 import {
   createWorkspaceApiKey as createWorkspaceApiKeyRecord,
+  createWorkspaceInvite as createWorkspaceInviteRecord,
+  createWorkspaceMember as createWorkspaceMemberRecord,
+  disableWorkspaceMember as disableWorkspaceMemberRecord,
+  enableWorkspaceMember as enableWorkspaceMemberRecord,
   revokeWorkspaceApiKey as revokeWorkspaceApiKeyRecord,
+  revokeWorkspaceInvite as revokeWorkspaceInviteRecord,
   rotateWorkspaceApiKey as rotateWorkspaceApiKeyRecord,
+  updateWorkspaceMember as updateWorkspaceMemberRecord,
 } from '@/lib/vowgrid/repository';
 
 export interface ApiKeyActionResult {
@@ -12,6 +18,17 @@ export interface ApiKeyActionResult {
   message: string;
   revealedApiKey?: string;
   recordName?: string;
+}
+
+export interface MemberActionResult {
+  ok: boolean;
+  message: string;
+}
+
+export interface InviteActionResult {
+  ok: boolean;
+  message: string;
+  inviteUrl?: string | null;
 }
 
 function getExpiry(formData: FormData) {
@@ -29,6 +46,119 @@ function getExpiry(formData: FormData) {
   return parsed.toISOString();
 }
 
+function getRequiredString(formData: FormData, key: string, message: string) {
+  const value = formData.get(key);
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error(message);
+  }
+
+  return value.trim();
+}
+
+function getOptionalString(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined;
+}
+
+function getRole(formData: FormData) {
+  const role = formData.get('role');
+
+  if (role === 'admin' || role === 'member' || role === 'viewer') {
+    return role;
+  }
+
+  throw new Error('Select a valid workspace role.');
+}
+
+function revalidateSettings() {
+  revalidatePath('/app/settings');
+}
+
+export async function createMemberAction(formData: FormData): Promise<MemberActionResult> {
+  try {
+    const created = await createWorkspaceMemberRecord({
+      name: getRequiredString(formData, 'name', 'Provide the member name.'),
+      email: getRequiredString(formData, 'email', 'Provide the member email.'),
+      role: getRole(formData),
+      password: getRequiredString(
+        formData,
+        'password',
+        'Provide an initial password with at least 8 characters.',
+      ),
+    });
+
+    revalidateSettings();
+
+    return {
+      ok: true,
+      message: `${created.member.name} was added to the workspace successfully.`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : 'Failed to create workspace member.',
+    };
+  }
+}
+
+export async function updateMemberAction(
+  userId: string,
+  formData: FormData,
+): Promise<MemberActionResult> {
+  try {
+    const updated = await updateWorkspaceMemberRecord(userId, {
+      name: getOptionalString(formData, 'name'),
+      role: getRole(formData),
+    });
+
+    revalidateSettings();
+
+    return {
+      ok: true,
+      message: `${updated.member.name} was updated successfully.`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : 'Failed to update workspace member.',
+    };
+  }
+}
+
+export async function disableMemberAction(userId: string): Promise<MemberActionResult> {
+  try {
+    const disabled = await disableWorkspaceMemberRecord(userId);
+    revalidateSettings();
+
+    return {
+      ok: true,
+      message: `${disabled.member.name} was disabled and existing sessions were revoked.`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : 'Failed to disable workspace member.',
+    };
+  }
+}
+
+export async function enableMemberAction(userId: string): Promise<MemberActionResult> {
+  try {
+    const enabled = await enableWorkspaceMemberRecord(userId);
+    revalidateSettings();
+
+    return {
+      ok: true,
+      message: `${enabled.member.name} was re-enabled successfully.`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : 'Failed to re-enable workspace member.',
+    };
+  }
+}
+
 export async function createApiKeyAction(formData: FormData): Promise<ApiKeyActionResult> {
   try {
     const name = formData.get('name');
@@ -44,7 +174,7 @@ export async function createApiKeyAction(formData: FormData): Promise<ApiKeyActi
       expiresAt: getExpiry(formData),
     });
 
-    revalidatePath('/app/settings');
+    revalidateSettings();
 
     return {
       ok: true,
@@ -60,11 +190,50 @@ export async function createApiKeyAction(formData: FormData): Promise<ApiKeyActi
   }
 }
 
+export async function createInviteAction(formData: FormData): Promise<InviteActionResult> {
+  try {
+    const created = await createWorkspaceInviteRecord({
+      email: getRequiredString(formData, 'email', 'Provide the invite email.'),
+      role: getRole(formData),
+    });
+
+    revalidateSettings();
+
+    return {
+      ok: true,
+      message: 'Workspace invite created successfully.',
+      inviteUrl: created.inviteUrl,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : 'Failed to create workspace invite.',
+    };
+  }
+}
+
+export async function revokeInviteAction(inviteId: string): Promise<InviteActionResult> {
+  try {
+    await revokeWorkspaceInviteRecord(inviteId);
+    revalidateSettings();
+
+    return {
+      ok: true,
+      message: 'Workspace invite revoked successfully.',
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : 'Failed to revoke workspace invite.',
+    };
+  }
+}
+
 export async function rotateApiKeyAction(apiKeyId: string): Promise<ApiKeyActionResult> {
   try {
     const rotated = await rotateWorkspaceApiKeyRecord(apiKeyId);
 
-    revalidatePath('/app/settings');
+    revalidateSettings();
 
     return {
       ok: true,
@@ -83,7 +252,7 @@ export async function rotateApiKeyAction(apiKeyId: string): Promise<ApiKeyAction
 export async function revokeApiKeyAction(apiKeyId: string): Promise<ApiKeyActionResult> {
   try {
     await revokeWorkspaceApiKeyRecord(apiKeyId);
-    revalidatePath('/app/settings');
+    revalidateSettings();
 
     return {
       ok: true,

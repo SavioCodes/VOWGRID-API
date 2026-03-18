@@ -12,13 +12,14 @@ const navItems = [
   { href: '/app/policies', label: 'Policies', note: 'Governance rules' },
   { href: '/app/connectors', label: 'Connectors', note: 'Action surfaces' },
   { href: '/app/audit', label: 'Audit trail', note: 'Immutable visibility' },
-  { href: '/app/settings', label: 'Settings', note: 'Auth and adapter state' },
+  { href: '/app/settings', label: 'Settings', note: 'Members, auth, and keys' },
 ];
 
 export function Sidebar({
   workspaceName,
   workspaceId,
   currentUser,
+  availableWorkspaces,
   integration,
 }: {
   workspaceName: string;
@@ -27,6 +28,15 @@ export function Sidebar({
     name: string;
     role: string;
   };
+  availableWorkspaces: Array<{
+    workspaceId: string;
+    name: string;
+    slug: string;
+    role: string;
+    status: string;
+    isDefault: boolean;
+    disabledAt: string | null;
+  }>;
   integration: IntegrationState;
 }) {
   return (
@@ -49,6 +59,7 @@ export function Sidebar({
           workspaceName={workspaceName}
           workspaceId={workspaceId}
           currentUser={currentUser}
+          availableWorkspaces={availableWorkspaces}
           integration={integration}
         />
       </div>

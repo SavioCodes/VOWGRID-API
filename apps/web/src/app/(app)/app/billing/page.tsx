@@ -7,6 +7,8 @@ import { UsageMeter } from '@/components/vowgrid/usage-meter';
 import {
   billingPlans,
   formatApprovalsMode,
+  formatBrlCents,
+  formatInvoiceTitle,
   getEnterpriseContactHref,
   formatPlanPrice,
   formatSupportTier,
@@ -30,7 +32,7 @@ export default async function BillingPage() {
       <PageHeader
         eyebrow="Billing"
         title="Turn trust infrastructure into a clear commercial surface with real limits, real trials, and an honest upgrade path."
-        description="Billing truth stays inside the VowGrid backend. This page shows the current plan, subscription status, trial countdown, usage pressure, and the current Mercado Pago setup state for the workspace."
+        description="Billing truth stays inside the VowGrid backend. This page shows the current plan, subscription status, trial countdown, usage pressure, automatic overage posture, invoices, and the current Mercado Pago setup state for the workspace."
         actions={
           <Link href="/pricing">
             <Button tone="secondary">View public pricing</Button>
@@ -102,6 +104,16 @@ export default async function BillingPage() {
                         : 'Upgrade required'}
                     </p>
                   </div>
+                  <div className="rounded-[22px] border border-[var(--color-border)] p-4">
+                    <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                      Overage
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-[var(--color-text-primary)]">
+                      {account.entitlements.automaticOverageBilling
+                        ? 'Automatic billing enabled'
+                        : 'Hard limit enforcement'}
+                    </p>
+                  </div>
                 </div>
 
                 {account.entitlements.warnings.length > 0 ||
@@ -168,7 +180,11 @@ export default async function BillingPage() {
                 {account.subscription ? (
                   <form action={cancelSubscriptionAction} className="space-y-3">
                     <input type="hidden" name="immediate" value="false" />
-                    <Button tone="ghost" disabled={account.subscription.status !== 'active'}>
+                    <Button
+                      type="submit"
+                      tone="ghost"
+                      disabled={account.subscription.status !== 'active'}
+                    >
                       Cancel at period end
                     </Button>
                   </form>
@@ -190,6 +206,67 @@ export default async function BillingPage() {
               {account.usage.metrics.map((metric) => (
                 <UsageMeter key={metric.key} metric={metric} />
               ))}
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
+                Invoices and adjustments
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
+                Overage and proration stay inspectable instead of turning into opaque provider math.
+              </h2>
+            </div>
+            <div className="grid gap-4 xl:grid-cols-2">
+              {account.invoices.length > 0 ? (
+                account.invoices.map((invoice) => (
+                  <Card key={invoice.id}>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                            {formatInvoiceTitle(invoice)}
+                          </p>
+                          <h3 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-[var(--color-text-primary)]">
+                            {formatBrlCents(invoice.totalBrlCents)}
+                          </h3>
+                        </div>
+                        <Badge tone={invoice.status === 'paid' ? 'mint' : 'warning'}>
+                          {invoice.status}
+                        </Badge>
+                      </div>
+                      <div className="space-y-2 text-sm leading-6 text-[var(--color-text-secondary)]">
+                        {invoice.lineItems.map((item) => (
+                          <p key={item.id}>
+                            {item.label}: {formatBrlCents(item.subtotalBrlCents)}
+                          </p>
+                        ))}
+                        <p>Tax: {formatBrlCents(invoice.taxAmountBrlCents)}</p>
+                        {invoice.dueAt ? (
+                          <p>Due: {new Date(invoice.dueAt).toLocaleDateString('pt-BR')}</p>
+                        ) : null}
+                      </div>
+                      {invoice.paymentUrl ? (
+                        <Link href={invoice.paymentUrl}>
+                          <Button block tone="secondary">
+                            Open invoice checkout
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Button block tone="secondary" disabled>
+                          No payment link yet
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <EmptyState
+                  title="No invoice activity yet"
+                  description="Automatic overage and proration invoices will appear here when paid workspaces exceed included usage or change plan mid-cycle."
+                />
+              )}
             </div>
           </section>
 
@@ -249,12 +326,22 @@ export default async function BillingPage() {
                       </div>
 
                       <div className="space-y-3">
+                        {account.subscription?.planKey &&
+                        account.subscription.planKey !== plan.key &&
+                        account.subscription.status === 'active' ? (
+                          <div className="rounded-[18px] border border-[var(--color-border)] bg-[rgba(255,255,255,0.03)] px-3 py-3 text-sm leading-6 text-[var(--color-text-secondary)]">
+                            Changing plans mid-cycle creates a proration credit and charge on the
+                            current billing period instead of hiding the delta inside provider
+                            metadata.
+                          </div>
+                        ) : null}
                         {plan.selfServeCheckout ? (
                           <>
                             <form action={startCheckoutAction}>
                               <input type="hidden" name="planKey" value={plan.key} />
                               <input type="hidden" name="billingCycle" value="monthly" />
                               <Button
+                                type="submit"
                                 block
                                 disabled={!account.provider.checkoutEnabled || isCurrent}
                               >
@@ -267,6 +354,7 @@ export default async function BillingPage() {
                               <input type="hidden" name="planKey" value={plan.key} />
                               <input type="hidden" name="billingCycle" value="yearly" />
                               <Button
+                                type="submit"
                                 block
                                 tone="secondary"
                                 disabled={!account.provider.checkoutEnabled || isCurrent}

@@ -8,9 +8,11 @@ export function UsageMeter({ metric }: { metric: UsageMetricResponse }) {
   const barTone =
     metric.status === 'blocked'
       ? 'bg-[var(--color-danger)]'
-      : metric.status === 'warning'
-        ? 'bg-[var(--color-warning)]'
-        : 'bg-[var(--color-accent)]';
+      : metric.status === 'overage'
+        ? 'bg-[var(--color-accent-soft)]'
+        : metric.status === 'warning'
+          ? 'bg-[var(--color-warning)]'
+          : 'bg-[var(--color-accent)]';
 
   return (
     <Card>
@@ -35,9 +37,11 @@ export function UsageMeter({ metric }: { metric: UsageMetricResponse }) {
           <div className="flex items-center justify-between text-sm text-[var(--color-text-secondary)]">
             <span>{metric.limit === null ? 'Custom limit' : `${Math.round(percent)}% used`}</span>
             <span>
-              {metric.remaining === null
-                ? 'Contact sales'
-                : `${metric.remaining.toLocaleString('pt-BR')} remaining`}
+              {metric.overageUnits > 0
+                ? `${metric.overageUnits.toLocaleString('pt-BR')} overage`
+                : metric.remaining === null
+                  ? 'Contact sales'
+                  : `${metric.remaining.toLocaleString('pt-BR')} remaining`}
             </span>
           </div>
           {metric.resetsAt ? (

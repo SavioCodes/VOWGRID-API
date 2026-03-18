@@ -2,8 +2,13 @@
 
 import Link from 'next/link';
 import { useActionState } from 'react';
+import type { OAuthSignupCandidateResponse } from '@vowgrid/contracts';
 import { Input } from '@vowgrid/ui';
-import { type AuthActionState, signupAction } from '@/lib/vowgrid/auth-actions';
+import {
+  completeOauthSignupAction,
+  type AuthActionState,
+  signupAction,
+} from '@/lib/vowgrid/auth-actions';
 import { initialAuthActionState } from '@/lib/vowgrid/auth-form-state';
 import { AuthSubmitButton } from './auth-submit-button';
 
@@ -19,8 +24,15 @@ function ErrorMessage({ state }: { state: AuthActionState }) {
   );
 }
 
-export function SignupForm() {
-  const [state, formAction] = useActionState(signupAction, initialAuthActionState);
+export function SignupForm({
+  oauthCandidate = null,
+}: {
+  oauthCandidate?: OAuthSignupCandidateResponse | null;
+}) {
+  const [state, formAction] = useActionState(
+    oauthCandidate ? completeOauthSignupAction : signupAction,
+    initialAuthActionState,
+  );
 
   return (
     <form action={formAction} className="space-y-5">
@@ -29,7 +41,7 @@ export function SignupForm() {
           Signup
         </p>
         <h2 className="text-3xl font-semibold tracking-[-0.05em] text-[var(--color-text-primary)]">
-          Start a workspace trial
+          {oauthCandidate ? 'Finish the social signup' : 'Start a workspace trial'}
         </h2>
       </div>
 
@@ -46,36 +58,67 @@ export function SignupForm() {
           />
         </label>
 
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-[var(--color-text-primary)]">Your name</span>
-          <Input name="name" placeholder="Amina Patel" autoComplete="name" required />
-        </label>
+        {oauthCandidate ? (
+          <>
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">Provider</span>
+              <Input value={oauthCandidate.provider} readOnly />
+            </label>
 
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-[var(--color-text-primary)]">Work email</span>
-          <Input
-            name="email"
-            type="email"
-            placeholder="you@company.com"
-            autoComplete="email"
-            required
-          />
-        </label>
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                Verified work email
+              </span>
+              <Input value={oauthCandidate.email} readOnly />
+            </label>
 
-        <label className="block space-y-2 sm:col-span-2">
-          <span className="text-sm font-medium text-[var(--color-text-primary)]">Password</span>
-          <Input
-            name="password"
-            type="password"
-            placeholder="Create a password with at least 8 characters"
-            autoComplete="new-password"
-            required
-          />
-        </label>
+            <label className="block space-y-2 sm:col-span-2">
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                Operator name
+              </span>
+              <Input value={oauthCandidate.name} readOnly />
+            </label>
+          </>
+        ) : (
+          <>
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                Your name
+              </span>
+              <Input name="name" placeholder="Amina Patel" autoComplete="name" required />
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                Work email
+              </span>
+              <Input
+                name="email"
+                type="email"
+                placeholder="you@company.com"
+                autoComplete="email"
+                required
+              />
+            </label>
+
+            <label className="block space-y-2 sm:col-span-2">
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">Password</span>
+              <Input
+                name="password"
+                type="password"
+                placeholder="Create a password with at least 8 characters"
+                autoComplete="new-password"
+                required
+              />
+            </label>
+          </>
+        )}
       </div>
 
       <ErrorMessage state={state} />
-      <AuthSubmitButton>Create workspace</AuthSubmitButton>
+      <AuthSubmitButton>
+        {oauthCandidate ? 'Create workspace and continue' : 'Create workspace'}
+      </AuthSubmitButton>
 
       <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
         Already have access?{' '}

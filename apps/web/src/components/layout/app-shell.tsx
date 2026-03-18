@@ -16,6 +16,7 @@ export function AppShell({
         workspaceName={snapshot.workspaceName}
         workspaceId={snapshot.workspaceId}
         currentUser={snapshot.currentUser}
+        availableWorkspaces={snapshot.availableWorkspaces}
         integration={snapshot.integration}
       />
       <div className="flex-1 space-y-6">

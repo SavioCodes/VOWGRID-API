@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useActionState } from 'react';
 import { Input } from '@vowgrid/ui';
-import { type AuthActionState, loginAction } from '@/lib/vowgrid/auth-actions';
+import { type AuthActionState, acceptWorkspaceInviteAction } from '@/lib/vowgrid/auth-actions';
 import { initialAuthActionState } from '@/lib/vowgrid/auth-form-state';
 import { AuthSubmitButton } from './auth-submit-button';
 
@@ -19,63 +19,51 @@ function ErrorMessage({ state }: { state: AuthActionState }) {
   );
 }
 
-export function LoginForm() {
-  const [state, formAction] = useActionState(loginAction, initialAuthActionState);
+export function AcceptInviteForm({ token }: { token: string }) {
+  const [state, formAction] = useActionState(acceptWorkspaceInviteAction, initialAuthActionState);
 
   return (
     <form action={formAction} className="space-y-5">
+      <input type="hidden" name="token" value={token} />
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">Login</p>
+        <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
+          Workspace invite
+        </p>
         <h2 className="text-3xl font-semibold tracking-[-0.05em] text-[var(--color-text-primary)]">
-          Access the control plane
+          Join this workspace
         </h2>
       </div>
 
       <div className="space-y-4">
         <label className="block space-y-2">
-          <span className="text-sm font-medium text-[var(--color-text-primary)]">Email</span>
-          <Input
-            name="email"
-            type="email"
-            placeholder="you@company.com"
-            autoComplete="email"
-            required
-          />
+          <span className="text-sm font-medium text-[var(--color-text-primary)]">Name</span>
+          <Input name="name" placeholder="Only required for new accounts" autoComplete="name" />
         </label>
-
         <label className="block space-y-2">
           <span className="text-sm font-medium text-[var(--color-text-primary)]">Password</span>
           <Input
             name="password"
             type="password"
-            placeholder="At least 8 characters"
-            autoComplete="current-password"
-            required
+            placeholder="Required for new accounts"
+            autoComplete="new-password"
           />
         </label>
       </div>
 
       <ErrorMessage state={state} />
-      <AuthSubmitButton>Log in</AuthSubmitButton>
+      <AuthSubmitButton>Accept invite</AuthSubmitButton>
 
       <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
-        Forgot the password?{' '}
-        <Link
-          href="/forgot-password"
-          className="text-[var(--color-accent-soft)] hover:text-[var(--color-text-primary)]"
-        >
-          Reset it here
-        </Link>
-        .
+        Already have a session? You can still accept this invite directly. If the email does not
+        exist yet, provide name and password above.
       </p>
-
       <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
-        Need a workspace first?{' '}
+        Or go back to{' '}
         <Link
-          href="/signup"
+          href="/login"
           className="text-[var(--color-accent-soft)] hover:text-[var(--color-text-primary)]"
         >
-          Create one here
+          login
         </Link>
         .
       </p>

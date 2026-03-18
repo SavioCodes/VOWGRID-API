@@ -663,9 +663,11 @@ const billingAccount: BillingAccountResponse = {
     effectivePlanKey: 'pro',
     readOnlyMode: false,
     selfServeCheckout: true,
+    automaticOverageBilling: false,
     supportTier: 'priority_email',
     advancedPolicies: true,
     approvalsMode: 'advanced',
+    taxRateBps: 0,
     limits: {
       workspaces: 3,
       internalUsers: 10,
@@ -690,6 +692,8 @@ const billingAccount: BillingAccountResponse = {
         warningThreshold: 0.8,
         status: 'ok',
         hardLimit: true,
+        overageAllowed: false,
+        overageUnits: 0,
         resetsAt: null,
       },
       {
@@ -703,6 +707,8 @@ const billingAccount: BillingAccountResponse = {
         warningThreshold: 0.8,
         status: 'ok',
         hardLimit: true,
+        overageAllowed: false,
+        overageUnits: 0,
         resetsAt: null,
       },
       {
@@ -716,6 +722,8 @@ const billingAccount: BillingAccountResponse = {
         warningThreshold: 0.8,
         status: 'ok',
         hardLimit: true,
+        overageAllowed: false,
+        overageUnits: 0,
         resetsAt: null,
       },
       {
@@ -729,6 +737,8 @@ const billingAccount: BillingAccountResponse = {
         warningThreshold: 0.8,
         status: 'ok',
         hardLimit: true,
+        overageAllowed: false,
+        overageUnits: 0,
         resetsAt: '2026-04-01T00:00:00.000Z',
       },
       {
@@ -742,10 +752,13 @@ const billingAccount: BillingAccountResponse = {
         warningThreshold: 0.8,
         status: 'ok',
         hardLimit: true,
+        overageAllowed: false,
+        overageUnits: 0,
         resetsAt: '2026-04-01T00:00:00.000Z',
       },
     ],
   },
+  invoices: [],
   provider: {
     name: 'mercado_pago',
     configured: false,
