@@ -53,4 +53,6 @@ Local working files should remain:
 
 - Postgres credentials and host port overrides
 - Redis host port override
+- Prometheus, Alertmanager, and Grafana port overrides
+- Grafana admin credentials for the self-hosted observability stack
 - release image tags and `VOWGRID_WEB_BASE_URL` for release compose

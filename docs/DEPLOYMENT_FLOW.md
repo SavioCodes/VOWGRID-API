@@ -9,6 +9,7 @@ The repository now has:
 - production deploy automation in `.github/workflows/deploy-production.yml`
 - release Dockerfiles for `apps/api` and `apps/web`
 - release compose in `infra/docker-compose.release.yml`
+- optional release observability profile in `infra/docker-compose.release.yml`
 - Terraform scaffold in `infra/terraform/aws-vps`
 
 Those pieces are real, but they still depend on external setup:
@@ -40,7 +41,7 @@ Those pieces are real, but they still depend on external setup:
 - real Mercado Pago credentials
 - protected secrets store
 - `deploy-production.yml` runs only on manual dispatch
-- centralized log shipping and alerting layered on top of `/v1/metrics`
+- optional `observability` compose profile for Prometheus, Alertmanager, and Grafana
 
 ## Release Checklist
 
@@ -67,5 +68,5 @@ It is not yet a complete production platform module set. Database hardening, bac
 
 - reusable production modules beyond the single VPS scaffold
 - secret management beyond GitHub and `.env.production`
-- centralized dashboards and alerting on top of the metrics endpoint
+- hosted vendors or external notification receivers on top of the bundled observability stack
 - rollout, rollback, and blue/green deployment strategy

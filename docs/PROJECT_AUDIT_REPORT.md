@@ -56,7 +56,7 @@
 - Added workspace member create, update, disable, re-enable, invite, accept, and workspace-switch flows.
 - Added a dedicated rollback worker and queue-backed rollback receipt generation.
 - Added automatic overage invoicing, invoice records, and proration preview foundations for billing.
-- Added release Dockerfiles, deploy workflows, Terraform scaffolding, and a Prometheus-compatible metrics endpoint.
+- Added release Dockerfiles, deploy workflows, Terraform scaffolding, a Prometheus-compatible metrics endpoint, and a self-hosted Prometheus/Alertmanager/Grafana stack under `infra/observability`.
 - Fixed `prisma.config.ts` so local Prisma commands load `apps/api/.env`.
 - Removed the polymorphic-audit foreign-key bug by making `AuditEvent` store polymorphic entity references without pretending they are always intents.
 - Added dedicated integration and Playwright paths and aligned them with current UI copy.
@@ -138,5 +138,5 @@ Manual verification:
 - Enterprise contact path with a real inbox or form
 - Advanced tax handling and invoice compliance
 - Deeper E2E coverage beyond auth, invite, and recovery paths
-- Centralized observability sinks, dashboards, and alerting
+- Hosted observability vendors or notification receivers beyond the bundled self-hosted stack
 - Production-hardening of deploy workflows and Terraform values

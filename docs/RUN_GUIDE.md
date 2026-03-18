@@ -55,6 +55,28 @@ Seeded billing state:
 - Docker status: `pnpm docker:status`
 - Docker logs: `pnpm docker:logs`
 
+## Centralized Observability
+
+Start the local observability stack on top of the API + infra:
+
+- `pnpm docker:obs:up`
+- `pnpm docker:obs:status`
+
+Local observability URLs:
+
+- Prometheus: `http://localhost:9090`
+- Alertmanager: `http://localhost:9093`
+- Grafana: `http://localhost:3001`
+
+Default Grafana login:
+
+- user: `admin`
+- password: `vowgrid_admin`
+
+Shut it down with:
+
+- `pnpm docker:obs:down`
+
 ## API Auth Checks
 
 Session auth:
@@ -111,6 +133,8 @@ Workspace admin auth:
 
 The compose stack only manages Postgres and Redis. Persistent data lives in the named volumes `infra_pgdata` and `infra_redisdata`.
 
+The observability overlay adds Prometheus, Alertmanager, and Grafana volumes on top of the same `infra` compose project without changing the base database/Redis services.
+
 ## Test Commands
 
 - Unit: `pnpm test`
@@ -118,6 +142,14 @@ The compose stack only manages Postgres and Redis. Persistent data lives in the 
 - Coverage: `pnpm test:coverage`
 - E2E smoke: `pnpm test:e2e`
 - Browser install for E2E: `pnpm test:e2e:install`
+
+The E2E suite now covers:
+
+- signup and protected app access
+- invite acceptance and workspace switching
+- password reset
+- seeded workflow creation through execution and rollback
+- receipt, audit, billing, and metrics visibility
 
 ## Billing Provider Setup
 

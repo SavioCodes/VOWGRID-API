@@ -27,29 +27,29 @@
 | Rollback worker and rollback receipts                              | Implemented                         |
 | GitHub Actions CI with integration, coverage, and smoke E2E        | Implemented                         |
 | Prometheus-compatible metrics endpoint                             | Implemented                         |
+| Self-hosted Prometheus, Alertmanager, and Grafana stack            | Implemented                         |
 | Release Dockerfiles, release compose, and Terraform scaffold       | Implemented                         |
 | Root `build`, `lint`, `typecheck`, and `test` scripts              | Implemented and verified            |
 | Prisma migration and local seed flow                               | Implemented and verified            |
 
 ## Partially Implemented
 
-| Area                       | Current state                                                                                                           |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Mercado Pago account setup | Code path exists, but checkout remains disabled until provider envs are configured                                      |
-| Social login               | GitHub and Google OAuth flows exist, but require provider envs before the buttons become active                         |
-| Deploy automation          | GitHub Actions workflows, release compose, and Dockerfiles exist, but require real secrets, registry setup, and targets |
-| Infrastructure as Code     | Terraform scaffold exists for an AWS VPS-style environment, but still needs real values and hardening for production    |
-| Enterprise contact path    | Enterprise is sales-assisted and now env-configurable, but still depends on manual commercial handling                  |
-| Preview mode               | Available only through explicit `/preview` access when `VOWGRID_ENABLE_PROVISIONAL_DATA=true`                           |
-| Observability              | Native metrics endpoint exists, but centralized sinks, dashboards, and alert routing are still external-setup dependent |
-| Deep E2E coverage          | Real auth and invite flows are covered, but the overall product journey still needs broader browser coverage            |
+| Area                       | Current state                                                                                                                                                                |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mercado Pago account setup | Code path exists, but checkout remains disabled until provider envs are configured                                                                                           |
+| Social login               | GitHub and Google OAuth flows exist, but require provider envs before the buttons become active                                                                              |
+| Deploy automation          | GitHub Actions workflows, release compose, and Dockerfiles exist, but require real secrets, registry setup, and targets                                                      |
+| Infrastructure as Code     | Terraform scaffold exists for an AWS VPS-style environment, but still needs real values and hardening for production                                                         |
+| Enterprise contact path    | Enterprise is sales-assisted and now env-configurable, but still depends on manual commercial handling                                                                       |
+| Preview mode               | Available only through explicit `/preview` access when `VOWGRID_ENABLE_PROVISIONAL_DATA=true`                                                                                |
+| Observability vendor sinks | Self-hosted metrics, dashboards, and alert rules exist, but Datadog/Sentry/New Relic style integrations remain optional                                                      |
+| Deep E2E coverage          | Core auth, invite, workspace switch, billing surface, execution, receipt, rollback, and metrics flows are covered, but the full regression matrix still needs more scenarios |
 
 ## Not Implemented Yet
 
-| Area                             | Gap                                                                                |
-| -------------------------------- | ---------------------------------------------------------------------------------- |
-| SSO beyond GitHub/Google OAuth   | Enterprise identity providers and SAML/OIDC setup are not implemented              |
-| Advanced tax and invoice systems | No jurisdiction-aware invoicing or full compliance engine exists                   |
-| Centralized observability        | No Datadog, Prometheus stack, New Relic, or Sentry wiring is configured yet        |
-| Production-grade deploy setup    | Workflows and Terraform scaffold need real secrets, infra values, and host wiring  |
-| Deep E2E coverage                | The main browser paths are covered, but execution, billing, and rollback need more |
+| Area                             | Gap                                                                               |
+| -------------------------------- | --------------------------------------------------------------------------------- |
+| SSO beyond GitHub/Google OAuth   | Enterprise identity providers and SAML/OIDC setup are not implemented             |
+| Advanced tax and invoice systems | No jurisdiction-aware invoicing or full compliance engine exists                  |
+| Hosted observability vendors     | Datadog, Sentry, New Relic, or managed log/trace sinks are not preconfigured      |
+| Production-grade deploy setup    | Workflows and Terraform scaffold need real secrets, infra values, and host wiring |
