@@ -34,7 +34,9 @@
 - The web dashboard used `VOWGRID_API_KEY` as a pseudo-login model.
 - Actor attribution in workflow transitions leaned on API-key or `system` semantics even for future dashboard actions.
 - Monorepo typecheck drift appeared when contracts changed but downstream packages still read stale `dist` exports.
-- The Prisma schema emitted a referential-action warning in `AuditEvent`.
+- The Prisma schema modeled `AuditEvent` as if every audited entity were an `Intent`, which caused foreign-key failures for workspace and API-key audit events.
+- Prisma CLI commands were brittle locally because `prisma.config.ts` did not load `apps/api/.env`.
+- Integration and E2E commands existed only partially and needed dedicated configuration to run cleanly.
 
 ## What Was Fixed
 
@@ -49,6 +51,11 @@
 - Added a seeded local dashboard user and password.
 - Fixed actor attribution so session-authenticated actions are recorded as user-driven.
 - Updated typecheck scripts so downstream packages rebuild contracts before consuming new exports.
+- Added dashboard-backed workspace API key create, list, rotate, and revoke flows.
+- Added a dedicated rollback worker and queue-backed rollback receipt generation.
+- Fixed `prisma.config.ts` so local Prisma commands load `apps/api/.env`.
+- Removed the polymorphic-audit foreign-key bug by making `AuditEvent` store polymorphic entity references without pretending they are always intents.
+- Added dedicated integration and Playwright smoke test paths and aligned them with current UI copy.
 
 ## Auth Added Or Completed
 
@@ -66,31 +73,36 @@
 - `pnpm docker:up`
 - `pnpm --filter @vowgrid/contracts build`
 - `pnpm --filter @vowgrid/contracts typecheck`
-- `pnpm --filter web typecheck`
-- `pnpm --filter @vowgrid/api exec prisma format`
-- `pnpm --filter @vowgrid/api exec prisma generate`
-- `pnpm --filter @vowgrid/api exec prisma migrate dev --name add_dashboard_auth`
+- `pnpm migrate`
 - `pnpm seed`
 - `pnpm typecheck`
 - `pnpm lint`
 - `pnpm test`
+- `pnpm test:integration`
+- `pnpm test:coverage`
+- `pnpm test:e2e:install`
+- `pnpm test:e2e`
 - `pnpm build`
 
 Manual verification:
 
-- `GET /v1/auth/login` via real login request
+- `POST /v1/auth/login` via real login request
 - `GET /v1/auth/me`
 - `POST /v1/auth/logout`
 - unauthenticated `/app` redirect behavior
 - authenticated `/app` access with session cookie
 - authenticated `/login` redirect back to `/app`
-- workflow verification through create, propose, simulate, approval, execute, receipt, audit, and rollback visibility
+- workflow verification through create, propose, simulate, approval, execute, receipt, audit, and rollback completion
+- workspace API key lifecycle verification through create, list, rotate, revoke, and auth checks
 
 ## What Passed
 
 - Root `typecheck`
 - Root `lint`
 - Root `test`
+- Root `test:integration`
+- Root `test:coverage`
+- Root `test:e2e`
 - Root `build`
 - Prisma migration and seed
 - Session-authenticated web access
@@ -107,11 +119,10 @@ One verification nuance:
 
 ## What Still Remains
 
-- Rollback worker implementation
 - Password reset
 - Email verification
 - Invites and membership management
 - SSO
-- API key self-service UI and routes
 - Enterprise contact path with a real inbox or form
-- Dedicated E2E coverage
+- Deeper E2E coverage beyond the smoke path
+- Automated staging/production deployment and Infrastructure as Code

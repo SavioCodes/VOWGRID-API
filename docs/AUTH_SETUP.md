@@ -12,6 +12,7 @@ Implemented:
 - Current session (`/v1/auth/me`)
 - Protected `/app` routes in the web app
 - Session-backed dashboard data fetching
+- User-facing workspace API key management in `/app/settings`
 
 Not implemented:
 
@@ -20,7 +21,6 @@ Not implemented:
 - Invites
 - SSO
 - Multi-workspace membership
-- User-facing API key management
 
 ## Backend Model
 
@@ -103,4 +103,4 @@ Checks:
 - Passwords are hashed before storage
 - Session tokens are hashed before persistence
 - The browser only receives the opaque session token through an HttpOnly cookie
-- API keys remain separate from dashboard auth and are not exposed through the web UI yet
+- API keys remain separate from dashboard auth and can be created, rotated, and revoked only by workspace owners or admins

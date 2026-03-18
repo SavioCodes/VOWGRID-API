@@ -18,12 +18,12 @@ Launch strategy:
 
 ## Launch Plan Catalog
 
-| Plan | Monthly | Yearly | Workspaces | Internal users | Active connectors | Intents / month | Executed actions / month | Audit retention | Support | Advanced policies | Approvals |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Launch | `R$ 79` | `R$ 790` | `1` | `2` | `2` | `2,000` | `300` | `15 days` | Email | No | Basic |
-| Pro | `R$ 249` | `R$ 2,490` | `3` | `10` | `8` | `15,000` | `3,000` | `90 days` | Priority email | Yes | Advanced |
-| Business | `R$ 799` | `R$ 7,990` | `10` | `50` | `25` | `100,000` | `20,000` | `365 days` | Priority | Yes | Advanced |
-| Enterprise | `Sob consulta` | `Sob consulta` | Custom | Custom | Custom | Custom | Custom | Custom | Enterprise | Custom | Custom |
+| Plan       | Monthly        | Yearly         | Workspaces | Internal users | Active connectors | Intents / month | Executed actions / month | Audit retention | Support        | Advanced policies | Approvals |
+| ---------- | -------------- | -------------- | ---------- | -------------- | ----------------- | --------------- | ------------------------ | --------------- | -------------- | ----------------- | --------- |
+| Launch     | `R$ 79`        | `R$ 790`       | `1`        | `2`            | `2`               | `2,000`         | `300`                    | `15 days`       | Email          | No                | Basic     |
+| Pro        | `R$ 249`       | `R$ 2,490`     | `3`        | `10`           | `8`               | `15,000`        | `3,000`                  | `90 days`       | Priority email | Yes               | Advanced  |
+| Business   | `R$ 799`       | `R$ 7,990`     | `10`       | `50`           | `25`              | `100,000`       | `20,000`                 | `365 days`      | Priority       | Yes               | Advanced  |
+| Enterprise | `Sob consulta` | `Sob consulta` | Custom     | Custom         | Custom            | Custom          | Custom                   | Custom          | Enterprise     | Custom            | Custom    |
 
 Enterprise note:
 

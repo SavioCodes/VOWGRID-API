@@ -8,7 +8,10 @@ http://localhost:4000/v1
 
 ## Authentication
 
-All endpoints except `/health`, `/billing/plans`, and the Mercado Pago webhook require `X-Api-Key`.
+Workflow endpoints accept:
+
+- `X-Api-Key` for trusted machine clients
+- `Authorization: Bearer <session>` for dashboard sessions when the route is session-backed
 
 ```bash
 curl -H "X-Api-Key: vowgrid_local_dev_key" http://localhost:4000/v1/intents
@@ -16,30 +19,38 @@ curl -H "X-Api-Key: vowgrid_local_dev_key" http://localhost:4000/v1/intents
 
 ## Endpoints
 
-| Method | Path | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/v1/health` | No | System health check |
-| `GET` | `/v1/billing/plans` | No | List the internal launch plan catalog |
-| `GET` | `/v1/billing/account` | Yes | Return billing, trial, usage, entitlement, and provider state for the current workspace |
-| `POST` | `/v1/billing/checkout` | Yes | Start a Mercado Pago subscription checkout for Launch, Pro, or Business |
-| `POST` | `/v1/billing/subscription/cancel` | Yes | Cancel immediately or mark the subscription to end at period boundary |
-| `POST` | `/v1/billing/webhooks/mercado-pago` | No | Receive Mercado Pago subscription events |
-| `POST` | `/v1/intents` | Yes | Create a draft intent |
-| `POST` | `/v1/intents/:intentId/propose` | Yes | Promote a draft intent to `proposed` |
-| `GET` | `/v1/intents` | Yes | List intents |
-| `GET` | `/v1/intents/:intentId` | Yes | Get intent details, including policy evaluations |
-| `POST` | `/v1/intents/:intentId/simulate` | Yes | Run connector simulation |
-| `POST` | `/v1/intents/:intentId/submit-for-approval` | Yes | Evaluate policies and create an approval request |
-| `POST` | `/v1/approvals/:approvalRequestId/approve` | Yes | Approve an approval request |
-| `POST` | `/v1/approvals/:approvalRequestId/reject` | Yes | Reject an approval request |
-| `POST` | `/v1/intents/:intentId/execute` | Yes | Queue intent for execution |
-| `POST` | `/v1/intents/:intentId/rollback` | Yes | Create a rollback attempt |
-| `GET` | `/v1/receipts/:receiptId` | Yes | Get receipt detail |
-| `GET` | `/v1/audit-events` | Yes | Query audit events |
-| `GET` | `/v1/policies` | Yes | List policies |
-| `POST` | `/v1/policies` | Yes | Create a policy |
-| `GET` | `/v1/connectors` | Yes | List connectors |
-| `POST` | `/v1/connectors` | Yes | Register a connector |
+| Method | Path                                        | Auth          | Description                                                                             |
+| ------ | ------------------------------------------- | ------------- | --------------------------------------------------------------------------------------- |
+| `GET`  | `/v1/health`                                | No            | System health check                                                                     |
+| `POST` | `/v1/auth/signup`                           | No            | Create the first workspace owner and dashboard session                                  |
+| `POST` | `/v1/auth/login`                            | No            | Create a dashboard session                                                              |
+| `GET`  | `/v1/auth/me`                               | Session       | Return the current dashboard user and workspace                                         |
+| `POST` | `/v1/auth/logout`                           | Session       | Revoke the current dashboard session                                                    |
+| `GET`  | `/v1/billing/plans`                         | No            | List the internal launch plan catalog                                                   |
+| `GET`  | `/v1/billing/account`                       | Yes           | Return billing, trial, usage, entitlement, and provider state for the current workspace |
+| `POST` | `/v1/billing/checkout`                      | Yes           | Start a Mercado Pago subscription checkout for Launch, Pro, or Business                 |
+| `POST` | `/v1/billing/subscription/cancel`           | Yes           | Cancel immediately or mark the subscription to end at period boundary                   |
+| `POST` | `/v1/billing/webhooks/mercado-pago`         | No            | Receive Mercado Pago subscription events                                                |
+| `POST` | `/v1/intents`                               | Yes           | Create a draft intent                                                                   |
+| `POST` | `/v1/intents/:intentId/propose`             | Yes           | Promote a draft intent to `proposed`                                                    |
+| `GET`  | `/v1/intents`                               | Yes           | List intents                                                                            |
+| `GET`  | `/v1/intents/:intentId`                     | Yes           | Get intent details, including policy evaluations                                        |
+| `POST` | `/v1/intents/:intentId/simulate`            | Yes           | Run connector simulation                                                                |
+| `POST` | `/v1/intents/:intentId/submit-for-approval` | Yes           | Evaluate policies and create an approval request                                        |
+| `POST` | `/v1/approvals/:approvalRequestId/approve`  | Yes           | Approve an approval request                                                             |
+| `POST` | `/v1/approvals/:approvalRequestId/reject`   | Yes           | Reject an approval request                                                              |
+| `POST` | `/v1/intents/:intentId/execute`             | Yes           | Queue intent for execution                                                              |
+| `POST` | `/v1/intents/:intentId/rollback`            | Yes           | Create a rollback attempt                                                               |
+| `GET`  | `/v1/receipts/:receiptId`                   | Yes           | Get receipt detail                                                                      |
+| `GET`  | `/v1/audit-events`                          | Yes           | Query audit events                                                                      |
+| `GET`  | `/v1/policies`                              | Yes           | List policies                                                                           |
+| `POST` | `/v1/policies`                              | Yes           | Create a policy                                                                         |
+| `GET`  | `/v1/connectors`                            | Yes           | List connectors                                                                         |
+| `POST` | `/v1/connectors`                            | Yes           | Register a connector                                                                    |
+| `GET`  | `/v1/workspace/api-keys`                    | Session admin | List workspace API keys without exposing secrets                                        |
+| `POST` | `/v1/workspace/api-keys`                    | Session admin | Create a workspace API key and reveal the secret once                                   |
+| `POST` | `/v1/workspace/api-keys/:apiKeyId/rotate`   | Session admin | Revoke and replace an API key                                                           |
+| `POST` | `/v1/workspace/api-keys/:apiKeyId/revoke`   | Session admin | Revoke a workspace API key                                                              |
 
 ## Response Envelope
 
@@ -61,7 +72,7 @@ curl -H "X-Api-Key: vowgrid_local_dev_key" http://localhost:4000/v1/intents
 - `POST /v1/intents` creates `draft`.
 - `POST /v1/intents/:intentId/propose` is the supported way to enter the simulation path.
 - Intent detail includes `policyEvaluations`.
-- Rollback currently stops at visibility and pending attempts; there is no rollback worker yet.
+- Rollback is now processed asynchronously through a dedicated BullMQ worker.
 
 ## Swagger
 

@@ -8,13 +8,29 @@ Core product flow:
 
 `Propose -> Simulate -> Evaluate Policy -> Approve -> Execute -> Generate Receipt -> Rollback visibility`
 
+## Architecture At A Glance
+
+```mermaid
+flowchart LR
+  Browser[Operator browser] --> Web[apps/web]
+  Web --> Contracts[packages/contracts]
+  Web --> API[apps/api]
+  API --> Prisma[Prisma]
+  Prisma --> Postgres[(PostgreSQL)]
+  API --> Redis[(Redis)]
+  API --> Workers[BullMQ workers]
+  API --> MercadoPago[Mercado Pago]
+  Web --> UI[packages/ui]
+```
+
 ## Current Reality
 
-- The core trust workflow is implemented through receipt generation and audit visibility.
+- The core trust workflow is implemented through receipt generation, audit visibility, queue-backed execution, and queue-backed rollback.
 - Dashboard auth is now real: email/password signup and login create a session-backed dashboard experience.
-- API keys still exist as the machine-to-machine auth path for agents and external automation.
+- API keys exist as the machine-to-machine auth path and can now be created, rotated, and revoked from the dashboard.
 - Billing is implemented internally with launch pricing, a backend-managed 14-day trial, usage tracking, entitlements, and Mercado Pago provider integration foundations.
 - Provisional data still exists, but only behind the explicit dev-only `/preview` route when enabled.
+- CI now validates typecheck, lint, unit tests, integration tests, coverage, build, and an E2E smoke path.
 
 ## Monorepo
 
@@ -33,14 +49,18 @@ vowgrid/
 ## Quick Start
 
 1. Install dependencies with `pnpm install`.
-2. Copy `apps/api/.env.example` to `apps/api/.env`.
-3. Copy `apps/web/.env.example` to `apps/web/.env.local`.
-4. Optionally copy `infra/.env.example` to `infra/.env` if you need custom Docker ports or credentials.
+2. Copy `apps/api/.env.development.example` to `apps/api/.env`.
+3. Copy `apps/web/.env.development.example` to `apps/web/.env.local`.
+4. Optionally copy `infra/.env.development.example` to `infra/.env` if you need custom Docker ports or credentials.
 5. Start Docker Desktop, then run `pnpm docker:up`.
 6. Apply migrations with `pnpm migrate`.
 7. Seed local data with `pnpm seed`.
 8. Start the API with `pnpm dev:api`.
 9. Start the web app with `pnpm dev:web`.
+
+Or use the unified dev command:
+
+- `pnpm start:dev`
 
 Local URLs:
 
@@ -54,6 +74,26 @@ Seeded local access:
 - Dashboard password: `vowgrid_local_password`
 - API key: `vowgrid_local_dev_key`
 
+## Common Scenarios
+
+### Human operator path
+
+1. Sign up at `/signup` or log in at `/login`.
+2. Review the control plane at `/app`.
+3. Manage programmatic API keys from `/app/settings`.
+4. Review billing, usage, and trial state from `/app/billing`.
+
+### Machine-to-machine path
+
+```bash
+curl -H "X-Api-Key: vowgrid_local_dev_key" \
+  http://localhost:4000/v1/intents?pageSize=5
+```
+
+### End-to-end trust workflow
+
+See `docs/REAL_WORLD_SCENARIOS.md` for common intent, billing, and enterprise paths.
+
 ## Auth Model
 
 - Human dashboard access uses session-backed auth through `/v1/auth/signup`, `/v1/auth/login`, `/v1/auth/me`, and `/v1/auth/logout`.
@@ -63,12 +103,12 @@ Seeded local access:
 
 ## Billing Snapshot
 
-| Plan | Monthly | Yearly | Executed actions / month | Intents / month | Self-serve checkout |
-| --- | --- | --- | --- | --- | --- |
-| Launch | `R$ 79` | `R$ 790` | `300` | `2,000` | Yes |
-| Pro | `R$ 249` | `R$ 2,490` | `3,000` | `15,000` | Yes |
-| Business | `R$ 799` | `R$ 7,990` | `20,000` | `100,000` | Yes |
-| Enterprise | `Sob consulta` | `Sob consulta` | Custom | Custom | No |
+| Plan       | Monthly        | Yearly         | Executed actions / month | Intents / month | Self-serve checkout |
+| ---------- | -------------- | -------------- | ------------------------ | --------------- | ------------------- |
+| Launch     | `R$ 79`        | `R$ 790`       | `300`                    | `2,000`         | Yes                 |
+| Pro        | `R$ 249`       | `R$ 2,490`     | `3,000`                  | `15,000`        | Yes                 |
+| Business   | `R$ 799`       | `R$ 7,990`     | `20,000`                 | `100,000`       | Yes                 |
+| Enterprise | `Sob consulta` | `Sob consulta` | Custom                   | Custom          | No                  |
 
 Launch billing notes:
 
@@ -84,6 +124,9 @@ Launch billing notes:
 - `pnpm lint`
 - `pnpm build`
 - `pnpm test`
+- `pnpm test:integration`
+- `pnpm test:coverage`
+- `pnpm test:e2e`
 - `pnpm migrate`
 - `pnpm seed`
 - `pnpm docker:up`
@@ -95,6 +138,13 @@ Launch billing notes:
 
 Current docs:
 
+- `docs/ARCHITECTURE.md`
+- `docs/TECH_CHOICES.md`
+- `docs/ENVIRONMENT_STRATEGY.md`
+- `docs/DEPLOYMENT_FLOW.md`
+- `docs/TROUBLESHOOTING.md`
+- `docs/REAL_WORLD_SCENARIOS.md`
+- `docs/ROADMAP.md`
 - `docs/RUN_GUIDE.md`
 - `docs/AUTH_SETUP.md`
 - `docs/IMPLEMENTATION_STATUS.md`
@@ -116,8 +166,7 @@ Historical reports:
 
 ## Known Limitations
 
-- Rollback visibility exists, but there is still no rollback worker.
-- Password reset, email verification, invites, SSO, and multi-workspace membership are not implemented.
-- User-facing API key management does not exist yet.
+- Enterprise still depends on a configured contact inbox and manual commercial handling.
 - Mercado Pago checkout still requires real provider env configuration.
-- Enterprise still needs a real sales inbox or contact form before launch.
+- Password reset, email verification, invites, SSO, and multi-workspace membership are not implemented.
+- Deploy automation to staging/production and Infrastructure as Code are not implemented yet.

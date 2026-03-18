@@ -21,24 +21,24 @@ The backend API is built and ready at `apps/api/`. It provides:
 
 ## 2. API Endpoints (Stable)
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/v1/health` | Health check |
-| `POST` | `/v1/intents` | Create intent |
-| `GET` | `/v1/intents` | List intents (paginated) |
-| `GET` | `/v1/intents/:intentId` | Get intent detail |
-| `POST` | `/v1/intents/:intentId/simulate` | Simulate |
-| `POST` | `/v1/intents/:intentId/submit-for-approval` | Submit for approval |
-| `POST` | `/v1/approvals/:approvalRequestId/approve` | Approve |
-| `POST` | `/v1/approvals/:approvalRequestId/reject` | Reject |
-| `POST` | `/v1/intents/:intentId/execute` | Execute |
-| `POST` | `/v1/intents/:intentId/rollback` | Rollback |
-| `GET` | `/v1/receipts/:receiptId` | Get receipt |
-| `GET` | `/v1/audit-events` | Query audit events |
-| `GET` | `/v1/policies` | List policies |
-| `POST` | `/v1/policies` | Create policy |
-| `GET` | `/v1/connectors` | List connectors |
-| `POST` | `/v1/connectors` | Register connector |
+| Method | Path                                        | Description              |
+| ------ | ------------------------------------------- | ------------------------ |
+| `GET`  | `/v1/health`                                | Health check             |
+| `POST` | `/v1/intents`                               | Create intent            |
+| `GET`  | `/v1/intents`                               | List intents (paginated) |
+| `GET`  | `/v1/intents/:intentId`                     | Get intent detail        |
+| `POST` | `/v1/intents/:intentId/simulate`            | Simulate                 |
+| `POST` | `/v1/intents/:intentId/submit-for-approval` | Submit for approval      |
+| `POST` | `/v1/approvals/:approvalRequestId/approve`  | Approve                  |
+| `POST` | `/v1/approvals/:approvalRequestId/reject`   | Reject                   |
+| `POST` | `/v1/intents/:intentId/execute`             | Execute                  |
+| `POST` | `/v1/intents/:intentId/rollback`            | Rollback                 |
+| `GET`  | `/v1/receipts/:receiptId`                   | Get receipt              |
+| `GET`  | `/v1/audit-events`                          | Query audit events       |
+| `GET`  | `/v1/policies`                              | List policies            |
+| `POST` | `/v1/policies`                              | Create policy            |
+| `GET`  | `/v1/connectors`                            | List connectors          |
+| `POST` | `/v1/connectors`                            | Register connector       |
 
 **All routes are considered stable.** Path structure will not change without versioning.
 
@@ -58,21 +58,21 @@ Also: `rejected`, `failed`
 
 **UI state mapping suggestions:**
 
-| State | UI Treatment |
-|-------|-------------|
-| `draft` | Gray badge, editable fields |
-| `proposed` | Blue badge, "Simulate" CTA |
-| `simulated` | Purple badge, show simulation results, "Submit for Approval" CTA |
-| `pending_approval` | Orange badge, show approval progress bar |
-| `approved` | Green badge, "Execute" CTA |
-| `rejected` | Red badge, show rejection reason |
-| `queued` | Yellow badge, loading spinner |
-| `executing` | Yellow badge, progress animation |
-| `succeeded` | Green badge, show receipt link, "Rollback" CTA if supported |
-| `failed` | Red badge, show error, "Retry" option |
-| `rollback_pending` | Orange badge, loading spinner |
-| `rolled_back` | Gray badge, "Rolled back" message |
-| `rollback_failed` | Red badge, show error, "Retry Rollback" option |
+| State              | UI Treatment                                                     |
+| ------------------ | ---------------------------------------------------------------- |
+| `draft`            | Gray badge, editable fields                                      |
+| `proposed`         | Blue badge, "Simulate" CTA                                       |
+| `simulated`        | Purple badge, show simulation results, "Submit for Approval" CTA |
+| `pending_approval` | Orange badge, show approval progress bar                         |
+| `approved`         | Green badge, "Execute" CTA                                       |
+| `rejected`         | Red badge, show rejection reason                                 |
+| `queued`           | Yellow badge, loading spinner                                    |
+| `executing`        | Yellow badge, progress animation                                 |
+| `succeeded`        | Green badge, show receipt link, "Rollback" CTA if supported      |
+| `failed`           | Red badge, show error, "Retry" option                            |
+| `rollback_pending` | Orange badge, loading spinner                                    |
+| `rolled_back`      | Gray badge, "Rolled back" message                                |
+| `rollback_failed`  | Red badge, show error, "Retry Rollback" option                   |
 
 ## 4. Response Envelope
 
@@ -159,21 +159,19 @@ const mockSimulation = {
   estimatedImpact: 'low',
   riskLevel: 'low',
   reversibility: 'partial',
-  affectedResources: [
-    { type: 'slack_channel', id: 'C123', name: '#general' }
-  ],
+  affectedResources: [{ type: 'slack_channel', id: 'C123', name: '#general' }],
   warnings: [],
 };
 ```
 
 ## 10. Where Things Are
 
-| Artifact | Location |
-|----------|----------|
-| API source | `apps/api/src/` |
-| Prisma schema | `apps/api/prisma/schema.prisma` |
-| Shared contracts | `packages/contracts/src/` |
-| API docs | `docs/backend/API_OVERVIEW.md` |
-| Domain model | `docs/backend/DOMAIN_MODEL.md` |
-| Swagger UI | `http://localhost:3000/v1/docs` |
-| Docker Compose | `infra/docker-compose.yml` |
+| Artifact         | Location                        |
+| ---------------- | ------------------------------- |
+| API source       | `apps/api/src/`                 |
+| Prisma schema    | `apps/api/prisma/schema.prisma` |
+| Shared contracts | `packages/contracts/src/`       |
+| API docs         | `docs/backend/API_OVERVIEW.md`  |
+| Domain model     | `docs/backend/DOMAIN_MODEL.md`  |
+| Swagger UI       | `http://localhost:3000/v1/docs` |
+| Docker Compose   | `infra/docker-compose.yml`      |

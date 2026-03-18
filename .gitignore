@@ -44,6 +44,8 @@ infra/data/
 
 # Coverage
 coverage/
+playwright-report/
+test-results/
 
 # Logs
 *.log

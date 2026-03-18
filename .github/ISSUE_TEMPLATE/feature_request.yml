@@ -1,0 +1,29 @@
+name: Feature request
+description: Propose a product, DX, or platform improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: What problem should this solve for operators, developers, or the business?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the expected UX, API behavior, and constraints if known.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What would make this feel done?
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Link docs, screenshots, competitor references, or rollout concerns.

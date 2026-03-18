@@ -4,14 +4,18 @@
 
 1. Make sure Docker Desktop is running.
 2. Install dependencies with `pnpm install`.
-3. Copy `apps/api/.env.example` to `apps/api/.env`.
-4. Copy `apps/web/.env.example` to `apps/web/.env.local`.
-5. Optionally copy `infra/.env.example` to `infra/.env` if you need custom Docker ports or credentials.
+3. Copy `apps/api/.env.development.example` to `apps/api/.env`.
+4. Copy `apps/web/.env.development.example` to `apps/web/.env.local`.
+5. Optionally copy `infra/.env.development.example` to `infra/.env` if you need custom Docker ports or credentials.
 6. Start Postgres and Redis with `pnpm docker:up`.
 7. Apply migrations with `pnpm migrate`.
 8. Seed local data with `pnpm seed`.
 9. Start the API with `pnpm dev:api`.
 10. Start the web app with `pnpm dev:web`.
+
+One-command local startup:
+
+- `pnpm start:dev`
 
 ## Local URLs
 
@@ -44,6 +48,7 @@ Seeded billing state:
 - Protected app: open `http://localhost:3000/app`
 - Pricing page: open `http://localhost:3000/pricing`
 - Billing page: open `http://localhost:3000/app/billing`
+- Settings page: open `http://localhost:3000/app/settings`
 - Docker status: `pnpm docker:status`
 - Docker logs: `pnpm docker:logs`
 
@@ -59,6 +64,7 @@ Session auth:
 Machine auth:
 
 - Send `X-Api-Key: vowgrid_local_dev_key` to the workflow routes
+- Create and rotate workspace-scoped API keys from `/app/settings`
 
 ## Minimal Product Workflow Check
 
@@ -71,7 +77,7 @@ Machine auth:
 7. Execute it.
 8. Read the generated receipt.
 9. Inspect `/v1/audit-events`.
-10. Optionally request rollback and confirm the attempt appears as `rollback_pending`.
+10. Optionally request rollback and confirm the attempt completes through the rollback worker.
 
 ## Preview Mode
 
@@ -86,6 +92,13 @@ Machine auth:
 - Render the resolved compose file: `pnpm docker:config`
 
 The compose stack only manages Postgres and Redis. Persistent data lives in the named volumes `infra_pgdata` and `infra_redisdata`.
+
+## Test Commands
+
+- Unit: `pnpm test`
+- Integration: `pnpm test:integration`
+- Coverage: `pnpm test:coverage`
+- E2E smoke: `pnpm test:e2e`
 
 ## Billing Provider Setup
 
@@ -111,3 +124,4 @@ See `docs/billing/MERCADO_PAGO_SETUP.md` for the full setup flow.
 - If checkout stays disabled, verify the Mercado Pago envs in `apps/api/.env`.
 - If `3000` is already occupied, run `pnpm --filter web dev -- --port 3001`.
 - If `5432` or `6379` are already occupied, override the host ports in `infra/.env`.
+- See `docs/TROUBLESHOOTING.md` for the broader local troubleshooting guide.

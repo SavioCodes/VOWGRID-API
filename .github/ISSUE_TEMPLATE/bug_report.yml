@@ -1,0 +1,34 @@
+name: Bug report
+description: Report a defect in API, web, billing, auth, or local tooling
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What broke and where did you see it?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: List the exact steps to reproduce the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include branch, OS, browser, local Docker state, and relevant env notes.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs or screenshots

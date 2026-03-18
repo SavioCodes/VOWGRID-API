@@ -28,18 +28,18 @@
 
 ## Common Commands
 
-| Command | Description |
-| --- | --- |
-| `pnpm dev:api` | Start the API with hot reload |
-| `pnpm build` | Build contracts, API, and web |
-| `pnpm lint` | Run the root lint gate |
-| `pnpm typecheck` | Run workspace type checks |
-| `pnpm test` | Run API tests |
-| `pnpm migrate` | Apply Prisma migrations |
-| `pnpm seed` | Seed a local workspace and API key |
-| `pnpm db:studio` | Open Prisma Studio |
-| `pnpm docker:up` | Start Postgres and Redis |
-| `pnpm docker:down` | Stop Postgres and Redis |
+| Command            | Description                        |
+| ------------------ | ---------------------------------- |
+| `pnpm dev:api`     | Start the API with hot reload      |
+| `pnpm build`       | Build contracts, API, and web      |
+| `pnpm lint`        | Run the root lint gate             |
+| `pnpm typecheck`   | Run workspace type checks          |
+| `pnpm test`        | Run API tests                      |
+| `pnpm migrate`     | Apply Prisma migrations            |
+| `pnpm seed`        | Seed a local workspace and API key |
+| `pnpm db:studio`   | Open Prisma Studio                 |
+| `pnpm docker:up`   | Start Postgres and Redis           |
+| `pnpm docker:down` | Stop Postgres and Redis            |
 
 ## Seeded Local Credentials
 
