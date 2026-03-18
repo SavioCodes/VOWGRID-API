@@ -34,11 +34,31 @@ export async function connectorRoutes(app: FastifyInstance): Promise<void> {
         throw new ValidationError('Invalid connector data', parsed.error.flatten());
       }
 
+      const connectorRuntime = connectorRegistry.get(parsed.data.type);
+
+      if (!connectorRuntime) {
+        throw new ValidationError(
+          `Connector type "${parsed.data.type}" is not available in the current runtime.`,
+        );
+      }
+
+      if (connectorRuntime.validateConfig) {
+        const configValidation = await connectorRuntime.validateConfig(parsed.data.config ?? {});
+
+        if (!configValidation.valid) {
+          throw new ValidationError(
+            `Connector config for "${parsed.data.type}" is invalid.`,
+            configValidation.errors,
+          );
+        }
+      }
+
       await assertCanCreateConnector(request.auth.workspaceId, parsed.data.enabled);
 
       const connector = await prisma.connector.create({
         data: {
           ...parsed.data,
+          rollbackSupport: connectorRuntime.rollbackSupport,
           config: toPrismaNullableJsonValue(parsed.data.config),
           workspaceId: request.auth.workspaceId,
         },

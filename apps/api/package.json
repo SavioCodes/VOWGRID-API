@@ -30,6 +30,7 @@
     "@fastify/swagger": "^9.4.2",
     "@fastify/swagger-ui": "^5.2.1",
     "@prisma/client": "^6.4.1",
+    "@sentry/node": "^10.20.0",
     "@vowgrid/contracts": "workspace:*",
     "bullmq": "^5.34.8",
     "fastify": "^5.2.1",

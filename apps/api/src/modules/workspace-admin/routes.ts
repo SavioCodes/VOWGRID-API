@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import {
+  anonymizeWorkspaceMemberSchema,
   createWorkspaceApiKeySchema,
   createWorkspaceInviteSchema,
   createWorkspaceMemberSchema,
@@ -9,11 +10,13 @@ import {
 import { ForbiddenError, ValidationError } from '../../common/errors.js';
 import { success } from '../../common/response.js';
 import {
+  anonymizeWorkspaceMember,
   createWorkspaceApiKey,
   createWorkspaceInvite,
   createWorkspaceMember,
   disableWorkspaceMember,
   enableWorkspaceMember,
+  exportWorkspaceData,
   listWorkspaceApiKeys,
   listWorkspaceInvites,
   listWorkspaceMembers,
@@ -26,6 +29,12 @@ import {
 function requireWorkspaceAdmin(role?: string) {
   if (role !== 'owner' && role !== 'admin') {
     throw new ForbiddenError('Only workspace owners and admins can manage workspace access.');
+  }
+}
+
+function requireWorkspaceOwner(role?: string) {
+  if (role !== 'owner') {
+    throw new ForbiddenError('Only workspace owners can perform this action.');
   }
 }
 
@@ -127,6 +136,45 @@ export async function workspaceAdminRoutes(app: FastifyInstance): Promise<void> 
         request.auth.userId ?? 'system',
       );
       return reply.send(success(enabled));
+    },
+  });
+
+  app.post('/workspace/members/:userId/anonymize', {
+    schema: {
+      tags: ['Workspace'],
+      summary: 'Anonymize workspace member',
+      description:
+        'Replaces a disabled member personal identity with a redacted placeholder while preserving operational history.',
+    },
+    preHandler: [app.authenticateSession],
+    handler: async (request, reply) => {
+      requireWorkspaceOwner(request.auth.role);
+      const parsed = anonymizeWorkspaceMemberSchema.safeParse(request.body ?? {});
+      if (!parsed.success) {
+        throw new ValidationError('Invalid anonymization payload', parsed.error.flatten());
+      }
+
+      const anonymized = await anonymizeWorkspaceMember(
+        (request.params as { userId: string }).userId,
+        request.auth.workspaceId,
+        request.auth.userId ?? 'system',
+      );
+      return reply.send(success(anonymized));
+    },
+  });
+
+  app.get('/workspace/export', {
+    schema: {
+      tags: ['Workspace'],
+      summary: 'Export workspace data',
+      description:
+        'Returns a JSON snapshot of workspace access, governance, billing summary, and trust workflow records.',
+    },
+    preHandler: [app.authenticateSession],
+    handler: async (request, reply) => {
+      requireWorkspaceAdmin(request.auth.role);
+      const exported = await exportWorkspaceData(request.auth.workspaceId);
+      return reply.send(success(exported));
     },
   });
 

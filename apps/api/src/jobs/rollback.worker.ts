@@ -1,10 +1,12 @@
 import { Worker, type Job } from 'bullmq';
 import { toPrismaJsonValue } from '../common/json.js';
 import { bullmqConnection } from '../lib/queue.js';
+import { reportOperationalError } from '../lib/error-reporting.js';
 import { logger } from '../lib/logger.js';
 import { prisma } from '../lib/prisma.js';
 import { emitAuditEvent } from '../modules/audits/service.js';
 import { connectorRegistry } from '../modules/connectors/framework/connector.registry.js';
+import { buildConnectorRuntimeContext } from '../modules/connectors/framework/runtime-context.js';
 import { transitionIntent } from '../modules/intents/service.js';
 import { observeRollbackEvent } from '../lib/metrics.js';
 
@@ -67,6 +69,19 @@ export async function processRollback(job: Job<RollbackJobData>) {
     throw new Error(`Connector type "${connectorType}" does not implement rollback execution`);
   }
 
+  const context = buildConnectorRuntimeContext({
+    workspaceId,
+    environment: intent.environment,
+    connector: intent.connector
+      ? {
+          id: intent.connector.id,
+          name: intent.connector.name,
+          type: intent.connector.type,
+          config: intent.connector.config,
+        }
+      : null,
+  });
+
   const executionContext = getExecutionContext(intent);
   const startTime = Date.now();
 
@@ -75,6 +90,7 @@ export async function processRollback(job: Job<RollbackJobData>) {
       intent.action,
       (intent.parameters as Record<string, unknown>) ?? {},
       executionContext,
+      context,
     );
 
     await prisma.rollbackAttempt.update({
@@ -176,6 +192,14 @@ export function startRollbackWorker() {
 
   worker.on('failed', (job, err) => {
     logger.error({ jobId: job?.id, error: err.message }, 'Rollback job failed');
+    void reportOperationalError({
+      source: 'worker.rollback',
+      message: err.message,
+      error: err,
+      context: {
+        jobId: job?.id ?? null,
+      },
+    });
   });
 
   logger.info('Rollback worker started');

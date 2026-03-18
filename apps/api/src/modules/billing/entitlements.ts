@@ -1,6 +1,5 @@
 import type {
   BillingAccountResponse,
-  BillingCustomerResponse,
   BillingPlanLimits,
   BillingPlanKey,
   TrialStateResponse,
@@ -8,10 +7,14 @@ import type {
   WorkspaceSubscriptionResponse,
 } from '@vowgrid/contracts';
 import { PLAN_CATALOG, BILLING_TRIAL_DAYS } from '@vowgrid/contracts';
-import { env } from '../../config/env.js';
 import { prisma } from '../../lib/prisma.js';
 import { NotFoundError, PaymentRequiredError } from '../../common/errors.js';
 import { DEFAULT_TRIAL_PLAN_KEY, ADVANCED_POLICY_TYPES, getPlan } from './catalog.js';
+import {
+  parseBillingCustomerMetadata,
+  resolveBillingTaxRateBps,
+  serializeBillingCustomer,
+} from './customer.js';
 import { getMercadoPagoProviderState } from './mercado-pago.js';
 import { getCurrentUsageMetrics, incrementMonthlyUsageCounter } from './usage.js';
 import { listWorkspaceInvoices, recordAutomaticOverageBilling } from './invoices.js';
@@ -136,32 +139,6 @@ async function ensureBillingState(workspaceId: string) {
   };
 }
 
-function toCustomerResponse(
-  customer: {
-    id: string;
-    workspaceId: string;
-    email: string;
-    legalName: string | null;
-    mercadoPagoCustomerId: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-  } | null,
-): BillingCustomerResponse | null {
-  if (!customer) {
-    return null;
-  }
-
-  return {
-    id: customer.id,
-    workspaceId: customer.workspaceId,
-    email: customer.email,
-    legalName: customer.legalName,
-    providerCustomerId: customer.mercadoPagoCustomerId,
-    createdAt: customer.createdAt.toISOString(),
-    updatedAt: customer.updatedAt.toISOString(),
-  };
-}
-
 function toSubscriptionResponse(
   subscription: {
     id: string;
@@ -230,9 +207,13 @@ function toTrialResponse(trialState: {
 function resolveEntitlements({
   subscription,
   trial,
+  customer,
 }: {
   subscription: WorkspaceSubscriptionResponse | null;
   trial: TrialStateResponse;
+  customer: {
+    metadata: unknown;
+  } | null;
 }) {
   let source: BillingAccountResponse['entitlements']['source'] = 'none';
   let effectivePlanKey: BillingPlanKey | null = null;
@@ -243,7 +224,7 @@ function resolveEntitlements({
   let readOnlyMode = true;
   let selfServeCheckout = true;
   let automaticOverageBilling = false;
-  let taxRateBps = env.BILLING_DEFAULT_TAX_RATE_BPS;
+  let taxRateBps = resolveBillingTaxRateBps(customer);
   const warnings: string[] = [];
   const blocks: string[] = [];
 
@@ -311,7 +292,12 @@ export async function getBillingAccount(workspaceId: string): Promise<BillingAcc
   const state = await ensureBillingState(workspaceId);
   const trial = toTrialResponse(state.trialState);
   const subscription = toSubscriptionResponse(state.subscription);
-  const entitlements = resolveEntitlements({ subscription, trial });
+  const entitlements = resolveEntitlements({
+    subscription,
+    trial,
+    customer: state.billingCustomer,
+  });
+  const customerMetadata = parseBillingCustomerMetadata(state.billingCustomer?.metadata);
   const [usage, invoices] = await Promise.all([
     getCurrentUsageMetrics(workspaceId, entitlements.limits, {
       intentsOverageAllowed:
@@ -340,7 +326,8 @@ export async function getBillingAccount(workspaceId: string): Promise<BillingAcc
 
   return {
     workspaceId,
-    customer: toCustomerResponse(state.billingCustomer),
+    customer: state.billingCustomer ? serializeBillingCustomer(state.billingCustomer) : null,
+    activeCoupon: customerMetadata.activeCoupon ?? null,
     subscription,
     trial,
     entitlements,

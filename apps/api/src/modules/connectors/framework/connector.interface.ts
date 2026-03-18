@@ -31,16 +31,39 @@ export interface ConnectorRollbackResult {
 
 export type RollbackSupport = 'supported' | 'partial' | 'unsupported';
 
+export interface ConnectorRuntimeContext {
+  connectorId: string | null;
+  connectorName: string;
+  connectorType: string;
+  workspaceId: string;
+  environment: string;
+  config: Record<string, unknown>;
+}
+
 export interface IConnector {
   readonly type: string;
   readonly rollbackSupport: RollbackSupport;
 
-  validate(action: string, parameters: Record<string, unknown>): Promise<ConnectorValidateResult>;
-  simulate(action: string, parameters: Record<string, unknown>): Promise<ConnectorSimulateResult>;
-  execute(action: string, parameters: Record<string, unknown>): Promise<ConnectorExecuteResult>;
+  validateConfig?(config: Record<string, unknown>): Promise<ConnectorValidateResult>;
+  validate(
+    action: string,
+    parameters: Record<string, unknown>,
+    context: ConnectorRuntimeContext,
+  ): Promise<ConnectorValidateResult>;
+  simulate(
+    action: string,
+    parameters: Record<string, unknown>,
+    context: ConnectorRuntimeContext,
+  ): Promise<ConnectorSimulateResult>;
+  execute(
+    action: string,
+    parameters: Record<string, unknown>,
+    context: ConnectorRuntimeContext,
+  ): Promise<ConnectorExecuteResult>;
   rollback?(
     action: string,
     parameters: Record<string, unknown>,
     executionData: Record<string, unknown>,
+    context: ConnectorRuntimeContext,
   ): Promise<ConnectorRollbackResult>;
 }

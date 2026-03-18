@@ -11,6 +11,11 @@ import { Prisma } from '@prisma/client';
 import { env } from '../../config/env.js';
 import { prisma } from '../../lib/prisma.js';
 import { observeBillingInvoiceEvent } from '../../lib/metrics.js';
+import {
+  calculateCouponDiscountBrlCents,
+  parseBillingCustomerMetadata,
+  resolveBillingTaxRateBps,
+} from './customer.js';
 import { getMercadoPagoProviderState, startMercadoPagoInvoicePayment } from './mercado-pago.js';
 import { getCurrentMonthlyWindow } from './usage.js';
 
@@ -61,6 +66,7 @@ function serializeInvoice(invoice: {
   status: string;
   currency: string;
   subtotalBrlCents: number;
+  discountBrlCents: number;
   taxRateBps: number;
   taxAmountBrlCents: number;
   totalBrlCents: number;
@@ -89,6 +95,7 @@ function serializeInvoice(invoice: {
     status: invoice.status as BillingInvoiceResponse['status'],
     currency: 'BRL',
     subtotalBrlCents: invoice.subtotalBrlCents,
+    discountBrlCents: invoice.discountBrlCents,
     taxRateBps: invoice.taxRateBps,
     taxAmountBrlCents: invoice.taxAmountBrlCents,
     totalBrlCents: invoice.totalBrlCents,
@@ -159,8 +166,13 @@ async function syncInvoiceTotalsAndPaymentLink(invoiceId: string) {
   }
 
   const subtotal = invoice.lineItems.reduce((sum, item) => sum + item.subtotalBrlCents, 0);
-  const taxAmount = subtotal > 0 ? Math.round((subtotal * invoice.taxRateBps) / 10_000) : 0;
-  const total = subtotal + taxAmount;
+  const activeCoupon =
+    parseBillingCustomerMetadata(invoice.workspace.billingCustomer?.metadata).activeCoupon ?? null;
+  const discountBrlCents = calculateCouponDiscountBrlCents(activeCoupon, subtotal);
+  const netSubtotal = Math.max(subtotal - discountBrlCents, 0);
+  const taxRateBps = resolveBillingTaxRateBps(invoice.workspace.billingCustomer);
+  const taxAmount = netSubtotal > 0 ? Math.round((netSubtotal * taxRateBps) / 10_000) : 0;
+  const total = netSubtotal + taxAmount;
 
   let paymentUrl: string | null = null;
   let preferenceId: string | null = null;
@@ -178,7 +190,7 @@ async function syncInvoiceTotalsAndPaymentLink(invoiceId: string) {
         {
           title: `VowGrid invoice ${invoice.id}`,
           quantity: 1,
-          unitPriceBrlCents: subtotal,
+          unitPriceBrlCents: netSubtotal,
         },
       ],
       taxAmountBrlCents: taxAmount,
@@ -191,7 +203,8 @@ async function syncInvoiceTotalsAndPaymentLink(invoiceId: string) {
   const updated = await prisma.billingInvoice.update({
     where: { id: invoice.id },
     data: {
-      subtotalBrlCents: subtotal,
+      subtotalBrlCents: netSubtotal,
+      taxRateBps,
       taxAmountBrlCents: taxAmount,
       totalBrlCents: total,
       paymentUrl,
@@ -202,7 +215,10 @@ async function syncInvoiceTotalsAndPaymentLink(invoiceId: string) {
     },
   });
 
-  return serializeInvoice(updated);
+  return serializeInvoice({
+    ...updated,
+    discountBrlCents,
+  });
 }
 
 export async function listWorkspaceInvoices(
@@ -212,12 +228,34 @@ export async function listWorkspaceInvoices(
     where: { workspaceId },
     include: {
       lineItems: true,
+      workspace: {
+        include: {
+          billingCustomer: true,
+        },
+      },
     },
     orderBy: [{ createdAt: 'desc' }],
     take: 12,
   });
 
-  return invoices.map(serializeInvoice);
+  return invoices.map((invoice) => {
+    const activeCoupon =
+      parseBillingCustomerMetadata(invoice.workspace.billingCustomer?.metadata).activeCoupon ??
+      null;
+    const rawSubtotal = invoice.lineItems.reduce((sum, item) => sum + item.subtotalBrlCents, 0);
+
+    return serializeInvoice({
+      ...invoice,
+      subtotalBrlCents: Math.max(
+        rawSubtotal - calculateCouponDiscountBrlCents(activeCoupon, rawSubtotal),
+        0,
+      ),
+      discountBrlCents: calculateCouponDiscountBrlCents(activeCoupon, rawSubtotal),
+      taxRateBps: resolveBillingTaxRateBps(invoice.workspace.billingCustomer),
+      taxAmountBrlCents: invoice.taxAmountBrlCents,
+      totalBrlCents: invoice.totalBrlCents,
+    });
+  });
 }
 
 export async function recordAutomaticOverageBilling(input: {

@@ -25,6 +25,7 @@ export const USAGE_METRIC_KEYS = [
 ] as const;
 export const USAGE_METRIC_STATUSES = ['ok', 'warning', 'blocked', 'overage'] as const;
 export const ENTITLEMENT_SOURCES = ['trial', 'subscription', 'expired_trial', 'none'] as const;
+export const BILLING_COUPON_KINDS = ['percent', 'fixed_amount'] as const;
 
 export type BillingPlanKey = (typeof BILLING_PLAN_KEYS)[number];
 export type SelfServeBillingPlanKey = (typeof SELF_SERVE_BILLING_PLAN_KEYS)[number];
@@ -37,6 +38,7 @@ export type ApprovalsMode = (typeof APPROVALS_MODES)[number];
 export type UsageMetricKey = (typeof USAGE_METRIC_KEYS)[number];
 export type UsageMetricStatus = (typeof USAGE_METRIC_STATUSES)[number];
 export type EntitlementSource = (typeof ENTITLEMENT_SOURCES)[number];
+export type BillingCouponKind = (typeof BILLING_COUPON_KINDS)[number];
 
 export interface BillingPlanLimits {
   workspaces: number | null;
@@ -201,8 +203,41 @@ export const cancelSubscriptionSchema = z.object({
   immediate: z.boolean().default(false),
 });
 
+export const updateBillingCustomerSchema = z.object({
+  legalName: z.string().trim().min(2).max(160).optional(),
+  countryCode: z.string().trim().length(2).optional(),
+  regionCode: z.string().trim().min(1).max(16).optional(),
+  documentType: z.enum(['cpf', 'cnpj', 'vat', 'other']).optional(),
+  documentNumber: z.string().trim().min(4).max(64).optional(),
+  taxExempt: z.boolean().optional(),
+  taxRateBpsOverride: z.number().int().min(0).max(10_000).nullable().optional(),
+});
+
+export const applyBillingCouponSchema = z.object({
+  code: z.string().trim().min(3).max(64),
+});
+
 export type CreateCheckoutInput = z.infer<typeof createCheckoutSchema>;
 export type CancelSubscriptionInput = z.infer<typeof cancelSubscriptionSchema>;
+export type UpdateBillingCustomerInput = z.infer<typeof updateBillingCustomerSchema>;
+export type ApplyBillingCouponInput = z.infer<typeof applyBillingCouponSchema>;
+
+export interface BillingTaxProfileResponse {
+  countryCode: string | null;
+  regionCode: string | null;
+  documentType: 'cpf' | 'cnpj' | 'vat' | 'other' | null;
+  documentNumber: string | null;
+  taxExempt: boolean;
+  taxRateBpsOverride: number | null;
+}
+
+export interface BillingCouponResponse {
+  code: string;
+  label: string;
+  kind: BillingCouponKind;
+  percentOffBps: number | null;
+  amountOffBrlCents: number | null;
+}
 
 export interface BillingCustomerResponse {
   id: string;
@@ -210,6 +245,7 @@ export interface BillingCustomerResponse {
   email: string;
   legalName?: string | null;
   providerCustomerId?: string | null;
+  taxProfile: BillingTaxProfileResponse | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -304,6 +340,7 @@ export interface BillingInvoiceResponse {
   status: 'open' | 'paid' | 'void';
   currency: 'BRL';
   subtotalBrlCents: number;
+  discountBrlCents: number;
   taxRateBps: number;
   taxAmountBrlCents: number;
   totalBrlCents: number;
@@ -328,6 +365,7 @@ export interface BillingProviderStateResponse {
 export interface BillingAccountResponse {
   workspaceId: string;
   customer: BillingCustomerResponse | null;
+  activeCoupon: BillingCouponResponse | null;
   subscription: WorkspaceSubscriptionResponse | null;
   trial: TrialStateResponse;
   entitlements: EntitlementSnapshotResponse;

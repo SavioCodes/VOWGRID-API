@@ -9,6 +9,7 @@ import type {
   ConnectorSimulateResult,
   ConnectorExecuteResult,
   ConnectorRollbackResult,
+  ConnectorRuntimeContext,
   RollbackSupport,
 } from './connector.interface.js';
 
@@ -19,6 +20,7 @@ export class MockConnector implements IConnector {
   async validate(
     action: string,
     _parameters: Record<string, unknown>,
+    _context: ConnectorRuntimeContext,
   ): Promise<ConnectorValidateResult> {
     const errors: string[] = [];
 
@@ -36,6 +38,7 @@ export class MockConnector implements IConnector {
   async simulate(
     action: string,
     _parameters: Record<string, unknown>,
+    _context: ConnectorRuntimeContext,
   ): Promise<ConnectorSimulateResult> {
     // Simulate realistic delay
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -57,6 +60,7 @@ export class MockConnector implements IConnector {
   async execute(
     action: string,
     parameters: Record<string, unknown>,
+    _context: ConnectorRuntimeContext,
   ): Promise<ConnectorExecuteResult> {
     const start = Date.now();
 
@@ -83,6 +87,7 @@ export class MockConnector implements IConnector {
     action: string,
     _parameters: Record<string, unknown>,
     executionData: Record<string, unknown>,
+    _context: ConnectorRuntimeContext,
   ): Promise<ConnectorRollbackResult> {
     await new Promise((resolve) => setTimeout(resolve, 100));
 

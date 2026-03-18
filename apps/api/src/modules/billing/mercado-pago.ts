@@ -49,6 +49,7 @@ export interface StartMercadoPagoCheckoutInput {
   externalReference: string;
   payerEmail: string;
   reason: string;
+  transactionAmountBrl?: number;
 }
 
 export interface StartMercadoPagoInvoicePaymentInput {
@@ -156,7 +157,9 @@ export function mapMercadoPagoStatus(status?: string | null): BillingSubscriptio
 
 export async function startMercadoPagoCheckout(input: StartMercadoPagoCheckoutInput) {
   const plan = PLAN_CATALOG[input.planKey];
-  const amount = input.billingCycle === 'monthly' ? plan.monthlyBrl : plan.yearlyBrl;
+  const amount =
+    input.transactionAmountBrl ??
+    (input.billingCycle === 'monthly' ? plan.monthlyBrl : plan.yearlyBrl);
 
   if (amount === null) {
     throw new ValidationError('The selected plan is not available for self-serve checkout.');

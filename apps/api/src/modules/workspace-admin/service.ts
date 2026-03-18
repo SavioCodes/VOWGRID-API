@@ -1,4 +1,5 @@
 import type {
+  AnonymizeWorkspaceMemberResponse,
   CreateWorkspaceApiKeyInput,
   CreateWorkspaceInviteInput,
   CreateWorkspaceMemberInput,
@@ -7,6 +8,7 @@ import type {
   UpdateWorkspaceMemberInput,
   WorkspaceApiKeyResponse,
   WorkspaceApiKeySecretResponse,
+  WorkspaceExportResponse,
   WorkspaceInviteResponse,
   WorkspaceInviteSecretResponse,
   WorkspaceMemberMutationResponse,
@@ -42,6 +44,12 @@ function buildInviteUrl(token: string) {
     `/accept-invite?token=${encodeURIComponent(token)}`,
     env.APP_WEB_BASE_URL,
   ).toString();
+}
+
+function toPlainRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
 }
 
 function resolveMemberStatus(record: {
@@ -230,6 +238,26 @@ function assertMemberCanBeDisabled(member: { role: string; userId: string }, act
 
   if (member.userId === actorId) {
     throw new ForbiddenError('You cannot disable your own account from this admin surface.');
+  }
+}
+
+function assertMemberCanBeAnonymized(member: {
+  role: string;
+  disabledAt: Date | null;
+  user: { email: string };
+}) {
+  if (member.role === 'owner') {
+    throw new ForbiddenError('Workspace owners cannot be anonymized from this admin surface.');
+  }
+
+  if (!member.disabledAt) {
+    throw new ForbiddenError(
+      'Disable the workspace member before anonymizing personally identifiable data.',
+    );
+  }
+
+  if (member.user.email.endsWith('@redacted.vowgrid.invalid')) {
+    throw new ConflictError('This workspace member has already been anonymized.');
   }
 }
 
@@ -840,5 +868,274 @@ export async function rotateWorkspaceApiKey(
   return {
     apiKey: secret,
     record: serializeApiKey(rotated),
+  };
+}
+
+export async function anonymizeWorkspaceMember(
+  userId: string,
+  workspaceId: string,
+  actorId: string,
+): Promise<AnonymizeWorkspaceMemberResponse> {
+  const existing = await getWorkspaceMembershipOrThrow(userId, workspaceId);
+  assertMemberCanBeAnonymized(existing);
+
+  const anonymizedEmail = `anonymized+${existing.user.id}@redacted.vowgrid.invalid`;
+  const anonymizedName = `Anonymized user ${existing.user.id.slice(-6)}`;
+  const now = new Date();
+
+  const member = await prisma.$transaction(async (tx) => {
+    await tx.userSession.updateMany({
+      where: {
+        userId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: now,
+      },
+    });
+
+    await tx.passwordResetToken.updateMany({
+      where: {
+        userId,
+        usedAt: null,
+      },
+      data: {
+        usedAt: now,
+      },
+    });
+
+    await tx.emailVerificationToken.updateMany({
+      where: {
+        userId,
+        usedAt: null,
+      },
+      data: {
+        usedAt: now,
+      },
+    });
+
+    await tx.oAuthAccount.deleteMany({
+      where: {
+        userId,
+      },
+    });
+
+    await tx.workspaceInvite.updateMany({
+      where: {
+        email: existing.user.email,
+        revokedAt: null,
+        acceptedAt: null,
+      },
+      data: {
+        revokedAt: now,
+      },
+    });
+
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        email: anonymizedEmail,
+        name: anonymizedName,
+        passwordHash: null,
+        emailVerifiedAt: null,
+        lastLoginAt: null,
+      },
+    });
+
+    return tx.workspaceMembership.findUniqueOrThrow({
+      where: {
+        userId_workspaceId: {
+          userId,
+          workspaceId,
+        },
+      },
+      include: {
+        user: true,
+      },
+    });
+  });
+
+  await emitAuditEvent({
+    action: 'workspace.member.anonymized',
+    entityType: 'user',
+    entityId: member.user.id,
+    actorType: 'user',
+    actorId,
+    workspaceId,
+    metadata: {
+      previousEmail: existing.user.email,
+      anonymizedEmail,
+    },
+  });
+
+  return {
+    anonymized: true,
+    member: serializeWorkspaceMember(member),
+  };
+}
+
+export async function exportWorkspaceData(workspaceId: string): Promise<WorkspaceExportResponse> {
+  const [workspace, receipts] = await Promise.all([
+    prisma.workspace.findUniqueOrThrow({
+      where: { id: workspaceId },
+      include: {
+        billingCustomer: true,
+        subscription: true,
+        billingInvoices: {
+          orderBy: { createdAt: 'desc' },
+        },
+        memberships: {
+          include: {
+            user: true,
+          },
+        },
+        invites: {
+          orderBy: [{ revokedAt: 'asc' }, { createdAt: 'desc' }],
+        },
+        apiKeys: {
+          orderBy: [{ revokedAt: 'asc' }, { createdAt: 'desc' }],
+        },
+        agents: {
+          orderBy: { createdAt: 'asc' },
+        },
+        connectors: {
+          orderBy: { createdAt: 'asc' },
+        },
+        policies: {
+          orderBy: [{ enabled: 'desc' }, { priority: 'desc' }, { createdAt: 'asc' }],
+        },
+        intents: {
+          orderBy: { createdAt: 'desc' },
+        },
+        auditEvents: {
+          orderBy: { createdAt: 'desc' },
+          take: 500,
+        },
+      },
+    }),
+    prisma.receipt.findMany({
+      where: {
+        intent: {
+          workspaceId,
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    }),
+  ]);
+
+  return {
+    exportedAt: new Date().toISOString(),
+    workspace: {
+      id: workspace.id,
+      name: workspace.name,
+      slug: workspace.slug,
+      createdAt: workspace.createdAt.toISOString(),
+      updatedAt: workspace.updatedAt.toISOString(),
+    },
+    billing: {
+      customer: workspace.billingCustomer
+        ? {
+            id: workspace.billingCustomer.id,
+            email: workspace.billingCustomer.email,
+            legalName: workspace.billingCustomer.legalName,
+            createdAt: workspace.billingCustomer.createdAt.toISOString(),
+            updatedAt: workspace.billingCustomer.updatedAt.toISOString(),
+          }
+        : null,
+      subscription: workspace.subscription
+        ? {
+            id: workspace.subscription.id,
+            provider: workspace.subscription.provider,
+            planKey: workspace.subscription.planKey,
+            billingCycle: workspace.subscription.billingCycle,
+            status: workspace.subscription.status,
+            currentPeriodStart: workspace.subscription.currentPeriodStart?.toISOString() ?? null,
+            currentPeriodEnd: workspace.subscription.currentPeriodEnd?.toISOString() ?? null,
+            createdAt: workspace.subscription.createdAt.toISOString(),
+            updatedAt: workspace.subscription.updatedAt.toISOString(),
+          }
+        : null,
+      invoices: workspace.billingInvoices.map((invoice) => ({
+        id: invoice.id,
+        status: invoice.status,
+        subtotalBrlCents: invoice.subtotalBrlCents,
+        taxRateBps: invoice.taxRateBps,
+        taxAmountBrlCents: invoice.taxAmountBrlCents,
+        totalBrlCents: invoice.totalBrlCents,
+        issuedAt: invoice.issuedAt?.toISOString() ?? null,
+        paidAt: invoice.paidAt?.toISOString() ?? null,
+        createdAt: invoice.createdAt.toISOString(),
+        updatedAt: invoice.updatedAt.toISOString(),
+      })),
+    },
+    members: workspace.memberships
+      .sort((left, right) => left.user.name.localeCompare(right.user.name))
+      .map(serializeWorkspaceMember),
+    invites: workspace.invites.map(serializeWorkspaceInvite),
+    apiKeys: workspace.apiKeys.map(serializeApiKey),
+    agents: workspace.agents.map((agent) => ({
+      id: agent.id,
+      name: agent.name,
+      description: agent.description,
+      type: agent.type,
+      metadata: toPlainRecord(agent.metadata),
+      createdAt: agent.createdAt.toISOString(),
+      updatedAt: agent.updatedAt.toISOString(),
+    })),
+    connectors: workspace.connectors.map((connector) => ({
+      id: connector.id,
+      name: connector.name,
+      type: connector.type,
+      description: connector.description,
+      enabled: connector.enabled,
+      rollbackSupport: connector.rollbackSupport,
+      config: toPlainRecord(connector.config),
+      createdAt: connector.createdAt.toISOString(),
+      updatedAt: connector.updatedAt.toISOString(),
+    })),
+    policies: workspace.policies.map((policy) => ({
+      id: policy.id,
+      name: policy.name,
+      description: policy.description,
+      type: policy.type,
+      priority: policy.priority,
+      enabled: policy.enabled,
+      rules: toPlainRecord(policy.rules) ?? {},
+      createdAt: policy.createdAt.toISOString(),
+      updatedAt: policy.updatedAt.toISOString(),
+    })),
+    intents: workspace.intents.map((intent) => ({
+      id: intent.id,
+      title: intent.title,
+      description: intent.description,
+      action: intent.action,
+      status: intent.status,
+      environment: intent.environment,
+      agentId: intent.agentId,
+      connectorId: intent.connectorId,
+      parameters: toPlainRecord(intent.parameters),
+      createdAt: intent.createdAt.toISOString(),
+      updatedAt: intent.updatedAt.toISOString(),
+    })),
+    receipts: receipts.map((receipt) => ({
+      id: receipt.id,
+      intentId: receipt.intentId,
+      type: receipt.type,
+      summary: receipt.summary,
+      duration: receipt.duration,
+      createdAt: receipt.createdAt.toISOString(),
+    })),
+    auditEvents: workspace.auditEvents.map((event) => ({
+      id: event.id,
+      action: event.action,
+      actorType: event.actorType,
+      actorId: event.actorId,
+      entityType: event.entityType,
+      entityId: event.entityId,
+      metadata: toPlainRecord(event.metadata),
+      createdAt: event.createdAt.toISOString(),
+    })),
   };
 }

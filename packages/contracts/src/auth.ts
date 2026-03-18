@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const OAUTH_PROVIDERS = ['github', 'google'] as const;
+export const OAUTH_PROVIDERS = ['github', 'google', 'oidc'] as const;
 export const WORKSPACE_MEMBERSHIP_STATUSES = ['active', 'disabled'] as const;
 
 export const authEmailSchema = z.string().trim().email().max(255);

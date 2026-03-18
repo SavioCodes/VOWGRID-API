@@ -14,6 +14,7 @@ import { error as errorResponse } from './common/response.js';
 import { env } from './config/env.js';
 import { startExecutionWorker } from './jobs/execution.worker.js';
 import { startRollbackWorker } from './jobs/rollback.worker.js';
+import { initializeErrorReporting, reportOperationalError } from './lib/error-reporting.js';
 import { logger } from './lib/logger.js';
 import { observeHttpRequest } from './lib/metrics.js';
 import { prisma, disconnectPrisma } from './lib/prisma.js';
@@ -24,6 +25,8 @@ import { approvalRoutes } from './modules/approvals/routes.js';
 import { billingRoutes } from './modules/billing/routes.js';
 import { connectorRoutes } from './modules/connectors/routes.js';
 import { connectorRegistry } from './modules/connectors/framework/connector.registry.js';
+import { GitHubConnector } from './modules/connectors/framework/github.connector.js';
+import { HttpConnector } from './modules/connectors/framework/http.connector.js';
 import { MockConnector } from './modules/connectors/framework/mock.connector.js';
 import { executionRoutes } from './modules/executions/routes.js';
 import { healthRoutes } from './modules/health/routes.js';
@@ -36,6 +39,20 @@ import { workspaceAdminRoutes } from './modules/workspace-admin/routes.js';
 import authPlugin from './plugins/auth.plugin.js';
 
 export async function buildServer() {
+  initializeErrorReporting();
+
+  if (!connectorRegistry.has('mock')) {
+    connectorRegistry.register('mock', new MockConnector());
+  }
+
+  if (!connectorRegistry.has('http')) {
+    connectorRegistry.register('http', new HttpConnector());
+  }
+
+  if (!connectorRegistry.has('github')) {
+    connectorRegistry.register('github', new GitHubConnector());
+  }
+
   const app = Fastify({
     logger: false,
     genReqId: () => crypto.randomUUID(),
@@ -155,6 +172,16 @@ export async function buildServer() {
     }
 
     logger.error({ requestId: request.id, err }, 'unhandled error');
+    void reportOperationalError({
+      source: 'api.request',
+      message: err.message,
+      error: err,
+      context: {
+        requestId: request.id,
+        method: request.method,
+        url: request.url,
+      },
+    });
     return reply.status(500).send(errorResponse('INTERNAL_ERROR', 'An internal error occurred'));
   });
 
@@ -177,8 +204,6 @@ export async function buildServer() {
 
 export async function startServer() {
   try {
-    connectorRegistry.register('mock', new MockConnector());
-
     const app = await buildServer();
 
     await prisma.$connect();

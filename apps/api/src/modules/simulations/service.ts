@@ -7,6 +7,7 @@ import { toPrismaJsonValue, toPrismaNullableJsonValue } from '../../common/json.
 import { NotFoundError, ValidationError } from '../../common/errors.js';
 import { transitionIntent } from '../intents/service.js';
 import { connectorRegistry } from '../connectors/framework/connector.registry.js';
+import { buildConnectorRuntimeContext } from '../connectors/framework/runtime-context.js';
 import { emitAuditEvent } from '../audits/service.js';
 
 export async function simulateIntent(
@@ -39,10 +40,24 @@ export async function simulateIntent(
     throw new ValidationError(`Connector type "${connectorType}" is not registered`);
   }
 
+  const context = buildConnectorRuntimeContext({
+    workspaceId,
+    environment: intent.environment,
+    connector: intent.connector
+      ? {
+          id: intent.connector.id,
+          name: intent.connector.name,
+          type: intent.connector.type,
+          config: intent.connector.config,
+        }
+      : null,
+  });
+
   // Validate first
   const validation = await connector.validate(
     intent.action,
     (intent.parameters as Record<string, unknown>) ?? {},
+    context,
   );
 
   if (!validation.valid) {
@@ -53,6 +68,7 @@ export async function simulateIntent(
   const simResult = await connector.simulate(
     intent.action,
     (intent.parameters as Record<string, unknown>) ?? {},
+    context,
   );
 
   // Persist simulation result

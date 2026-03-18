@@ -1,9 +1,11 @@
 import { Prisma } from '@prisma/client';
 import type {
+  ApplyBillingCouponInput,
   BillingAccountResponse,
   BillingCheckoutResponse,
   CancelSubscriptionInput,
   CreateCheckoutInput,
+  UpdateBillingCustomerInput,
 } from '@vowgrid/contracts';
 import { PLAN_CATALOG } from '@vowgrid/contracts';
 import { prisma } from '../../lib/prisma.js';
@@ -21,6 +23,12 @@ import {
   validateMercadoPagoWebhookSignature,
   type MercadoPagoWebhookPayload,
 } from './mercado-pago.js';
+import {
+  applyWorkspaceCoupon,
+  calculateCouponDiscountBrlCents,
+  clearWorkspaceCoupon,
+  updateWorkspaceBillingCustomer,
+} from './customer.js';
 import { getBillingAccount } from './entitlements.js';
 import { calculateProrationPreview, recordProrationBilling } from './invoices.js';
 
@@ -117,11 +125,24 @@ export async function startWorkspaceCheckout(
 
   const externalReference = buildExternalReference(workspaceId, input);
   const planLabel = input.planKey.charAt(0).toUpperCase() + input.planKey.slice(1);
+  const planAmountBrl =
+    input.billingCycle === 'monthly'
+      ? PLAN_CATALOG[input.planKey].monthlyBrl
+      : PLAN_CATALOG[input.planKey].yearlyBrl;
+  const couponDiscountBrlCents = calculateCouponDiscountBrlCents(
+    account.activeCoupon,
+    planAmountBrl ? Math.round(planAmountBrl * 100) : 0,
+  );
+  const discountedAmountBrl =
+    planAmountBrl === null
+      ? undefined
+      : Number(((Math.round(planAmountBrl * 100) - couponDiscountBrlCents) / 100).toFixed(2));
   const checkout = await startMercadoPagoCheckout({
     ...input,
     externalReference,
     payerEmail: account.customer.email,
-    reason: `VowGrid ${planLabel} ${input.billingCycle}`,
+    reason: `VowGrid ${planLabel} ${input.billingCycle}${account.activeCoupon ? ` (${account.activeCoupon.code})` : ''}`,
+    transactionAmountBrl: discountedAmountBrl,
   });
 
   const existingSubscription = await prisma.workspaceSubscription.findUnique({
@@ -191,6 +212,61 @@ export async function startWorkspaceCheckout(
     providerSubscriptionId: checkout.providerSubscriptionId,
     proration,
   };
+}
+
+export async function updateWorkspaceBillingCustomerProfile(
+  workspaceId: string,
+  input: UpdateBillingCustomerInput,
+) {
+  const customer = await updateWorkspaceBillingCustomer(workspaceId, input);
+  await emitAuditEvent({
+    action: 'billing.customer.updated',
+    entityType: 'workspace',
+    entityId: workspaceId,
+    actorType: 'system',
+    actorId: 'billing-system',
+    workspaceId,
+    metadata: {
+      legalName: customer.legalName,
+      taxProfile: customer.taxProfile,
+    },
+  });
+
+  return getBillingAccount(workspaceId);
+}
+
+export async function applyWorkspaceBillingCoupon(
+  workspaceId: string,
+  input: ApplyBillingCouponInput,
+) {
+  const result = await applyWorkspaceCoupon(workspaceId, input);
+  await emitAuditEvent({
+    action: 'billing.coupon.applied',
+    entityType: 'workspace',
+    entityId: workspaceId,
+    actorType: 'system',
+    actorId: 'billing-system',
+    workspaceId,
+    metadata: {
+      couponCode: result.activeCoupon?.code ?? null,
+    },
+  });
+
+  return getBillingAccount(workspaceId);
+}
+
+export async function clearWorkspaceBillingCoupon(workspaceId: string) {
+  await clearWorkspaceCoupon(workspaceId);
+  await emitAuditEvent({
+    action: 'billing.coupon.cleared',
+    entityType: 'workspace',
+    entityId: workspaceId,
+    actorType: 'system',
+    actorId: 'billing-system',
+    workspaceId,
+  });
+
+  return getBillingAccount(workspaceId);
 }
 
 export async function cancelWorkspaceSubscription(

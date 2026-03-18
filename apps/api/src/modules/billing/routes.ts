@@ -1,14 +1,28 @@
 import { FastifyInstance } from 'fastify';
-import { cancelSubscriptionSchema, createCheckoutSchema } from '@vowgrid/contracts';
-import { ValidationError } from '../../common/errors.js';
+import {
+  applyBillingCouponSchema,
+  cancelSubscriptionSchema,
+  createCheckoutSchema,
+  updateBillingCustomerSchema,
+} from '@vowgrid/contracts';
+import { ForbiddenError, ValidationError } from '../../common/errors.js';
 import { success } from '../../common/response.js';
 import {
+  applyWorkspaceBillingCoupon,
   cancelWorkspaceSubscription,
+  clearWorkspaceBillingCoupon,
   getWorkspaceBillingAccount,
   listBillingPlans,
   processMercadoPagoWebhook,
   startWorkspaceCheckout,
+  updateWorkspaceBillingCustomerProfile,
 } from './service.js';
+
+function requireBillingAdmin(role?: string) {
+  if (role !== 'owner' && role !== 'admin') {
+    throw new ForbiddenError('Only workspace owners and admins can manage billing settings.');
+  }
+}
 
 export async function billingRoutes(app: FastifyInstance): Promise<void> {
   app.get('/billing/plans', {
@@ -71,6 +85,64 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const account = await cancelWorkspaceSubscription(request.auth.workspaceId, parsed.data);
+      return reply.send(success(account));
+    },
+  });
+
+  app.patch('/billing/customer', {
+    schema: {
+      tags: ['Billing'],
+      summary: 'Update workspace billing customer profile',
+      description:
+        'Stores workspace billing identity and tax profile data used for tax resolution and invoice rendering.',
+    },
+    preHandler: [app.authenticateSession],
+    handler: async (request, reply) => {
+      requireBillingAdmin(request.auth.role);
+      const parsed = updateBillingCustomerSchema.safeParse(request.body ?? {});
+      if (!parsed.success) {
+        throw new ValidationError('Invalid billing customer payload', parsed.error.flatten());
+      }
+
+      const account = await updateWorkspaceBillingCustomerProfile(
+        request.auth.workspaceId,
+        parsed.data,
+      );
+      return reply.send(success(account));
+    },
+  });
+
+  app.post('/billing/coupon', {
+    schema: {
+      tags: ['Billing'],
+      summary: 'Apply a workspace billing coupon',
+      description:
+        'Applies a configured billing coupon to future checkout pricing and invoice calculations.',
+    },
+    preHandler: [app.authenticateSession],
+    handler: async (request, reply) => {
+      requireBillingAdmin(request.auth.role);
+      const parsed = applyBillingCouponSchema.safeParse(request.body ?? {});
+      if (!parsed.success) {
+        throw new ValidationError('Invalid billing coupon payload', parsed.error.flatten());
+      }
+
+      const account = await applyWorkspaceBillingCoupon(request.auth.workspaceId, parsed.data);
+      return reply.send(success(account));
+    },
+  });
+
+  app.delete('/billing/coupon', {
+    schema: {
+      tags: ['Billing'],
+      summary: 'Clear the active workspace billing coupon',
+      description:
+        'Removes the currently active workspace coupon without deleting the billing customer profile.',
+    },
+    preHandler: [app.authenticateSession],
+    handler: async (request, reply) => {
+      requireBillingAdmin(request.auth.role);
+      const account = await clearWorkspaceBillingCoupon(request.auth.workspaceId);
       return reply.send(success(account));
     },
   });

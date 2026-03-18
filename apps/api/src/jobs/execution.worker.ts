@@ -7,8 +7,10 @@ import { toPrismaJsonValue } from '../common/json.js';
 import { bullmqConnection } from '../lib/queue.js';
 import { prisma } from '../lib/prisma.js';
 import { connectorRegistry } from '../modules/connectors/framework/connector.registry.js';
+import { buildConnectorRuntimeContext } from '../modules/connectors/framework/runtime-context.js';
 import { transitionIntent } from '../modules/intents/service.js';
 import { emitAuditEvent } from '../modules/audits/service.js';
+import { reportOperationalError } from '../lib/error-reporting.js';
 import { logger } from '../lib/logger.js';
 import { observeExecutionEvent } from '../lib/metrics.js';
 
@@ -47,6 +49,19 @@ async function processExecution(job: Job<ExecutionJobData>) {
     throw new Error(`Connector type "${connectorType}" is not registered`);
   }
 
+  const context = buildConnectorRuntimeContext({
+    workspaceId,
+    environment: intent.environment,
+    connector: intent.connector
+      ? {
+          id: intent.connector.id,
+          name: intent.connector.name,
+          type: intent.connector.type,
+          config: intent.connector.config,
+        }
+      : null,
+  });
+
   const startTime = Date.now();
 
   try {
@@ -54,6 +69,7 @@ async function processExecution(job: Job<ExecutionJobData>) {
     const result = await connector.execute(
       intent.action,
       (intent.parameters as Record<string, unknown>) ?? {},
+      context,
     );
 
     // Update job
@@ -141,6 +157,14 @@ export function startExecutionWorker() {
 
   worker.on('failed', (job, err) => {
     logger.error({ jobId: job?.id, error: err.message }, 'Execution job failed');
+    void reportOperationalError({
+      source: 'worker.execution',
+      message: err.message,
+      error: err,
+      context: {
+        jobId: job?.id ?? null,
+      },
+    });
   });
 
   logger.info('🔧 Execution worker started');
