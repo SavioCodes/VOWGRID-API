@@ -56,7 +56,7 @@ export async function createIntent(
     metadata: { title: intent.title, action: intent.action },
   });
 
-  await trackIntentCreation(workspaceId, billing.entitlements.limits);
+  await trackIntentCreation(workspaceId, billing);
 
   return intent;
 }

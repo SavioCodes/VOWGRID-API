@@ -54,6 +54,8 @@ async function main() {
       name: 'Local Reviewer',
       role: 'admin',
       passwordHash: reviewerPasswordHash,
+      emailVerifiedAt: new Date(),
+      disabledAt: null,
       workspaceId: seedIds.workspaceId,
     },
     create: {
@@ -62,7 +64,28 @@ async function main() {
       name: 'Local Reviewer',
       role: 'admin',
       passwordHash: reviewerPasswordHash,
+      emailVerifiedAt: new Date(),
+      disabledAt: null,
       workspaceId: seedIds.workspaceId,
+    },
+  });
+
+  await prisma.workspaceMembership.upsert({
+    where: {
+      userId_workspaceId: {
+        userId: seedIds.reviewerId,
+        workspaceId: seedIds.workspaceId,
+      },
+    },
+    update: {
+      role: 'admin',
+      disabledAt: null,
+    },
+    create: {
+      userId: seedIds.reviewerId,
+      workspaceId: seedIds.workspaceId,
+      role: 'admin',
+      joinedAt: new Date(),
     },
   });
 

@@ -28,6 +28,12 @@ interface MercadoPagoPreapprovalResponse {
   last_modified?: string | null;
 }
 
+interface MercadoPagoPreferenceResponse {
+  id: string;
+  init_point?: string | null;
+  sandbox_init_point?: string | null;
+}
+
 export interface MercadoPagoWebhookPayload {
   action?: string;
   type?: string;
@@ -43,6 +49,18 @@ export interface StartMercadoPagoCheckoutInput {
   externalReference: string;
   payerEmail: string;
   reason: string;
+}
+
+export interface StartMercadoPagoInvoicePaymentInput {
+  externalReference: string;
+  payerEmail: string;
+  title: string;
+  items: Array<{
+    title: string;
+    quantity: number;
+    unitPriceBrlCents: number;
+  }>;
+  taxAmountBrlCents: number;
 }
 
 function getMercadoPagoApiBaseUrl() {
@@ -175,6 +193,62 @@ export async function startMercadoPagoCheckout(input: StartMercadoPagoCheckoutIn
     status: mapMercadoPagoStatus(subscription.status),
     checkoutUrl,
     providerPayload: subscription,
+  };
+}
+
+export async function startMercadoPagoInvoicePayment(input: StartMercadoPagoInvoicePaymentInput) {
+  const items = input.items
+    .filter((item) => item.quantity > 0 && item.unitPriceBrlCents > 0)
+    .map((item) => ({
+      title: item.title,
+      quantity: item.quantity,
+      currency_id: 'BRL',
+      unit_price: Number((item.unitPriceBrlCents / 100).toFixed(2)),
+    }));
+
+  if (input.taxAmountBrlCents > 0) {
+    items.push({
+      title: 'Tax',
+      quantity: 1,
+      currency_id: 'BRL',
+      unit_price: Number((input.taxAmountBrlCents / 100).toFixed(2)),
+    });
+  }
+
+  if (items.length === 0) {
+    throw new ValidationError('Mercado Pago invoice checkout requires at least one billable item.');
+  }
+
+  const preference = await mercadoPagoRequest<MercadoPagoPreferenceResponse>(
+    '/checkout/preferences',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        external_reference: input.externalReference,
+        payer: {
+          email: input.payerEmail,
+        },
+        items,
+        back_urls: env.MERCADO_PAGO_RETURN_URL
+          ? {
+              success: env.MERCADO_PAGO_RETURN_URL,
+              pending: env.MERCADO_PAGO_RETURN_URL,
+              failure: env.MERCADO_PAGO_RETURN_URL,
+            }
+          : undefined,
+      }),
+    },
+  );
+
+  const checkoutUrl = preference.init_point ?? preference.sandbox_init_point;
+
+  if (!checkoutUrl) {
+    throw new ValidationError('Mercado Pago did not return a checkout URL for the invoice.');
+  }
+
+  return {
+    preferenceId: preference.id,
+    checkoutUrl,
   };
 }
 

@@ -97,9 +97,13 @@ export async function getCurrentUsageMetrics(
     intentsPerMonth: number | null;
     executedActionsPerMonth: number | null;
   },
+  options?: {
+    intentsOverageAllowed?: boolean;
+    executedActionsOverageAllowed?: boolean;
+  },
 ): Promise<UsageMetricResponse[]> {
   const [usersCount, connectorsCount, intentCounter, executionCounter] = await Promise.all([
-    prisma.user.count({ where: { workspaceId } }),
+    prisma.workspaceMembership.count({ where: { workspaceId, disabledAt: null } }),
     prisma.connector.count({ where: { workspaceId, enabled: true } }),
     getMonthlyUsageCounter(workspaceId, 'intents'),
     getMonthlyUsageCounter(workspaceId, 'executed_actions'),
@@ -132,12 +136,17 @@ export async function getCurrentUsageMetrics(
     const remaining = snapshot.limit === null ? null : Math.max(snapshot.limit - snapshot.used, 0);
     const ratio =
       snapshot.limit === null || snapshot.limit === 0 ? 0 : snapshot.used / snapshot.limit;
+    const overageAllowed =
+      (key === 'intents' && Boolean(options?.intentsOverageAllowed)) ||
+      (key === 'executed_actions' && Boolean(options?.executedActionsOverageAllowed));
     const status =
-      snapshot.limit !== null && snapshot.used >= snapshot.limit
-        ? 'blocked'
-        : ratio >= DEFAULT_WARNING_RATIO
-          ? 'warning'
-          : 'ok';
+      snapshot.limit !== null && snapshot.used > snapshot.limit && overageAllowed
+        ? 'overage'
+        : snapshot.limit !== null && snapshot.used >= snapshot.limit
+          ? 'blocked'
+          : ratio >= DEFAULT_WARNING_RATIO
+            ? 'warning'
+            : 'ok';
 
     return {
       key,
@@ -149,7 +158,12 @@ export async function getCurrentUsageMetrics(
       remaining,
       warningThreshold: DEFAULT_WARNING_RATIO,
       status,
-      hardLimit: snapshot.limit !== null,
+      hardLimit: snapshot.limit !== null && !overageAllowed,
+      overageAllowed,
+      overageUnits:
+        snapshot.limit !== null && snapshot.used > snapshot.limit
+          ? snapshot.used - snapshot.limit
+          : 0,
       resetsAt: snapshot.resetsAt ?? null,
     };
   });

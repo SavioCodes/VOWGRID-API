@@ -22,6 +22,8 @@ model Workspace {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   users           User[]
+  memberships     WorkspaceMembership[]
+  invites         WorkspaceInvite[]
   sessions        UserSession[]
   agents          Agent[]
   intents         Intent[]
@@ -32,6 +34,7 @@ model Workspace {
   billingCustomer BillingCustomer?
   subscription    WorkspaceSubscription?
   billingEvents   BillingEvent[]
+  billingInvoices BillingInvoice[]
   usageCounters   UsageCounter[]
   trialState      TrialState?
 
@@ -44,17 +47,126 @@ model User {
   name         String
   role         String    @default("member") // owner, admin, member, viewer
   passwordHash String?   @map("password_hash")
+  emailVerifiedAt DateTime? @map("email_verified_at")
   lastLoginAt  DateTime? @map("last_login_at")
+  disabledAt   DateTime? @map("disabled_at")
   workspaceId  String    @map("workspace_id")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  workspace         Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  sessions          UserSession[]
-  approvalDecisions ApprovalDecision[]
+  workspace                Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessions                 UserSession[]
+  approvalDecisions        ApprovalDecision[]
+  memberships              WorkspaceMembership[]
+  sentWorkspaceInvites     WorkspaceInvite[]        @relation("WorkspaceInviteSender")
+  emailVerificationTokens  EmailVerificationToken[]
+  passwordResetTokens      PasswordResetToken[]
+  oauthAccounts            OAuthAccount[]
 
   @@index([workspaceId])
+  @@index([workspaceId, disabledAt])
   @@map("users")
+}
+
+model WorkspaceMembership {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  workspaceId String    @map("workspace_id")
+  role        String    @default("member") // owner, admin, member, viewer
+  disabledAt  DateTime? @map("disabled_at")
+  joinedAt    DateTime? @map("joined_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId, disabledAt])
+  @@index([userId, disabledAt])
+  @@map("workspace_memberships")
+}
+
+model WorkspaceInvite {
+  id              String    @id @default(cuid())
+  workspaceId     String    @map("workspace_id")
+  email           String
+  role            String
+  tokenHash       String    @unique @map("token_hash")
+  invitedByUserId String?   @map("invited_by_user_id")
+  expiresAt       DateTime  @map("expires_at")
+  acceptedAt      DateTime? @map("accepted_at")
+  revokedAt       DateTime? @map("revoked_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy User?     @relation("WorkspaceInviteSender", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, email])
+  @@index([email, revokedAt])
+  @@map("workspace_invites")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  email     String
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email, usedAt])
+  @@map("email_verification_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  provider          String
+  providerAccountId String   @map("provider_account_id")
+  email             String?
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
+
+model OAuthSignupToken {
+  id                String    @id @default(cuid())
+  provider          String
+  providerAccountId String    @map("provider_account_id")
+  email             String
+  name              String
+  tokenHash         String    @unique @map("token_hash")
+  expiresAt         DateTime  @map("expires_at")
+  usedAt            DateTime? @map("used_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  @@index([email, usedAt])
+  @@map("oauth_signup_tokens")
 }
 
 model UserSession {
@@ -137,6 +249,7 @@ model WorkspaceSubscription {
   workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   billingCustomer BillingCustomer? @relation(fields: [billingCustomerId], references: [id], onDelete: SetNull)
   events          BillingEvent[]
+  invoices        BillingInvoice[]
 
   @@index([status])
   @@index([planKey])
@@ -163,6 +276,56 @@ model BillingEvent {
   @@index([subscriptionId])
   @@index([source, eventType])
   @@map("billing_events")
+}
+
+model BillingInvoice {
+  id                     String    @id @default(cuid())
+  workspaceId            String    @map("workspace_id")
+  subscriptionId         String?   @map("subscription_id")
+  status                 String    @default("open")
+  currency               String    @default("BRL")
+  subtotalBrlCents       Int       @default(0) @map("subtotal_brl_cents")
+  taxRateBps             Int       @default(0) @map("tax_rate_bps")
+  taxAmountBrlCents      Int       @default(0) @map("tax_amount_brl_cents")
+  totalBrlCents          Int       @default(0) @map("total_brl_cents")
+  mercadoPagoPreferenceId String?  @unique @map("mercado_pago_preference_id")
+  paymentUrl             String?   @map("payment_url")
+  periodStart            DateTime? @map("period_start")
+  periodEnd              DateTime? @map("period_end")
+  dueAt                  DateTime? @map("due_at")
+  issuedAt               DateTime? @map("issued_at")
+  paidAt                 DateTime? @map("paid_at")
+  metadata               Json?
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  workspace    Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subscription WorkspaceSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  lineItems    BillingInvoiceLineItem[]
+
+  @@index([workspaceId, status])
+  @@index([subscriptionId])
+  @@map("billing_invoices")
+}
+
+model BillingInvoiceLineItem {
+  id                 String   @id @default(cuid())
+  invoiceId          String   @map("invoice_id")
+  type               String
+  metric             String?
+  label              String
+  quantity           Int      @default(1)
+  unitAmountBrlCents Int      @map("unit_amount_brl_cents")
+  subtotalBrlCents   Int      @map("subtotal_brl_cents")
+  metadata           Json?
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  invoice BillingInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@unique([invoiceId, type, metric])
+  @@map("billing_invoice_line_items")
 }
 
 model UsageCounter {

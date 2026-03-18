@@ -15,6 +15,7 @@ import { env } from './config/env.js';
 import { startExecutionWorker } from './jobs/execution.worker.js';
 import { startRollbackWorker } from './jobs/rollback.worker.js';
 import { logger } from './lib/logger.js';
+import { observeHttpRequest } from './lib/metrics.js';
 import { prisma, disconnectPrisma } from './lib/prisma.js';
 import { disconnectRedis } from './lib/redis.js';
 import { auditRoutes } from './modules/audits/routes.js';
@@ -27,6 +28,7 @@ import { MockConnector } from './modules/connectors/framework/mock.connector.js'
 import { executionRoutes } from './modules/executions/routes.js';
 import { healthRoutes } from './modules/health/routes.js';
 import { intentRoutes } from './modules/intents/routes.js';
+import { observabilityRoutes } from './modules/observability/routes.js';
 import { policyRoutes } from './modules/policies/routes.js';
 import { receiptRoutes } from './modules/receipts/routes.js';
 import { simulationRoutes } from './modules/simulations/routes.js';
@@ -106,6 +108,13 @@ export async function buildServer() {
   });
 
   app.addHook('onResponse', async (request, reply) => {
+    observeHttpRequest({
+      method: request.method,
+      route: request.routeOptions.url || request.url,
+      statusCode: reply.statusCode,
+      durationMs: reply.elapsedTime,
+    });
+
     logger.info(
       {
         requestId: request.id,
@@ -150,6 +159,7 @@ export async function buildServer() {
   });
 
   await app.register(healthRoutes, { prefix: '/v1' });
+  await app.register(observabilityRoutes, { prefix: '/v1' });
   await app.register(authRoutes, { prefix: '/v1' });
   await app.register(intentRoutes, { prefix: '/v1' });
   await app.register(simulationRoutes, { prefix: '/v1' });

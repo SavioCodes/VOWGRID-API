@@ -22,6 +22,7 @@ import {
   type MercadoPagoWebhookPayload,
 } from './mercado-pago.js';
 import { getBillingAccount } from './entitlements.js';
+import { calculateProrationPreview, recordProrationBilling } from './invoices.js';
 
 function buildExternalReference(workspaceId: string, input: CreateCheckoutInput) {
   return `${workspaceId}:${input.planKey}:${input.billingCycle}:${Date.now()}`;
@@ -88,6 +89,18 @@ export async function startWorkspaceCheckout(
   input: CreateCheckoutInput,
 ): Promise<BillingCheckoutResponse> {
   const account = await getBillingAccount(workspaceId);
+  const proration = calculateProrationPreview({
+    sourcePlanKey: account.subscription?.planKey ?? null,
+    sourceBillingCycle: account.subscription?.billingCycle ?? null,
+    targetPlanKey: input.planKey,
+    targetBillingCycle: input.billingCycle,
+    currentPeriodStart: account.subscription?.currentPeriodStart
+      ? new Date(account.subscription.currentPeriodStart)
+      : null,
+    currentPeriodEnd: account.subscription?.currentPeriodEnd
+      ? new Date(account.subscription.currentPeriodEnd)
+      : null,
+  });
 
   if (!account.customer?.email) {
     throw new ValidationError(
@@ -148,6 +161,14 @@ export async function startWorkspaceCheckout(
     },
   });
 
+  if (proration) {
+    await recordProrationBilling({
+      workspaceId,
+      subscriptionId: existingSubscription?.id ?? null,
+      preview: proration,
+    });
+  }
+
   await emitAuditEvent({
     action: 'billing.checkout.created',
     entityType: 'workspace',
@@ -168,6 +189,7 @@ export async function startWorkspaceCheckout(
     billingCycle: input.billingCycle,
     checkoutUrl: checkout.checkoutUrl,
     providerSubscriptionId: checkout.providerSubscriptionId,
+    proration,
   };
 }
 

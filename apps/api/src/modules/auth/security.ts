@@ -57,6 +57,10 @@ export function generateSessionToken() {
   return randomBytes(32).toString('base64url');
 }
 
+export function generateOpaqueToken(bytes = 32) {
+  return randomBytes(bytes).toString('base64url');
+}
+
 function getSessionSecret() {
   const sessionSecret = process.env.SESSION_SECRET ?? process.env.JWT_SECRET;
 
@@ -69,6 +73,10 @@ function getSessionSecret() {
 
 export function hashSessionToken(token: string) {
   return createHash('sha256').update(`${getSessionSecret()}:${token}`).digest('hex');
+}
+
+export function hashOpaqueToken(token: string) {
+  return createHash('sha256').update(`${getSessionSecret()}:opaque:${token}`).digest('hex');
 }
 
 export function buildSessionExpiry(from = new Date()) {

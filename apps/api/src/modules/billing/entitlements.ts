@@ -8,11 +8,13 @@ import type {
   WorkspaceSubscriptionResponse,
 } from '@vowgrid/contracts';
 import { PLAN_CATALOG, BILLING_TRIAL_DAYS } from '@vowgrid/contracts';
+import { env } from '../../config/env.js';
 import { prisma } from '../../lib/prisma.js';
 import { NotFoundError, PaymentRequiredError } from '../../common/errors.js';
 import { DEFAULT_TRIAL_PLAN_KEY, ADVANCED_POLICY_TYPES, getPlan } from './catalog.js';
 import { getMercadoPagoProviderState } from './mercado-pago.js';
 import { getCurrentUsageMetrics, incrementMonthlyUsageCounter } from './usage.js';
+import { listWorkspaceInvoices, recordAutomaticOverageBilling } from './invoices.js';
 
 const EMPTY_LIMITS: BillingPlanLimits = {
   workspaces: 0,
@@ -48,7 +50,18 @@ async function ensureBillingState(workspaceId: string) {
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
     include: {
-      users: true,
+      memberships: {
+        where: {
+          disabledAt: null,
+        },
+        include: {
+          user: {
+            select: {
+              email: true,
+            },
+          },
+        },
+      },
       billingCustomer: true,
       subscription: true,
       trialState: true,
@@ -85,7 +98,12 @@ async function ensureBillingState(workspaceId: string) {
   let billingCustomer = workspace.billingCustomer;
 
   if (!billingCustomer) {
-    const contact = pickBillingContact(workspace.users);
+    const contact = pickBillingContact(
+      workspace.memberships.map((membership) => ({
+        email: membership.user.email,
+        role: membership.role,
+      })),
+    );
 
     if (contact) {
       billingCustomer = await prisma.billingCustomer.create({
@@ -224,6 +242,8 @@ function resolveEntitlements({
   let approvalsMode: BillingAccountResponse['entitlements']['approvalsMode'] = 'basic';
   let readOnlyMode = true;
   let selfServeCheckout = true;
+  let automaticOverageBilling = false;
+  let taxRateBps = env.BILLING_DEFAULT_TAX_RATE_BPS;
   const warnings: string[] = [];
   const blocks: string[] = [];
 
@@ -237,6 +257,9 @@ function resolveEntitlements({
     approvalsMode = plan.features.approvalsMode;
     readOnlyMode = false;
     selfServeCheckout = plan.selfServeCheckout;
+    automaticOverageBilling =
+      plan.overage.intentsUnitBrlCents !== null ||
+      plan.overage.executedActionsUnitBrlCents !== null;
   } else if (subscription?.planKey) {
     const plan = getPlan(subscription.planKey);
     source = 'subscription';
@@ -247,6 +270,7 @@ function resolveEntitlements({
     approvalsMode = plan.features.approvalsMode;
     readOnlyMode = true;
     selfServeCheckout = plan.selfServeCheckout;
+    automaticOverageBilling = false;
     blocks.push(
       'The paid subscription is not currently active. Upgrade or reactivate billing to resume write actions.',
     );
@@ -260,6 +284,7 @@ function resolveEntitlements({
     approvalsMode = plan.features.approvalsMode;
     readOnlyMode = false;
     selfServeCheckout = true;
+    automaticOverageBilling = false;
     warnings.push(`Free trial active: ${trial.daysRemaining} day(s) remaining.`);
   } else if (trial.isExpired) {
     source = 'expired_trial';
@@ -271,10 +296,12 @@ function resolveEntitlements({
     effectivePlanKey,
     readOnlyMode,
     selfServeCheckout,
+    automaticOverageBilling,
     supportTier,
     advancedPolicies,
     approvalsMode,
     limits,
+    taxRateBps,
     warnings,
     blocks,
   } as BillingAccountResponse['entitlements'];
@@ -285,11 +312,25 @@ export async function getBillingAccount(workspaceId: string): Promise<BillingAcc
   const trial = toTrialResponse(state.trialState);
   const subscription = toSubscriptionResponse(state.subscription);
   const entitlements = resolveEntitlements({ subscription, trial });
-  const usage = await getCurrentUsageMetrics(workspaceId, entitlements.limits);
+  const [usage, invoices] = await Promise.all([
+    getCurrentUsageMetrics(workspaceId, entitlements.limits, {
+      intentsOverageAllowed:
+        entitlements.automaticOverageBilling && entitlements.source === 'subscription',
+      executedActionsOverageAllowed:
+        entitlements.automaticOverageBilling && entitlements.source === 'subscription',
+    }),
+    listWorkspaceInvoices(workspaceId),
+  ]);
 
   for (const metric of usage) {
     if (metric.status === 'warning') {
       entitlements.warnings.push(`${metric.label} is nearing the plan limit.`);
+    }
+
+    if (metric.status === 'overage') {
+      entitlements.warnings.push(
+        `${metric.label} is above the included plan allowance and is now billing as overage.`,
+      );
     }
 
     if (metric.status === 'blocked') {
@@ -304,6 +345,7 @@ export async function getBillingAccount(workspaceId: string): Promise<BillingAcc
     trial,
     entitlements,
     usage: { metrics: usage },
+    invoices,
     provider: getMercadoPagoProviderState(),
   };
 }
@@ -330,7 +372,7 @@ export async function assertCanCreateIntent(workspaceId: string) {
   requireWritableBilling(account);
   const metric = getUsageMetric(account, 'intents');
 
-  if (metric?.status === 'blocked') {
+  if (metric?.status === 'blocked' && !metric.overageAllowed) {
     throw new PaymentRequiredError(
       'This workspace has reached its monthly intent limit. Upgrade to continue creating new intents.',
       'BILLING_INTENT_LIMIT_REACHED',
@@ -346,7 +388,7 @@ export async function assertCanQueueExecution(workspaceId: string) {
   requireWritableBilling(account);
   const metric = getUsageMetric(account, 'executed_actions');
 
-  if (metric?.status === 'blocked') {
+  if (metric?.status === 'blocked' && !metric.overageAllowed) {
     throw new PaymentRequiredError(
       'This workspace has reached its monthly executed action limit. Upgrade to continue executing critical actions.',
       'BILLING_EXECUTION_LIMIT_REACHED',
@@ -371,6 +413,22 @@ export async function assertCanCreateConnector(workspaceId: string, enabled: boo
     throw new PaymentRequiredError(
       'This workspace has reached its active connector limit. Upgrade to connect more action surfaces.',
       'BILLING_CONNECTOR_LIMIT_REACHED',
+      metric,
+    );
+  }
+
+  return account;
+}
+
+export async function assertCanManageInternalUsers(workspaceId: string) {
+  const account = await getBillingAccount(workspaceId);
+  requireWritableBilling(account);
+  const metric = getUsageMetric(account, 'internal_users');
+
+  if (metric?.status === 'blocked') {
+    throw new PaymentRequiredError(
+      'This workspace has reached its internal user limit. Upgrade to add or re-enable more members.',
+      'BILLING_INTERNAL_USER_LIMIT_REACHED',
       metric,
     );
   }
@@ -408,15 +466,46 @@ export async function assertCanRequireApprovalCount(workspaceId: string, require
   return account;
 }
 
-export async function trackIntentCreation(workspaceId: string, limits: BillingPlanLimits) {
-  return incrementMonthlyUsageCounter(workspaceId, 'intents', 1, limits.intentsPerMonth);
+export async function trackIntentCreation(workspaceId: string, account: BillingAccountResponse) {
+  const counter = await incrementMonthlyUsageCounter(
+    workspaceId,
+    'intents',
+    1,
+    account.entitlements.limits.intentsPerMonth,
+  );
+
+  if (account.entitlements.automaticOverageBilling && account.subscription?.status === 'active') {
+    await recordAutomaticOverageBilling({
+      workspaceId,
+      subscriptionId: account.subscription.id,
+      planKey: account.subscription.planKey ?? null,
+      metric: 'intents',
+      used: counter.count,
+      limit: account.entitlements.limits.intentsPerMonth,
+    });
+  }
+
+  return counter;
 }
 
-export async function trackExecutionStart(workspaceId: string, limits: BillingPlanLimits) {
-  return incrementMonthlyUsageCounter(
+export async function trackExecutionStart(workspaceId: string, account: BillingAccountResponse) {
+  const counter = await incrementMonthlyUsageCounter(
     workspaceId,
     'executed_actions',
     1,
-    limits.executedActionsPerMonth,
+    account.entitlements.limits.executedActionsPerMonth,
   );
+
+  if (account.entitlements.automaticOverageBilling && account.subscription?.status === 'active') {
+    await recordAutomaticOverageBilling({
+      workspaceId,
+      subscriptionId: account.subscription.id,
+      planKey: account.subscription.planKey ?? null,
+      metric: 'executed_actions',
+      used: counter.count,
+      limit: account.entitlements.limits.executedActionsPerMonth,
+    });
+  }
+
+  return counter;
 }

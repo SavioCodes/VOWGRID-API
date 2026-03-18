@@ -77,7 +77,7 @@ export async function queueExecution(
     metadata: { executionJobId: executionJob.id },
   });
 
-  await trackExecutionStart(workspaceId, billing.entitlements.limits);
+  await trackExecutionStart(workspaceId, billing);
 
   return executionJob;
 }

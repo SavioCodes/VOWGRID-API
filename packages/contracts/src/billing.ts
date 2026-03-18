@@ -23,7 +23,7 @@ export const USAGE_METRIC_KEYS = [
   'intents',
   'executed_actions',
 ] as const;
-export const USAGE_METRIC_STATUSES = ['ok', 'warning', 'blocked'] as const;
+export const USAGE_METRIC_STATUSES = ['ok', 'warning', 'blocked', 'overage'] as const;
 export const ENTITLEMENT_SOURCES = ['trial', 'subscription', 'expired_trial', 'none'] as const;
 
 export type BillingPlanKey = (typeof BILLING_PLAN_KEYS)[number];
@@ -54,6 +54,11 @@ export interface BillingPlanFeatures {
   advancedFeatures: 'standard' | 'custom';
 }
 
+export interface BillingOveragePricing {
+  intentsUnitBrlCents: number | null;
+  executedActionsUnitBrlCents: number | null;
+}
+
 export interface BillingPlanCatalogEntry {
   key: BillingPlanKey;
   label: string;
@@ -65,6 +70,7 @@ export interface BillingPlanCatalogEntry {
   selfServeCheckout: boolean;
   limits: BillingPlanLimits;
   features: BillingPlanFeatures;
+  overage: BillingOveragePricing;
 }
 
 export const PLAN_CATALOG: Record<BillingPlanKey, BillingPlanCatalogEntry> = {
@@ -91,6 +97,10 @@ export const PLAN_CATALOG: Record<BillingPlanKey, BillingPlanCatalogEntry> = {
       approvalsMode: 'basic',
       advancedFeatures: 'standard',
     },
+    overage: {
+      intentsUnitBrlCents: 5,
+      executedActionsUnitBrlCents: 250,
+    },
   },
   pro: {
     key: 'pro',
@@ -114,6 +124,10 @@ export const PLAN_CATALOG: Record<BillingPlanKey, BillingPlanCatalogEntry> = {
       advancedPolicies: true,
       approvalsMode: 'advanced',
       advancedFeatures: 'standard',
+    },
+    overage: {
+      intentsUnitBrlCents: 4,
+      executedActionsUnitBrlCents: 200,
     },
   },
   business: {
@@ -139,6 +153,10 @@ export const PLAN_CATALOG: Record<BillingPlanKey, BillingPlanCatalogEntry> = {
       approvalsMode: 'advanced',
       advancedFeatures: 'standard',
     },
+    overage: {
+      intentsUnitBrlCents: 3,
+      executedActionsUnitBrlCents: 150,
+    },
   },
   enterprise: {
     key: 'enterprise',
@@ -162,6 +180,10 @@ export const PLAN_CATALOG: Record<BillingPlanKey, BillingPlanCatalogEntry> = {
       advancedPolicies: true,
       approvalsMode: 'custom',
       advancedFeatures: 'custom',
+    },
+    overage: {
+      intentsUnitBrlCents: null,
+      executedActionsUnitBrlCents: null,
     },
   },
 } as const;
@@ -234,6 +256,8 @@ export interface UsageMetricResponse {
   warningThreshold: number;
   status: UsageMetricStatus;
   hardLimit: boolean;
+  overageAllowed: boolean;
+  overageUnits: number;
   resetsAt?: string | null;
 }
 
@@ -242,12 +266,56 @@ export interface EntitlementSnapshotResponse {
   effectivePlanKey?: BillingPlanKey | null;
   readOnlyMode: boolean;
   selfServeCheckout: boolean;
+  automaticOverageBilling: boolean;
   supportTier: SupportTier;
   advancedPolicies: boolean;
   approvalsMode: ApprovalsMode | 'custom';
   limits: BillingPlanLimits;
+  taxRateBps: number;
   warnings: string[];
   blocks: string[];
+}
+
+export interface BillingProrationPreviewResponse {
+  sourcePlanKey: BillingPlanKey | null;
+  sourceBillingCycle: BillingCycle | null;
+  targetPlanKey: SelfServeBillingPlanKey;
+  targetBillingCycle: BillingCycle;
+  remainingRatio: number;
+  creditBrlCents: number;
+  chargeBrlCents: number;
+  netBrlCents: number;
+}
+
+export interface BillingInvoiceLineItemResponse {
+  id: string;
+  type: 'overage' | 'proration_charge' | 'proration_credit';
+  metric: 'intents' | 'executed_actions' | null;
+  label: string;
+  quantity: number;
+  unitAmountBrlCents: number;
+  subtotalBrlCents: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BillingInvoiceResponse {
+  id: string;
+  status: 'open' | 'paid' | 'void';
+  currency: 'BRL';
+  subtotalBrlCents: number;
+  taxRateBps: number;
+  taxAmountBrlCents: number;
+  totalBrlCents: number;
+  paymentUrl: string | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  dueAt: string | null;
+  issuedAt: string | null;
+  paidAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lineItems: BillingInvoiceLineItemResponse[];
 }
 
 export interface BillingProviderStateResponse {
@@ -266,6 +334,7 @@ export interface BillingAccountResponse {
   usage: {
     metrics: UsageMetricResponse[];
   };
+  invoices: BillingInvoiceResponse[];
   provider: BillingProviderStateResponse;
 }
 
@@ -275,4 +344,5 @@ export interface BillingCheckoutResponse {
   billingCycle: BillingCycle;
   checkoutUrl: string;
   providerSubscriptionId: string;
+  proration: BillingProrationPreviewResponse | null;
 }
