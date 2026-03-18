@@ -148,12 +148,28 @@ runFlow().catch((error) => {
 - Poll intent status or audit history instead of guessing whether execution finished.
 - Use receipts and audit events as the proof surfaces for downstream systems.
 
-## What VowGrid Does Not Yet Ship As A Package
+## TypeScript SDK
 
-There is not yet a dedicated published SDK package.
+VowGrid now ships a workspace package at `packages/sdk` with a typed `VowGridClient`.
 
-For this release, the expected integration surface is:
+Minimal example:
 
-- raw HTTP
-- shared API contracts inside the monorepo
-- examples in this guide and `docs/backend/API_OVERVIEW.md`
+```ts
+import { VowGridClient } from '@vowgrid/sdk';
+
+const client = new VowGridClient({
+  baseUrl: process.env.VOWGRID_BASE_URL ?? 'http://localhost:4000',
+  apiKey: process.env.VOWGRID_API_KEY!,
+});
+
+const plans = await client.listBillingPlans();
+const intents = await client.listIntents({ pageSize: 5 });
+
+console.log(plans.length, intents.length);
+```
+
+The SDK is repository-local for now. It is not published to npm yet, so external projects should either:
+
+- vendor the package from this monorepo
+- use raw HTTP against `/v1`
+- generate their own client from the shared contracts

@@ -1,0 +1,149 @@
+name: vowgrid-bluegreen
+
+services:
+  caddy:
+    image: caddy:2.9-alpine
+    container_name: vowgrid-caddy
+    restart: unless-stopped
+    depends_on:
+      api-blue:
+        condition: service_healthy
+      web-blue:
+        condition: service_healthy
+      api-green:
+        condition: service_healthy
+      web-green:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      VOWGRID_PRIMARY_DOMAIN: ${VOWGRID_PRIMARY_DOMAIN}
+      VOWGRID_ACTIVE_SLOT: ${VOWGRID_ACTIVE_SLOT:-blue}
+    volumes:
+      - ./Caddyfile.bluegreen:/etc/caddy/Caddyfile:ro
+      - vowgrid_caddy_data:/data
+      - vowgrid_caddy_config:/config
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: vowgrid-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${VOWGRID_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${VOWGRID_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${VOWGRID_POSTGRES_DB}
+    volumes:
+      - vowgrid_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${VOWGRID_POSTGRES_USER} -d ${VOWGRID_POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: vowgrid-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - vowgrid_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api-blue:
+    image: ${VOWGRID_API_IMAGE}
+    container_name: vowgrid-api-blue
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ${VOWGRID_API_ENV_FILE:-./api.env.example}
+    environment:
+      DATABASE_URL: postgresql://${VOWGRID_POSTGRES_USER}:${VOWGRID_POSTGRES_PASSWORD}@postgres:5432/${VOWGRID_POSTGRES_DB}?schema=public
+      REDIS_URL: redis://redis:6379
+      APP_WEB_BASE_URL: ${VOWGRID_WEB_BASE_URL}
+      MERCADO_PAGO_RETURN_URL: ${VOWGRID_WEB_BASE_URL}/app/billing
+    expose:
+      - "4000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/v1/health >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  api-green:
+    image: ${VOWGRID_API_IMAGE}
+    container_name: vowgrid-api-green
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ${VOWGRID_API_ENV_FILE:-./api.env.example}
+    environment:
+      DATABASE_URL: postgresql://${VOWGRID_POSTGRES_USER}:${VOWGRID_POSTGRES_PASSWORD}@postgres:5432/${VOWGRID_POSTGRES_DB}?schema=public
+      REDIS_URL: redis://redis:6379
+      APP_WEB_BASE_URL: ${VOWGRID_WEB_BASE_URL}
+      MERCADO_PAGO_RETURN_URL: ${VOWGRID_WEB_BASE_URL}/app/billing
+    expose:
+      - "4000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/v1/health >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  web-blue:
+    image: ${VOWGRID_WEB_IMAGE}
+    container_name: vowgrid-web-blue
+    restart: unless-stopped
+    depends_on:
+      api-blue:
+        condition: service_healthy
+    env_file:
+      - ${VOWGRID_WEB_ENV_FILE:-./web.env.example}
+    environment:
+      VOWGRID_API_BASE_URL: http://api-blue:4000
+      VOWGRID_WEB_BASE_URL: ${VOWGRID_WEB_BASE_URL}
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000 >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  web-green:
+    image: ${VOWGRID_WEB_IMAGE}
+    container_name: vowgrid-web-green
+    restart: unless-stopped
+    depends_on:
+      api-green:
+        condition: service_healthy
+    env_file:
+      - ${VOWGRID_WEB_ENV_FILE:-./web.env.example}
+    environment:
+      VOWGRID_API_BASE_URL: http://api-green:4000
+      VOWGRID_WEB_BASE_URL: ${VOWGRID_WEB_BASE_URL}
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000 >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  vowgrid_caddy_data:
+  vowgrid_caddy_config:
+  vowgrid_postgres_data:
+  vowgrid_redis_data:

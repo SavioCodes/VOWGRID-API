@@ -75,8 +75,19 @@ For repository-side validation, the compose file falls back to the committed pro
 4. The workflow starts Postgres and Redis, runs Prisma migrations in the release API image, then reconciles the full stack.
 5. The workflow verifies the API and web containers locally on the host.
 
+## Blue/Green Option
+
+The repository now also ships a single-host blue/green path:
+
+- `infra/docker-compose.bluegreen.yml`
+- `infra/Caddyfile.bluegreen`
+- `.github/workflows/deploy-production-bluegreen.yml`
+
+This keeps the same single-VPS philosophy while allowing slot-based cutovers between `blue` and
+`green` services on the same host.
+
 ## Intentional Limits
 
 - This is not a multi-node production platform yet.
 - Secrets are still host-managed rather than coming from a dedicated secrets manager.
-- Blue/green deploys, managed databases, and hosted observability vendors remain future upgrades.
+- Managed databases, fully hosted observability vendors, and multi-region rollout remain future upgrades.

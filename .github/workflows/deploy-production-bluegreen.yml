@@ -1,0 +1,100 @@
+name: Deploy Production Blue Green
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_slot:
+        description: "Blue or green slot to deploy"
+        required: true
+        default: "green"
+        type: choice
+        options:
+          - blue
+          - green
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image tags
+        run: |
+          echo "API_IMAGE=ghcr.io/${{ github.repository_owner }}/vowgrid-api-api:production-${{ github.sha }}" >> $GITHUB_ENV
+          echo "WEB_IMAGE=ghcr.io/${{ github.repository_owner }}/vowgrid-api-web:production-${{ github.sha }}" >> $GITHUB_ENV
+          echo "TARGET_SLOT=${{ github.event.inputs.target_slot }}" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./apps/api/Dockerfile
+          push: true
+          tags: ${{ env.API_IMAGE }}
+
+      - name: Build and push Web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./apps/web/Dockerfile
+          push: true
+          tags: ${{ env.WEB_IMAGE }}
+
+      - name: Configure SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PRODUCTION_DEPLOY_SSH_KEY }}
+
+      - name: Copy blue green assets
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_DEPLOY_USER }}@${{ secrets.PRODUCTION_DEPLOY_HOST }} "mkdir -p '${{ secrets.PRODUCTION_DEPLOY_PATH }}/infra'"
+          scp -o StrictHostKeyChecking=no infra/docker-compose.bluegreen.yml infra/Caddyfile.bluegreen infra/.env.bluegreen.example infra/api.env.example infra/web.env.example ${{ secrets.PRODUCTION_DEPLOY_USER }}@${{ secrets.PRODUCTION_DEPLOY_HOST }}:${{ secrets.PRODUCTION_DEPLOY_PATH }}/infra/
+
+      - name: Deploy selected slot and switch traffic
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_DEPLOY_USER }}@${{ secrets.PRODUCTION_DEPLOY_HOST }} "
+            set -eu && \
+            cd '${{ secrets.PRODUCTION_DEPLOY_PATH }}' && \
+            test -f infra/.env.bluegreen && \
+            test -f infra/api.env && \
+            test -f infra/web.env && \
+            export VOWGRID_API_IMAGE='${{ env.API_IMAGE }}' && \
+            export VOWGRID_WEB_IMAGE='${{ env.WEB_IMAGE }}' && \
+            export TARGET_SLOT='${{ env.TARGET_SLOT }}' && \
+            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml pull && \
+            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml up -d postgres redis api-$TARGET_SLOT web-$TARGET_SLOT && \
+            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml run --rm api-$TARGET_SLOT pnpm migrate && \
+            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml exec -T api-$TARGET_SLOT wget -qO- http://127.0.0.1:4000/v1/health >/dev/null && \
+            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml exec -T web-$TARGET_SLOT wget -qO- http://127.0.0.1:3000 >/dev/null && \
+            python - <<'PY'
+from pathlib import Path
+path = Path('infra/.env.bluegreen')
+lines = path.read_text().splitlines()
+target = '${{ env.TARGET_SLOT }}'
+updated = []
+found = False
+for line in lines:
+    if line.startswith('VOWGRID_ACTIVE_SLOT='):
+        updated.append(f'VOWGRID_ACTIVE_SLOT={target}')
+        found = True
+    else:
+        updated.append(line)
+if not found:
+    updated.append(f'VOWGRID_ACTIVE_SLOT={target}')
+path.write_text('\n'.join(updated) + '\n')
+PY
+            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml up -d caddy
+          "

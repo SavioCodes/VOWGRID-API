@@ -1,0 +1,19 @@
+{$VOWGRID_PRIMARY_DOMAIN} {
+  encode zstd gzip
+
+  @api path /v1/*
+  handle @api {
+    reverse_proxy api-{$VOWGRID_ACTIVE_SLOT}:4000
+  }
+
+  handle {
+    reverse_proxy web-{$VOWGRID_ACTIVE_SLOT}:3000
+  }
+
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "strict-origin-when-cross-origin"
+  }
+}
