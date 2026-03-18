@@ -83,22 +83,6 @@ resource "aws_security_group" "app" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
-    description = "VowGrid API"
-    from_port   = 4000
-    to_port     = 4000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "VowGrid Web"
-    from_port   = 3000
-    to_port     = 3000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   egress {
     from_port   = 0
     to_port     = 0
@@ -129,7 +113,7 @@ resource "aws_instance" "app" {
       tee /etc/apt/sources.list.d/docker.list > /dev/null
     apt-get update
     apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-    mkdir -p /opt/${var.project_name}
+    mkdir -p /opt/${var.project_name}/infra
   EOF
 
   tags = {

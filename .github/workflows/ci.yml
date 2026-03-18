@@ -40,6 +40,9 @@ jobs:
       - name: Render observability compose config
         run: pnpm docker:obs:config
 
+      - name: Render release compose config
+        run: pnpm docker:release:config
+
       - name: Apply migrations
         run: pnpm migrate
 

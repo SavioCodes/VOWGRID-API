@@ -10,6 +10,8 @@ Use this naming pattern consistently:
 - `apps/web/.env.production.example`
 - `infra/.env.development.example`
 - `infra/.env.production.example`
+- `infra/api.env.example`
+- `infra/web.env.example`
 
 Local working files should remain:
 
@@ -17,12 +19,19 @@ Local working files should remain:
 - `apps/web/.env.local`
 - `infra/.env`
 
+Remote release hosts should keep these ignored runtime files under `infra/`:
+
+- `infra/.env`
+- `infra/api.env`
+- `infra/web.env`
+
 ## Principles
 
 - Example files are committed and documented.
 - Real secrets never enter the repository.
 - Development and production examples stay structurally aligned.
 - The web app only exposes values that truly need to be public via `NEXT_PUBLIC_*`.
+- Launch-stage production uses one VPS with Docker Compose and keeps deploy-time env files colocated under `infra/`.
 
 ## Current important variables
 
@@ -56,3 +65,7 @@ Local working files should remain:
 - Prometheus, Alertmanager, and Grafana port overrides
 - Grafana admin credentials for the self-hosted observability stack
 - release image tags and `VOWGRID_WEB_BASE_URL` for release compose
+- `VOWGRID_PRIMARY_DOMAIN`
+- `VOWGRID_API_ENV_FILE`
+- `VOWGRID_WEB_ENV_FILE`
+- optional `COMPOSE_PROFILES=observability`

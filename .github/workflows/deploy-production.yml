@@ -52,18 +52,25 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.PRODUCTION_DEPLOY_SSH_KEY }}
 
-      - name: Copy release compose file
+      - name: Copy release assets
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_DEPLOY_USER }}@${{ secrets.PRODUCTION_DEPLOY_HOST }} "mkdir -p '${{ secrets.PRODUCTION_DEPLOY_PATH }}/infra'"
-          scp -o StrictHostKeyChecking=no infra/docker-compose.release.yml ${{ secrets.PRODUCTION_DEPLOY_USER }}@${{ secrets.PRODUCTION_DEPLOY_HOST }}:${{ secrets.PRODUCTION_DEPLOY_PATH }}/infra/docker-compose.release.yml
+          scp -o StrictHostKeyChecking=no -r infra/docker-compose.release.yml infra/Caddyfile infra/.env.production.example infra/api.env.example infra/web.env.example infra/observability ${{ secrets.PRODUCTION_DEPLOY_USER }}@${{ secrets.PRODUCTION_DEPLOY_HOST }}:${{ secrets.PRODUCTION_DEPLOY_PATH }}/infra/
 
       - name: Deploy production stack
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_DEPLOY_USER }}@${{ secrets.PRODUCTION_DEPLOY_HOST }} "
+            set -eu && \
             cd '${{ secrets.PRODUCTION_DEPLOY_PATH }}' && \
+            test -f infra/.env && \
+            test -f infra/api.env && \
+            test -f infra/web.env && \
             export VOWGRID_API_IMAGE='${{ env.API_IMAGE }}' && \
             export VOWGRID_WEB_IMAGE='${{ env.WEB_IMAGE }}' && \
-            export VOWGRID_WEB_BASE_URL='${{ secrets.PRODUCTION_WEB_BASE_URL }}' && \
-            docker compose -f infra/docker-compose.release.yml pull && \
-            docker compose -f infra/docker-compose.release.yml up -d --remove-orphans
+            docker compose --env-file infra/.env -f infra/docker-compose.release.yml pull && \
+            docker compose --env-file infra/.env -f infra/docker-compose.release.yml up -d postgres redis && \
+            docker compose --env-file infra/.env -f infra/docker-compose.release.yml run --rm api pnpm migrate && \
+            docker compose --env-file infra/.env -f infra/docker-compose.release.yml up -d --remove-orphans && \
+            docker compose --env-file infra/.env -f infra/docker-compose.release.yml exec -T api wget -qO- http://127.0.0.1:4000/v1/health >/dev/null && \
+            docker compose --env-file infra/.env -f infra/docker-compose.release.yml exec -T web wget -qO- http://127.0.0.1:3000 >/dev/null
           "

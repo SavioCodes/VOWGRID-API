@@ -56,6 +56,8 @@ docker compose --env-file infra/.env.production.example \
   config
 ```
 
+In the chosen production topology, the observability services bind to `127.0.0.1` on the host. They are meant to be reached through SSH tunneling, a private VPN, or a separate hardened ingress path rather than public internet exposure.
+
 ## What Still Requires Environment Setup
 
 - Grafana admin credentials should be changed outside local development.

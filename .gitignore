@@ -20,6 +20,8 @@ apps/*/.env.*.local
 infra/.env
 infra/.env.local
 infra/.env.*.local
+infra/api.env
+infra/web.env
 !.env.example
 !apps/*/.env.example
 !infra/.env.example
