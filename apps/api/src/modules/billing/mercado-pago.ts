@@ -93,15 +93,21 @@ export function getMercadoPagoProviderState(): BillingProviderStateResponse {
   }
 
   if (!env.MERCADO_PAGO_WEBHOOK_SECRET) {
-    manualSetupRequired.push('Configure MERCADO_PAGO_WEBHOOK_SECRET after enabling webhook signatures.');
+    manualSetupRequired.push(
+      'Configure MERCADO_PAGO_WEBHOOK_SECRET after enabling webhook signatures.',
+    );
   }
 
   if (!env.MERCADO_PAGO_WEBHOOK_URL) {
-    manualSetupRequired.push('Set MERCADO_PAGO_WEBHOOK_URL to your public /v1/billing/webhooks/mercado-pago endpoint.');
+    manualSetupRequired.push(
+      'Set MERCADO_PAGO_WEBHOOK_URL to your public /v1/billing/webhooks/mercado-pago endpoint.',
+    );
   }
 
   if (!env.MERCADO_PAGO_RETURN_URL) {
-    manualSetupRequired.push('Set MERCADO_PAGO_RETURN_URL so Mercado Pago can return users to the VowGrid billing surface.');
+    manualSetupRequired.push(
+      'Set MERCADO_PAGO_RETURN_URL so Mercado Pago can return users to the VowGrid billing surface.',
+    );
   }
 
   return {

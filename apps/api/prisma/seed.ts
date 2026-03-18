@@ -1,6 +1,6 @@
-import { createHash } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import { BILLING_TRIAL_DAYS } from '@vowgrid/contracts';
+import { buildApiKeyPrefix, hashApiKey } from '../src/common/api-keys.js';
 import { hashPassword } from '../src/modules/auth/security.js';
 
 const prisma = new PrismaClient();
@@ -17,23 +17,20 @@ const seedIds = {
 const localApiKey = 'vowgrid_local_dev_key';
 const localDashboardPassword = 'vowgrid_local_password';
 
-function hashApiKey(key: string, salt: string) {
-  return createHash('sha256').update(`${salt}:${key}`).digest('hex');
-}
-
 function addDays(date: Date, days: number) {
   return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
 }
 
 function getCurrentMonthlyWindow(now = new Date()) {
   const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
-  return { start, end: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0)) };
+  return {
+    start,
+    end: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0)),
+  };
 }
 
 async function main() {
-  const salt = process.env.API_KEY_SALT;
-
-  if (!salt) {
+  if (!process.env.API_KEY_SALT) {
     throw new Error('API_KEY_SALT is required to seed a local API key.');
   }
 
@@ -184,13 +181,13 @@ async function main() {
     },
   });
 
-  const keyHash = hashApiKey(localApiKey, salt);
+  const keyHash = hashApiKey(localApiKey);
 
   await prisma.apiKey.upsert({
     where: { keyHash },
     update: {
       name: 'Local Development Key',
-      keyPrefix: localApiKey.slice(0, 8),
+      keyPrefix: buildApiKeyPrefix(localApiKey),
       workspaceId: seedIds.workspaceId,
       scopes: ['*'],
       revokedAt: null,
@@ -198,7 +195,7 @@ async function main() {
     create: {
       name: 'Local Development Key',
       keyHash,
-      keyPrefix: localApiKey.slice(0, 8),
+      keyPrefix: buildApiKeyPrefix(localApiKey),
       workspaceId: seedIds.workspaceId,
       scopes: ['*'],
     },

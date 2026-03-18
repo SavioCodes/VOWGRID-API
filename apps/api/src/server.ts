@@ -8,10 +8,12 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
+import { pathToFileURL } from 'node:url';
 import { AppError } from './common/errors.js';
 import { error as errorResponse } from './common/response.js';
 import { env } from './config/env.js';
 import { startExecutionWorker } from './jobs/execution.worker.js';
+import { startRollbackWorker } from './jobs/rollback.worker.js';
 import { logger } from './lib/logger.js';
 import { prisma, disconnectPrisma } from './lib/prisma.js';
 import { disconnectRedis } from './lib/redis.js';
@@ -28,6 +30,7 @@ import { intentRoutes } from './modules/intents/routes.js';
 import { policyRoutes } from './modules/policies/routes.js';
 import { receiptRoutes } from './modules/receipts/routes.js';
 import { simulationRoutes } from './modules/simulations/routes.js';
+import { workspaceAdminRoutes } from './modules/workspace-admin/routes.js';
 import authPlugin from './plugins/auth.plugin.js';
 
 export async function buildServer() {
@@ -157,11 +160,12 @@ export async function buildServer() {
   await app.register(receiptRoutes, { prefix: '/v1' });
   await app.register(auditRoutes, { prefix: '/v1' });
   await app.register(billingRoutes, { prefix: '/v1' });
+  await app.register(workspaceAdminRoutes, { prefix: '/v1' });
 
   return app;
 }
 
-async function start() {
+export async function startServer() {
   try {
     connectorRegistry.register('mock', new MockConnector());
 
@@ -171,6 +175,7 @@ async function start() {
     logger.info('Database connected');
 
     startExecutionWorker();
+    startRollbackWorker();
 
     await app.listen({ port: env.PORT, host: env.HOST });
     logger.info(`VowGrid API running at http://${env.HOST}:${env.PORT}`);
@@ -192,4 +197,9 @@ async function start() {
   }
 }
 
-start();
+const entrypoint = process.argv[1];
+const isDirectRun = entrypoint ? import.meta.url === pathToFileURL(entrypoint).href : false;
+
+if (isDirectRun) {
+  startServer();
+}

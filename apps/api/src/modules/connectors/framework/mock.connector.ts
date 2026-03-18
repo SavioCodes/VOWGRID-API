@@ -16,7 +16,10 @@ export class MockConnector implements IConnector {
   readonly type = 'mock';
   readonly rollbackSupport: RollbackSupport = 'supported';
 
-  async validate(action: string, _parameters: Record<string, unknown>): Promise<ConnectorValidateResult> {
+  async validate(
+    action: string,
+    _parameters: Record<string, unknown>,
+  ): Promise<ConnectorValidateResult> {
     const errors: string[] = [];
 
     if (!action) {
@@ -30,7 +33,10 @@ export class MockConnector implements IConnector {
     return { valid: errors.length === 0, errors: errors.length > 0 ? errors : undefined };
   }
 
-  async simulate(action: string, _parameters: Record<string, unknown>): Promise<ConnectorSimulateResult> {
+  async simulate(
+    action: string,
+    _parameters: Record<string, unknown>,
+  ): Promise<ConnectorSimulateResult> {
     // Simulate realistic delay
     await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -39,9 +45,7 @@ export class MockConnector implements IConnector {
       estimatedImpact: 'low',
       riskLevel: 'low',
       reversibility: 'full',
-      affectedResources: [
-        { type: 'mock_resource', id: 'mock-001', name: 'Mock Resource' },
-      ],
+      affectedResources: [{ type: 'mock_resource', id: 'mock-001', name: 'Mock Resource' }],
       diffPreview: {
         before: { status: 'current' },
         after: { status: 'updated', action },
@@ -50,7 +54,10 @@ export class MockConnector implements IConnector {
     };
   }
 
-  async execute(action: string, parameters: Record<string, unknown>): Promise<ConnectorExecuteResult> {
+  async execute(
+    action: string,
+    parameters: Record<string, unknown>,
+  ): Promise<ConnectorExecuteResult> {
     const start = Date.now();
 
     // Simulate execution time

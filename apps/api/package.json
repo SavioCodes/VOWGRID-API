@@ -13,6 +13,8 @@
     "lint": "pnpm run typecheck",
     "test": "vitest run",
     "test:unit": "vitest run src/modules/*/__tests__/*.test.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "migrate": "prisma migrate dev",
     "migrate:reset": "prisma migrate reset --force",

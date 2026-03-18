@@ -246,7 +246,6 @@ model Intent {
   executionJob     ExecutionJob?
   receipts         Receipt[]
   rollbackAttempts RollbackAttempt[]
-  auditEvents      AuditEvent[]
 
   @@index([workspaceId])
   @@index([status])
@@ -418,7 +417,6 @@ model AuditEvent {
   createdAt   DateTime @default(now()) @map("created_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  intent    Intent?   @relation(fields: [entityId], references: [id], onDelete: NoAction)
 
   @@index([workspaceId])
   @@index([entityType, entityId])

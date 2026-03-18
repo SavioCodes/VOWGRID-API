@@ -66,7 +66,11 @@ export async function incrementMonthlyUsageCounter(
     limitReachedAt?: Date;
   } = {};
 
-  if (limit !== null && counter.count >= Math.ceil(limit * DEFAULT_WARNING_RATIO) && !counter.warningTriggeredAt) {
+  if (
+    limit !== null &&
+    counter.count >= Math.ceil(limit * DEFAULT_WARNING_RATIO) &&
+    !counter.warningTriggeredAt
+  ) {
     nextData.warningTriggeredAt = now;
   }
 
@@ -103,7 +107,10 @@ export async function getCurrentUsageMetrics(
 
   const { end } = getCurrentMonthlyWindow();
 
-  const snapshots: Record<UsageMetricKey, { used: number; limit: number | null; resetsAt?: string | null }> = {
+  const snapshots: Record<
+    UsageMetricKey,
+    { used: number; limit: number | null; resetsAt?: string | null }
+  > = {
     workspaces: { used: 1, limit: limits.workspaces, resetsAt: null },
     internal_users: { used: usersCount, limit: limits.internalUsers, resetsAt: null },
     active_connectors: { used: connectorsCount, limit: limits.activeConnectors, resetsAt: null },
@@ -123,7 +130,8 @@ export async function getCurrentUsageMetrics(
     const meta = USAGE_METRIC_META[key];
     const snapshot = snapshots[key];
     const remaining = snapshot.limit === null ? null : Math.max(snapshot.limit - snapshot.used, 0);
-    const ratio = snapshot.limit === null || snapshot.limit === 0 ? 0 : snapshot.used / snapshot.limit;
+    const ratio =
+      snapshot.limit === null || snapshot.limit === 0 ? 0 : snapshot.used / snapshot.limit;
     const status =
       snapshot.limit !== null && snapshot.used >= snapshot.limit
         ? 'blocked'

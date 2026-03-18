@@ -37,7 +37,8 @@ export async function executionRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ['Executions'],
       summary: 'Request rollback for an executed intent',
-      description: 'Creates a rollback attempt. Intent must be in succeeded or rollback_failed state.',
+      description:
+        'Creates a rollback attempt. Intent must be in succeeded or rollback_failed state.',
     },
     preHandler: [app.authenticate],
     handler: async (request, reply) => {

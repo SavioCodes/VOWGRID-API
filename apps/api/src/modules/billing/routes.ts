@@ -15,7 +15,8 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ['Billing'],
       summary: 'List billing plans',
-      description: 'Returns the internal VowGrid launch plan catalog used by the site and dashboard.',
+      description:
+        'Returns the internal VowGrid launch plan catalog used by the site and dashboard.',
     },
     handler: async (_request, reply) => {
       const plans = await listBillingPlans();
@@ -27,7 +28,8 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ['Billing'],
       summary: 'Get workspace billing account',
-      description: 'Returns subscription, trial, entitlements, usage, and provider setup state for the authenticated workspace.',
+      description:
+        'Returns subscription, trial, entitlements, usage, and provider setup state for the authenticated workspace.',
     },
     preHandler: [app.authenticate],
     handler: async (request, reply) => {
@@ -58,7 +60,8 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ['Billing'],
       summary: 'Cancel a workspace subscription',
-      description: 'Cancels immediately or marks the subscription to end at the current period boundary.',
+      description:
+        'Cancels immediately or marks the subscription to end at the current period boundary.',
     },
     preHandler: [app.authenticate],
     handler: async (request, reply) => {
@@ -76,7 +79,8 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ['Billing'],
       summary: 'Mercado Pago webhook',
-      description: 'Receives subscription events from Mercado Pago and syncs internal subscription state.',
+      description:
+        'Receives subscription events from Mercado Pago and syncs internal subscription state.',
       security: [],
     },
     handler: async (request, reply) => {

@@ -21,10 +21,19 @@ describe('Intent State Machine', () => {
 
     it('should include all expected states', () => {
       const expected = [
-        'draft', 'proposed', 'simulated', 'pending_approval',
-        'approved', 'rejected', 'queued', 'executing',
-        'succeeded', 'failed', 'rollback_pending',
-        'rolled_back', 'rollback_failed',
+        'draft',
+        'proposed',
+        'simulated',
+        'pending_approval',
+        'approved',
+        'rejected',
+        'queued',
+        'executing',
+        'succeeded',
+        'failed',
+        'rollback_pending',
+        'rolled_back',
+        'rollback_failed',
       ];
       expect(INTENT_STATES).toEqual(expected);
     });
@@ -59,17 +68,17 @@ describe('Intent State Machine', () => {
 
     // ── Invalid transitions ────────────
     const invalidTransitions: [IntentState, IntentState][] = [
-      ['draft', 'simulated'],       // must go through proposed
-      ['draft', 'approved'],        // can't skip ahead
-      ['draft', 'executing'],       // can't skip ahead
-      ['proposed', 'approved'],     // must simulate first
-      ['simulated', 'queued'],      // must go through approval
-      ['rejected', 'proposed'],     // terminal state
-      ['rejected', 'approved'],     // terminal state
-      ['rolled_back', 'draft'],     // terminal state
-      ['succeeded', 'queued'],      // can't re-execute directly
-      ['executing', 'queued'],      // can't go back to queued
-      ['queued', 'approved'],       // can't go backward
+      ['draft', 'simulated'], // must go through proposed
+      ['draft', 'approved'], // can't skip ahead
+      ['draft', 'executing'], // can't skip ahead
+      ['proposed', 'approved'], // must simulate first
+      ['simulated', 'queued'], // must go through approval
+      ['rejected', 'proposed'], // terminal state
+      ['rejected', 'approved'], // terminal state
+      ['rolled_back', 'draft'], // terminal state
+      ['succeeded', 'queued'], // can't re-execute directly
+      ['executing', 'queued'], // can't go back to queued
+      ['queued', 'approved'], // can't go backward
     ];
 
     it.each(invalidTransitions)('%s → %s should be invalid', (from, to) => {
@@ -139,8 +148,14 @@ describe('Intent State Machine', () => {
   describe('Full lifecycle path', () => {
     it('should support the happy path: draft → proposed → simulated → pending_approval → approved → queued → executing → succeeded', () => {
       const happyPath: IntentState[] = [
-        'draft', 'proposed', 'simulated', 'pending_approval',
-        'approved', 'queued', 'executing', 'succeeded',
+        'draft',
+        'proposed',
+        'simulated',
+        'pending_approval',
+        'approved',
+        'queued',
+        'executing',
+        'succeeded',
       ];
 
       for (let i = 0; i < happyPath.length - 1; i++) {

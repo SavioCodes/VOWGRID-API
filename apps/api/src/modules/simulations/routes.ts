@@ -12,7 +12,8 @@ export async function simulationRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ['Simulations'],
       summary: 'Simulate an intent',
-      description: 'Runs connector simulation and persists results. Intent must be in "proposed" state.',
+      description:
+        'Runs connector simulation and persists results. Intent must be in "proposed" state.',
     },
     preHandler: [app.authenticate],
     handler: async (request, reply) => {

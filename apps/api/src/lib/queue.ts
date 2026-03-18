@@ -15,3 +15,16 @@ export const executionQueue = new Queue('execution', {
     removeOnFail: { count: 5000 },
   },
 });
+
+export const rollbackQueue = new Queue('rollback', {
+  connection: bullmqConnection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: {
+      type: 'exponential',
+      delay: 1000,
+    },
+    removeOnComplete: { count: 1000 },
+    removeOnFail: { count: 5000 },
+  },
+});

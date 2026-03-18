@@ -2,6 +2,13 @@ export { INTENT_STATES, STATE_TRANSITIONS } from './intent-states.js';
 export type { IntentState } from './intent-states.js';
 export { loginSchema, signupSchema } from './auth.js';
 export {
+  WORKSPACE_API_KEY_STATUSES,
+  createWorkspaceApiKeySchema,
+  rotateWorkspaceApiKeySchema,
+  workspaceApiKeyExpirySchema,
+  workspaceApiKeyNameSchema,
+} from './workspace-admin.js';
+export {
   BILLING_PLAN_KEYS,
   SELF_SERVE_BILLING_PLAN_KEYS,
   BILLING_CYCLES,
@@ -40,6 +47,14 @@ export type {
   LogoutResponse,
   SignupInput,
 } from './auth.js';
+export type {
+  CreateWorkspaceApiKeyInput,
+  RevokeWorkspaceApiKeyResponse,
+  RotateWorkspaceApiKeyInput,
+  WorkspaceApiKeyResponse,
+  WorkspaceApiKeySecretResponse,
+  WorkspaceApiKeyStatus,
+} from './workspace-admin.js';
 export type {
   Environment,
   CreateIntentInput,

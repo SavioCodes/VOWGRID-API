@@ -37,9 +37,11 @@ function getDaysRemaining(endsAt?: Date | null) {
 
 function pickBillingContact(users: Array<{ email: string; role: string }>) {
   const rolePriority = ['owner', 'admin', 'member', 'viewer'];
-  return [...users].sort(
-    (left, right) => rolePriority.indexOf(left.role) - rolePriority.indexOf(right.role),
-  )[0] ?? null;
+  return (
+    [...users].sort(
+      (left, right) => rolePriority.indexOf(left.role) - rolePriority.indexOf(right.role),
+    )[0] ?? null
+  );
 }
 
 async function ensureBillingState(workspaceId: string) {
@@ -245,7 +247,9 @@ function resolveEntitlements({
     approvalsMode = plan.features.approvalsMode;
     readOnlyMode = true;
     selfServeCheckout = plan.selfServeCheckout;
-    blocks.push('The paid subscription is not currently active. Upgrade or reactivate billing to resume write actions.');
+    blocks.push(
+      'The paid subscription is not currently active. Upgrade or reactivate billing to resume write actions.',
+    );
   } else if (trial.isActive) {
     const plan = PLAN_CATALOG[DEFAULT_TRIAL_PLAN_KEY];
     source = 'trial';

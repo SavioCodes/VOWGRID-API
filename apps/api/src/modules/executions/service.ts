@@ -3,7 +3,7 @@
 // ──────────────────────────────────────────
 
 import { prisma } from '../../lib/prisma.js';
-import { executionQueue } from '../../lib/queue.js';
+import { executionQueue, rollbackQueue } from '../../lib/queue.js';
 import { NotFoundError, ValidationError, ConflictError } from '../../common/errors.js';
 import { transitionIntent } from '../intents/service.js';
 import { emitAuditEvent } from '../audits/service.js';
@@ -106,9 +106,7 @@ export async function requestRollback(
 
   // Check connector rollback support
   if (intent.connector && intent.connector.rollbackSupport === 'unsupported') {
-    throw new ValidationError(
-      `Connector "${intent.connector.name}" does not support rollback`,
-    );
+    throw new ValidationError(`Connector "${intent.connector.name}" does not support rollback`);
   }
 
   const rollbackAttempt = await prisma.rollbackAttempt.create({
@@ -130,6 +128,47 @@ export async function requestRollback(
     workspaceId,
     metadata: { rollbackAttemptId: rollbackAttempt.id, reason },
   });
+
+  try {
+    await rollbackQueue.add(
+      'rollback-intent',
+      {
+        intentId,
+        rollbackAttemptId: rollbackAttempt.id,
+        workspaceId,
+      },
+      {
+        jobId: rollbackAttempt.id,
+      },
+    );
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown rollback queue error';
+
+    await prisma.rollbackAttempt.update({
+      where: { id: rollbackAttempt.id },
+      data: {
+        status: 'failed',
+        completedAt: new Date(),
+        result: {
+          error: errorMessage,
+        },
+      },
+    });
+
+    await transitionIntent(intentId, workspaceId, 'rollback_failed', 'system', 'system');
+
+    await emitAuditEvent({
+      action: 'rollback.queue_failed',
+      entityType: 'intent',
+      entityId: intentId,
+      actorType: 'system',
+      actorId: 'system',
+      workspaceId,
+      metadata: { rollbackAttemptId: rollbackAttempt.id, error: errorMessage },
+    });
+
+    throw error;
+  }
 
   return rollbackAttempt;
 }

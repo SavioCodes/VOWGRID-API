@@ -4,9 +4,8 @@
 
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
-import { createHash } from 'node:crypto';
 import { UnauthorizedError } from '../common/errors.js';
-import { env } from '../config/env.js';
+import { hashApiKey } from '../common/api-keys.js';
 import { prisma } from '../lib/prisma.js';
 import { getSessionAuthenticationContext } from '../modules/auth/service.js';
 
@@ -24,10 +23,6 @@ declare module 'fastify' {
   interface FastifyRequest {
     auth: AuthContext;
   }
-}
-
-function hashApiKey(key: string): string {
-  return createHash('sha256').update(`${env.API_KEY_SALT}:${key}`).digest('hex');
 }
 
 function getBearerToken(request: FastifyRequest) {
@@ -98,7 +93,7 @@ async function authenticateSession(request: FastifyRequest): Promise<AuthContext
 }
 
 export function getActorId(auth: AuthContext) {
-  return auth.authType === 'session' ? auth.userId ?? 'system' : auth.apiKeyId ?? 'system';
+  return auth.authType === 'session' ? (auth.userId ?? 'system') : (auth.apiKeyId ?? 'system');
 }
 
 export function getActorType(auth: AuthContext): 'user' | 'agent' {
@@ -129,5 +124,3 @@ export default fp(authPlugin, {
   name: 'auth',
   fastify: '5.x',
 });
-
-export { hashApiKey };

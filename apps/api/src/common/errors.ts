@@ -60,11 +60,9 @@ export class BillingConfigurationError extends AppError {
 
 export class InvalidStateTransitionError extends AppError {
   constructor(from: string, to: string) {
-    super(
-      `Invalid state transition from "${from}" to "${to}"`,
-      422,
-      'INVALID_STATE_TRANSITION',
-      { from, to },
-    );
+    super(`Invalid state transition from "${from}" to "${to}"`, 422, 'INVALID_STATE_TRANSITION', {
+      from,
+      to,
+    });
   }
 }

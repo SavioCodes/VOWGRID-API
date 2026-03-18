@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { PLAN_CATALOG, TRIAL_EFFECTIVE_PLAN_KEY } from '@vowgrid/contracts';
-import { mapMercadoPagoStatus, buildMercadoPagoWebhookManifest, signMercadoPagoWebhookManifest } from '../mercado-pago.js';
+import {
+  mapMercadoPagoStatus,
+  buildMercadoPagoWebhookManifest,
+  signMercadoPagoWebhookManifest,
+} from '../mercado-pago.js';
 
 describe('Billing catalog', () => {
   it('keeps the launch pricing model aligned with launch monetization', () => {

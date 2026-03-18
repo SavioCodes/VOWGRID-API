@@ -14,7 +14,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     schema: {
       tags: ['Auth'],
       summary: 'Register a workspace owner',
-      description: 'Creates a workspace, owner account, initial trial state, and dashboard session.',
+      description:
+        'Creates a workspace, owner account, initial trial state, and dashboard session.',
       security: [],
     },
     handler: async (request, reply) => {

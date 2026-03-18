@@ -77,7 +77,9 @@ export async function listBillingPlans() {
   return Object.values(PLAN_CATALOG);
 }
 
-export async function getWorkspaceBillingAccount(workspaceId: string): Promise<BillingAccountResponse> {
+export async function getWorkspaceBillingAccount(
+  workspaceId: string,
+): Promise<BillingAccountResponse> {
   return getBillingAccount(workspaceId);
 }
 
@@ -127,7 +129,9 @@ export async function startWorkspaceCheckout(
       canceledAt: null,
       lastProviderSyncAt: new Date(),
       providerMetadata: checkout.providerPayload as unknown as Prisma.InputJsonValue,
-      ...(existingSubscription?.billingCustomerId ? {} : { billingCustomerId: account.customer.id }),
+      ...(existingSubscription?.billingCustomerId
+        ? {}
+        : { billingCustomerId: account.customer.id }),
     },
     create: {
       workspaceId,
@@ -200,7 +204,9 @@ export async function cancelWorkspaceSubscription(
   });
 
   await emitAuditEvent({
-    action: input.immediate ? 'billing.subscription.canceled' : 'billing.subscription.cancel_scheduled',
+    action: input.immediate
+      ? 'billing.subscription.canceled'
+      : 'billing.subscription.cancel_scheduled',
     entityType: 'workspace',
     entityId: workspaceId,
     actorType: 'system',
@@ -236,13 +242,11 @@ export async function processMercadoPagoWebhook({
   const eventKey = buildWebhookEventKey({ requestId, payload, resourceId });
   const eventType = `${payload.type ?? 'unknown'}.${payload.action ?? 'updated'}`;
 
-  let billingEvent:
-    | {
-        id: string;
-        workspaceId: string | null;
-        subscriptionId: string | null;
-      }
-    | null = null;
+  let billingEvent: {
+    id: string;
+    workspaceId: string | null;
+    subscriptionId: string | null;
+  } | null = null;
 
   try {
     billingEvent = await prisma.billingEvent.create({
@@ -355,9 +359,9 @@ export async function processMercadoPagoWebhook({
   const planKey = (existingSubscription?.planKey ?? parsedReference?.planKey ?? null) as
     | CreateCheckoutInput['planKey']
     | null;
-  const billingCycle = (existingSubscription?.billingCycle ?? parsedReference?.billingCycle ?? null) as
-    | CreateCheckoutInput['billingCycle']
-    | null;
+  const billingCycle = (existingSubscription?.billingCycle ??
+    parsedReference?.billingCycle ??
+    null) as CreateCheckoutInput['billingCycle'] | null;
 
   const subscription = await prisma.workspaceSubscription.upsert({
     where: { workspaceId },
@@ -369,17 +373,23 @@ export async function processMercadoPagoWebhook({
       status: providerSnapshot.status,
       mercadoPagoPreapprovalId: resourceId,
       checkoutUrl: providerSnapshot.raw.init_point ?? existingSubscription?.checkoutUrl ?? null,
-      externalReference: providerSnapshot.raw.external_reference ?? existingSubscription?.externalReference ?? null,
+      externalReference:
+        providerSnapshot.raw.external_reference ?? existingSubscription?.externalReference ?? null,
       currentPeriodEnd: providerSnapshot.raw.next_payment_date
         ? new Date(providerSnapshot.raw.next_payment_date)
-        : existingSubscription?.currentPeriodEnd ?? null,
+        : (existingSubscription?.currentPeriodEnd ?? null),
       startedAt:
         providerSnapshot.status === 'active'
-          ? existingSubscription?.startedAt ??
-            (providerSnapshot.raw.date_created ? new Date(providerSnapshot.raw.date_created) : new Date())
-          : existingSubscription?.startedAt ?? null,
+          ? (existingSubscription?.startedAt ??
+            (providerSnapshot.raw.date_created
+              ? new Date(providerSnapshot.raw.date_created)
+              : new Date()))
+          : (existingSubscription?.startedAt ?? null),
       canceledAt: providerSnapshot.status === 'canceled' ? new Date() : null,
-      cancelAtPeriodEnd: providerSnapshot.status === 'canceled' ? true : existingSubscription?.cancelAtPeriodEnd ?? false,
+      cancelAtPeriodEnd:
+        providerSnapshot.status === 'canceled'
+          ? true
+          : (existingSubscription?.cancelAtPeriodEnd ?? false),
       lastProviderSyncAt: new Date(),
       providerMetadata: providerSnapshot.raw as unknown as Prisma.InputJsonValue,
     },

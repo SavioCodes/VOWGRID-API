@@ -168,7 +168,10 @@ export async function processApprovalDecision(
       data: { status: 'rejected' },
     });
     await transitionIntent(approvalRequest.intentId, workspaceId, 'rejected', userId, 'user');
-    return { approvalRequest: { ...approvalRequest, status: 'rejected' }, decision: approvalDecision };
+    return {
+      approvalRequest: { ...approvalRequest, status: 'rejected' },
+      decision: approvalDecision,
+    };
   }
 
   // Count approvals
