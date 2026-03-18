@@ -37,6 +37,9 @@ jobs:
       - name: Start local infrastructure
         run: pnpm docker:up
 
+      - name: Render observability compose config
+        run: pnpm docker:obs:config
+
       - name: Apply migrations
         run: pnpm migrate
 
@@ -112,7 +115,7 @@ jobs:
       - name: Seed database
         run: pnpm seed
 
-      - name: Run E2E smoke suite
+      - name: Run E2E suite
         run: pnpm test:e2e
 
       - name: Upload Playwright report

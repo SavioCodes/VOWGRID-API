@@ -1,0 +1,68 @@
+services:
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: vowgrid-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./observability/prometheus/prometheus.local.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheusdata:/prometheus
+    ports:
+      - "${VOWGRID_PROMETHEUS_PORT:-9090}:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    labels:
+      com.vowgrid.project: vowgrid
+      com.vowgrid.stack: observability
+      com.vowgrid.service: prometheus
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: vowgrid-alertmanager
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    volumes:
+      - ./observability/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanagerdata:/alertmanager
+    ports:
+      - "${VOWGRID_ALERTMANAGER_PORT:-9093}:9093"
+    labels:
+      com.vowgrid.project: vowgrid
+      com.vowgrid.stack: observability
+      com.vowgrid.service: alertmanager
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    container_name: vowgrid-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${VOWGRID_GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${VOWGRID_GRAFANA_PASSWORD:-vowgrid_admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    depends_on:
+      prometheus:
+        condition: service_started
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafanadata:/var/lib/grafana
+    ports:
+      - "${VOWGRID_GRAFANA_PORT:-3001}:3000"
+    labels:
+      com.vowgrid.project: vowgrid
+      com.vowgrid.stack: observability
+      com.vowgrid.service: grafana
+
+volumes:
+  prometheusdata:
+    name: infra_prometheusdata
+  alertmanagerdata:
+    name: infra_alertmanagerdata
+  grafanadata:
+    name: infra_grafanadata

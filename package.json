@@ -29,7 +29,12 @@
     "docker:logs": "docker compose -f infra/docker-compose.yml logs --tail=200",
     "docker:status": "docker compose -f infra/docker-compose.yml ps",
     "docker:config": "docker compose -f infra/docker-compose.yml config",
-    "docker:reset": "docker compose -f infra/docker-compose.yml down --remove-orphans -v && docker compose -f infra/docker-compose.yml up -d"
+    "docker:reset": "docker compose -f infra/docker-compose.yml down --remove-orphans -v && docker compose -f infra/docker-compose.yml up -d",
+    "docker:obs:up": "docker compose -f infra/docker-compose.yml -f infra/docker-compose.observability.yml up -d --remove-orphans",
+    "docker:obs:down": "docker compose -f infra/docker-compose.yml -f infra/docker-compose.observability.yml down --remove-orphans",
+    "docker:obs:logs": "docker compose -f infra/docker-compose.yml -f infra/docker-compose.observability.yml logs --tail=200",
+    "docker:obs:status": "docker compose -f infra/docker-compose.yml -f infra/docker-compose.observability.yml ps",
+    "docker:obs:config": "docker compose -f infra/docker-compose.yml -f infra/docker-compose.observability.yml config"
   },
   "engines": {
     "node": ">=22.0.0",

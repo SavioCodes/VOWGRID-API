@@ -1,0 +1,56 @@
+groups:
+  - name: vowgrid-api
+    rules:
+      - alert: VowGridApiDown
+        expr: up{job="vowgrid-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: VowGrid API is unreachable
+          description: Prometheus cannot scrape /v1/metrics from the VowGrid API target.
+
+      - alert: VowGridHigh5xxRate
+        expr: |
+          (
+            sum(rate(vowgrid_http_requests_total{job="vowgrid-api",status_code=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(vowgrid_http_requests_total{job="vowgrid-api"}[5m])), 1)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Elevated VowGrid API 5xx rate
+          description: More than 5% of sampled VowGrid API traffic is failing with 5xx responses.
+
+      - alert: VowGridSlowP95Requests
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(vowgrid_http_request_duration_ms_bucket{job="vowgrid-api"}[5m]))
+          ) > 1000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Slow VowGrid API requests
+          description: The p95 request duration has stayed above 1000ms for at least 10 minutes.
+
+      - alert: VowGridExecutionFailures
+        expr: increase(vowgrid_execution_events_total{job="vowgrid-api",event="failed"}[15m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: Execution failures detected
+          description: At least one workflow execution failed in the last 15 minutes.
+
+      - alert: VowGridRollbackFailures
+        expr: increase(vowgrid_rollback_events_total{job="vowgrid-api",event="failed"}[15m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: Rollback failures detected
+          description: At least one workflow rollback failed in the last 15 minutes.
