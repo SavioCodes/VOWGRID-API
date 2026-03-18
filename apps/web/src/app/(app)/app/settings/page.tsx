@@ -1,4 +1,5 @@
 import { Badge, Card, CardContent } from '@vowgrid/ui';
+import Link from 'next/link';
 import { ApiKeyManager } from '@/components/settings/api-key-manager';
 import { InviteManager } from '@/components/settings/invite-manager';
 import { MemberManager } from '@/components/settings/member-manager';
@@ -114,6 +115,36 @@ export default async function SettingsPage() {
                 Mercado Pago remains isolated as the payment provider layer, with missing setup
                 called out explicitly instead of hidden behind fake success states.
               </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
+                Data controls
+              </p>
+              <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
+                Export and privacy
+              </h2>
+            </div>
+            <div className="space-y-3 text-sm leading-6 text-[var(--color-text-secondary)]">
+              <p>
+                Workspace owners and admins can export a JSON snapshot of the current workspace
+                state directly from this surface.
+              </p>
+              <p>
+                Disabled members can now be anonymized to redact personal identity while keeping
+                audit and execution history inspectable.
+              </p>
+              {isWorkspaceAdmin ? (
+                <Link
+                  href="/app/settings/export"
+                  className="inline-flex rounded-[16px] border border-[var(--color-border-strong)] px-4 py-2 font-medium text-[var(--color-text-primary)] transition hover:border-[var(--color-accent)]"
+                >
+                  Download workspace export
+                </Link>
+              ) : null}
             </div>
           </CardContent>
         </Card>

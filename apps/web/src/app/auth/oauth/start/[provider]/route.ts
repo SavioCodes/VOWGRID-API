@@ -25,7 +25,7 @@ export async function GET(
   }
 
   const state = createOauthState();
-  const authorizationUrl = buildOAuthAuthorizationUrl({
+  const authorizationUrl = await buildOAuthAuthorizationUrl({
     provider,
     state,
     origin: request.nextUrl.origin,

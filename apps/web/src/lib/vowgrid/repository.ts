@@ -1,4 +1,5 @@
 import type {
+  ApplyBillingCouponInput,
   AuditEventResponse,
   BillingAccountResponse,
   BillingCheckoutResponse,
@@ -15,11 +16,14 @@ import type {
   PolicyResponse,
   RevokeWorkspaceApiKeyResponse,
   ReceiptDetailResponse,
+  UpdateBillingCustomerInput,
   UpdateWorkspaceMemberInput,
+  WorkspaceExportResponse,
   WorkspaceApiKeyResponse,
   WorkspaceApiKeySecretResponse,
   WorkspaceInviteResponse,
   WorkspaceInviteSecretResponse,
+  AnonymizeWorkspaceMemberResponse,
   WorkspaceMemberMutationResponse,
   WorkspaceMemberResponse,
 } from '@vowgrid/contracts';
@@ -180,6 +184,29 @@ export async function cancelWorkspaceSubscription(input: CancelSubscriptionInput
   });
 }
 
+export async function updateBillingCustomerProfile(input: UpdateBillingCustomerInput) {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<BillingAccountResponse>('/v1/billing/customer', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function applyBillingCoupon(input: ApplyBillingCouponInput) {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<BillingAccountResponse>('/v1/billing/coupon', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function clearBillingCoupon() {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<BillingAccountResponse>('/v1/billing/coupon', {
+    method: 'DELETE',
+  });
+}
+
 export async function listWorkspaceApiKeys() {
   await requireCurrentSession();
   return fetchSessionEnvelope<WorkspaceApiKeyResponse[]>('/v1/workspace/api-keys');
@@ -228,6 +255,17 @@ export async function enableWorkspaceMember(userId: string) {
   );
 }
 
+export async function anonymizeWorkspaceMember(userId: string) {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<AnonymizeWorkspaceMemberResponse>(
+    `/v1/workspace/members/${userId}/anonymize`,
+    {
+      method: 'POST',
+      body: JSON.stringify({}),
+    },
+  );
+}
+
 export async function createWorkspaceApiKey(input: CreateWorkspaceApiKeyInput) {
   await requireCurrentSession();
   return fetchSessionEnvelope<WorkspaceApiKeySecretResponse>('/v1/workspace/api-keys', {
@@ -258,6 +296,11 @@ export async function revokeWorkspaceInvite(inviteId: string) {
       body: JSON.stringify({}),
     },
   );
+}
+
+export async function exportWorkspaceData() {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<WorkspaceExportResponse>('/v1/workspace/export');
 }
 
 export async function rotateWorkspaceApiKey(apiKeyId: string) {

@@ -18,6 +18,12 @@ type OauthStateCookie = {
 export const OAUTH_STATE_COOKIE = 'vowgrid_oauth_state';
 export const OAUTH_PENDING_COOKIE = 'vowgrid_oauth_pending';
 
+interface OidcDiscoveryDocument {
+  authorization_endpoint: string;
+  token_endpoint: string;
+  userinfo_endpoint?: string;
+}
+
 function isProduction() {
   return process.env.NODE_ENV === 'production';
 }
@@ -30,22 +36,35 @@ function getProviderEnv(provider: OAuthProvider) {
     };
   }
 
+  if (provider === 'google') {
+    return {
+      clientId: process.env.GOOGLE_OAUTH_CLIENT_ID?.trim() ?? '',
+      clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET?.trim() ?? '',
+    };
+  }
+
   return {
-    clientId: process.env.GOOGLE_OAUTH_CLIENT_ID?.trim() ?? '',
-    clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET?.trim() ?? '',
+    clientId: process.env.OIDC_OAUTH_CLIENT_ID?.trim() ?? '',
+    clientSecret: process.env.OIDC_OAUTH_CLIENT_SECRET?.trim() ?? '',
+    issuer: process.env.OIDC_OAUTH_ISSUER?.trim() ?? '',
+    scopes: process.env.OIDC_OAUTH_SCOPES?.trim() || 'openid email profile',
   };
 }
 
 export function getConfiguredOAuthProviders(): OAuthProvider[] {
   return OAUTH_PROVIDERS.filter((provider) => {
     const env = getProviderEnv(provider);
-    return Boolean(env.clientId && env.clientSecret);
+    return provider === 'oidc'
+      ? Boolean(env.clientId && env.clientSecret && env.issuer)
+      : Boolean(env.clientId && env.clientSecret);
   });
 }
 
 export function isOAuthProviderConfigured(provider: OAuthProvider) {
   const env = getProviderEnv(provider);
-  return Boolean(env.clientId && env.clientSecret);
+  return provider === 'oidc'
+    ? Boolean(env.clientId && env.clientSecret && env.issuer)
+    : Boolean(env.clientId && env.clientSecret);
 }
 
 export function resolveWebBaseUrl(fallbackOrigin?: string) {
@@ -90,16 +109,70 @@ function buildGoogleAuthorizationUrl({
   return url.toString();
 }
 
-export function buildOAuthAuthorizationUrl(input: {
+function buildOidcDiscoveryUrl(issuer: string) {
+  return new URL('.well-known/openid-configuration', `${issuer.replace(/\/$/, '')}/`).toString();
+}
+
+async function getOidcDiscoveryDocument() {
+  const env = getProviderEnv('oidc');
+
+  if (!env.issuer) {
+    throw new Error('OIDC issuer is not configured.');
+  }
+
+  const response = await fetch(buildOidcDiscoveryUrl(env.issuer), {
+    cache: 'no-store',
+  });
+
+  const json = (await response.json().catch(() => ({}))) as Partial<OidcDiscoveryDocument>;
+
+  if (
+    !response.ok ||
+    !json.authorization_endpoint ||
+    !json.token_endpoint ||
+    !json.userinfo_endpoint
+  ) {
+    throw new Error('OIDC discovery failed or returned an incomplete provider configuration.');
+  }
+
+  return json as OidcDiscoveryDocument;
+}
+
+async function buildOidcAuthorizationUrl({
+  state,
+  redirectUri,
+}: {
+  state: string;
+  redirectUri: string;
+}) {
+  const env = getProviderEnv('oidc');
+  const discovery = await getOidcDiscoveryDocument();
+  const url = new URL(discovery.authorization_endpoint);
+  url.searchParams.set('client_id', env.clientId);
+  url.searchParams.set('redirect_uri', redirectUri);
+  url.searchParams.set('response_type', 'code');
+  url.searchParams.set('scope', env.scopes ?? 'openid email profile');
+  url.searchParams.set('state', state);
+  url.searchParams.set('prompt', 'login');
+  return url.toString();
+}
+
+export async function buildOAuthAuthorizationUrl(input: {
   provider: OAuthProvider;
   state: string;
   origin?: string;
 }) {
   const redirectUri = buildOAuthCallbackUrl(input.provider, input.origin);
 
-  return input.provider === 'github'
-    ? buildGithubAuthorizationUrl({ state: input.state, redirectUri })
-    : buildGoogleAuthorizationUrl({ state: input.state, redirectUri });
+  if (input.provider === 'github') {
+    return buildGithubAuthorizationUrl({ state: input.state, redirectUri });
+  }
+
+  if (input.provider === 'google') {
+    return buildGoogleAuthorizationUrl({ state: input.state, redirectUri });
+  }
+
+  return buildOidcAuthorizationUrl({ state: input.state, redirectUri });
 }
 
 async function getCookieStore() {
@@ -315,6 +388,69 @@ async function exchangeGoogleCode(code: string, redirectUri: string) {
   };
 }
 
+async function exchangeOidcCode(code: string, redirectUri: string) {
+  const env = getProviderEnv('oidc');
+  const discovery = await getOidcDiscoveryDocument();
+  const tokenResponse = await fetch(discovery.token_endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      client_id: env.clientId,
+      client_secret: env.clientSecret,
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri: redirectUri,
+    }),
+    cache: 'no-store',
+  });
+
+  const token = (await tokenResponse.json().catch(() => ({}))) as {
+    access_token?: string;
+    error_description?: string;
+    error?: string;
+  };
+
+  if (!tokenResponse.ok || !token.access_token) {
+    throw new Error(token.error_description ?? token.error ?? 'OIDC token exchange failed.');
+  }
+
+  if (!discovery.userinfo_endpoint) {
+    throw new Error('OIDC provider did not publish a userinfo endpoint.');
+  }
+
+  const userResponse = await fetch(discovery.userinfo_endpoint, {
+    headers: {
+      Authorization: `Bearer ${token.access_token}`,
+    },
+    cache: 'no-store',
+  });
+
+  const user = (await userResponse.json().catch(() => ({}))) as {
+    sub?: string;
+    email?: string;
+    email_verified?: boolean;
+    name?: string;
+    preferred_username?: string;
+  };
+
+  if (!userResponse.ok || !user.sub || !user.email) {
+    throw new Error('OIDC userinfo did not return a usable identity.');
+  }
+
+  if (user.email_verified === false) {
+    throw new Error('OIDC identity must provide a verified email address.');
+  }
+
+  return {
+    provider: 'oidc' as const,
+    providerAccountId: user.sub,
+    email: user.email.trim().toLowerCase(),
+    name: user.name?.trim() || user.preferred_username?.trim() || user.email.split('@')[0],
+  };
+}
+
 export async function exchangeOauthCodeForProfile(input: {
   provider: OAuthProvider;
   code: string;
@@ -322,7 +458,13 @@ export async function exchangeOauthCodeForProfile(input: {
 }): Promise<OAuthCompleteInput> {
   const redirectUri = buildOAuthCallbackUrl(input.provider, input.origin);
 
-  return input.provider === 'github'
-    ? exchangeGithubCode(input.code, redirectUri)
-    : exchangeGoogleCode(input.code, redirectUri);
+  if (input.provider === 'github') {
+    return exchangeGithubCode(input.code, redirectUri);
+  }
+
+  if (input.provider === 'google') {
+    return exchangeGoogleCode(input.code, redirectUri);
+  }
+
+  return exchangeOidcCode(input.code, redirectUri);
 }

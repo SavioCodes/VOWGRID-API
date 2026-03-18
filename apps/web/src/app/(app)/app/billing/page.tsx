@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Badge, Button, Card, CardContent, EmptyState } from '@vowgrid/ui';
+import { BillingAdminPanel } from '@/components/vowgrid/billing-admin-panel';
 import { BillingStatusBadge } from '@/components/vowgrid/billing-status-badge';
 import { IntegrationBanner } from '@/components/vowgrid/integration-banner';
 import { PageHeader } from '@/components/vowgrid/page-header';
@@ -43,6 +44,8 @@ export default async function BillingPage() {
 
       {account ? (
         <>
+          <BillingAdminPanel account={account} />
+
           <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
             <Card>
               <CardContent className="space-y-5">

@@ -645,9 +645,18 @@ const billingAccount: BillingAccountResponse = {
     email: 'reviewer@vowgrid.local',
     legalName: 'Primary Trust Workspace',
     providerCustomerId: null,
+    taxProfile: {
+      countryCode: 'BR',
+      regionCode: 'SP',
+      documentType: 'cnpj',
+      documentNumber: '12.345.678/0001-99',
+      taxExempt: false,
+      taxRateBpsOverride: null,
+    },
     createdAt: '2026-03-12T09:00:00.000Z',
     updatedAt: '2026-03-15T09:00:00.000Z',
   },
+  activeCoupon: null,
   subscription: null,
   trial: {
     status: 'active',

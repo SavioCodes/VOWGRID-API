@@ -6,6 +6,7 @@ import type { OAuthMode } from '@/lib/vowgrid/oauth';
 const providerLabels: Record<OAuthProvider, string> = {
   github: 'GitHub',
   google: 'Google',
+  oidc: 'Enterprise SSO',
 };
 
 export function OAuthProviderLinks({
@@ -26,7 +27,7 @@ export function OAuthProviderLinks({
           Social login
         </p>
         <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
-          Continue with a verified provider identity instead of typing a password.
+          Continue with a verified identity provider instead of typing a password.
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">

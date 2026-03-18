@@ -19,6 +19,7 @@ import {
 import type { UsageMetricResponse, WorkspaceMemberResponse } from '@vowgrid/contracts';
 import { useRouter } from 'next/navigation';
 import {
+  anonymizeMemberAction,
   createMemberAction,
   disableMemberAction,
   enableMemberAction,
@@ -156,6 +157,27 @@ export function MemberManager({
     });
   };
 
+  const handleAnonymize = (member: WorkspaceMemberResponse) => {
+    const confirmation = window.confirm(
+      `Anonymize ${member.name}? This will redact email, name, password, OAuth links, and recovery tokens while preserving history.`,
+    );
+
+    if (!confirmation) {
+      return;
+    }
+
+    startTransition(async () => {
+      setActiveMemberId(member.id);
+      const next = await anonymizeMemberAction(member.id);
+      setResult(next);
+      setActiveMemberId(null);
+
+      if (next.ok) {
+        router.refresh();
+      }
+    });
+  };
+
   return (
     <div className="space-y-4">
       <Card>
@@ -239,6 +261,7 @@ export function MemberManager({
             const isOwner = member.role === 'owner';
             const canEdit = !isOwner;
             const canToggle = !isOwner && !isCurrentUser;
+            const canAnonymize = !isOwner && member.status === 'disabled';
 
             return (
               <TableRow key={member.id}>
@@ -276,6 +299,13 @@ export function MemberManager({
                         : member.status === 'active'
                           ? 'Disable'
                           : 'Enable'}
+                    </Button>
+                    <Button
+                      tone="ghost"
+                      disabled={!canAnonymize || pending}
+                      onClick={() => handleAnonymize(member)}
+                    >
+                      {pending && activeMemberId === member.id ? 'Working...' : 'Anonymize'}
                     </Button>
                   </div>
                 </TableCell>

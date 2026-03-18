@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import {
+  anonymizeWorkspaceMember as anonymizeWorkspaceMemberRecord,
   createWorkspaceApiKey as createWorkspaceApiKeyRecord,
   createWorkspaceInvite as createWorkspaceInviteRecord,
   createWorkspaceMember as createWorkspaceMemberRecord,
@@ -155,6 +156,23 @@ export async function enableMemberAction(userId: string): Promise<MemberActionRe
     return {
       ok: false,
       message: error instanceof Error ? error.message : 'Failed to re-enable workspace member.',
+    };
+  }
+}
+
+export async function anonymizeMemberAction(userId: string): Promise<MemberActionResult> {
+  try {
+    const anonymized = await anonymizeWorkspaceMemberRecord(userId);
+    revalidateSettings();
+
+    return {
+      ok: true,
+      message: `${anonymized.member.name} was anonymized and personal identity fields were redacted.`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : 'Failed to anonymize workspace member.',
     };
   }
 }
