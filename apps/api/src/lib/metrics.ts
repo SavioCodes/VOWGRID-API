@@ -29,6 +29,27 @@ export const authEventsTotal = new Counter({
   registers: [metricsRegistry],
 });
 
+export const executionEventsTotal = new Counter({
+  name: 'vowgrid_execution_events_total',
+  help: 'Execution lifecycle events emitted by the workflow runtime.',
+  labelNames: ['event'] as const,
+  registers: [metricsRegistry],
+});
+
+export const rollbackEventsTotal = new Counter({
+  name: 'vowgrid_rollback_events_total',
+  help: 'Rollback lifecycle events emitted by the workflow runtime.',
+  labelNames: ['event'] as const,
+  registers: [metricsRegistry],
+});
+
+export const billingInvoiceEventsTotal = new Counter({
+  name: 'vowgrid_billing_invoice_events_total',
+  help: 'Billing invoice and adjustment events emitted by the billing subsystem.',
+  labelNames: ['event', 'metric'] as const,
+  registers: [metricsRegistry],
+});
+
 export function observeHttpRequest(input: {
   method: string;
   route: string;
@@ -47,4 +68,16 @@ export function observeHttpRequest(input: {
 
 export function observeAuthEvent(event: string, provider = 'password') {
   authEventsTotal.inc({ event, provider });
+}
+
+export function observeExecutionEvent(event: string) {
+  executionEventsTotal.inc({ event });
+}
+
+export function observeRollbackEvent(event: string) {
+  rollbackEventsTotal.inc({ event });
+}
+
+export function observeBillingInvoiceEvent(event: string, metric: string) {
+  billingInvoiceEventsTotal.inc({ event, metric });
 }

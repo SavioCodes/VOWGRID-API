@@ -48,12 +48,17 @@ const envSchema = z.object({
   BILLING_DEFAULT_TAX_RATE_BPS: z.coerce.number().min(0).max(10_000).default(0),
   METRICS_AUTH_TOKEN: z.string().min(16).optional(),
 
-  RATE_LIMIT_MAX: z.coerce.number().default(100),
-  RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60_000),
+  RATE_LIMIT_MAX: z.coerce.number().optional(),
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().optional(),
 });
 
-export type Env = z.infer<typeof envSchema> & {
+export type Env = Omit<
+  z.infer<typeof envSchema>,
+  'SESSION_SECRET' | 'RATE_LIMIT_MAX' | 'RATE_LIMIT_WINDOW_MS'
+> & {
   SESSION_SECRET: string;
+  RATE_LIMIT_MAX: number;
+  RATE_LIMIT_WINDOW_MS: number;
 };
 
 export function loadEnv(): Env {
@@ -74,6 +79,9 @@ export function loadEnv(): Env {
   return {
     ...result.data,
     SESSION_SECRET: sessionSecret,
+    RATE_LIMIT_MAX:
+      result.data.RATE_LIMIT_MAX ?? (result.data.NODE_ENV === 'production' ? 100 : 1_000),
+    RATE_LIMIT_WINDOW_MS: result.data.RATE_LIMIT_WINDOW_MS ?? 60_000,
   };
 }
 

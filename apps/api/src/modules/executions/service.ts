@@ -8,6 +8,7 @@ import { NotFoundError, ValidationError, ConflictError } from '../../common/erro
 import { transitionIntent } from '../intents/service.js';
 import { emitAuditEvent } from '../audits/service.js';
 import { assertCanQueueExecution, trackExecutionStart } from '../billing/entitlements.js';
+import { observeExecutionEvent, observeRollbackEvent } from '../../lib/metrics.js';
 
 export async function queueExecution(
   intentId: string,
@@ -78,6 +79,7 @@ export async function queueExecution(
   });
 
   await trackExecutionStart(workspaceId, billing);
+  observeExecutionEvent('queued');
 
   return executionJob;
 }
@@ -128,6 +130,7 @@ export async function requestRollback(
     workspaceId,
     metadata: { rollbackAttemptId: rollbackAttempt.id, reason },
   });
+  observeRollbackEvent('requested');
 
   try {
     await rollbackQueue.add(
@@ -166,6 +169,8 @@ export async function requestRollback(
       workspaceId,
       metadata: { rollbackAttemptId: rollbackAttempt.id, error: errorMessage },
     });
+
+    observeRollbackEvent('queue_failed');
 
     throw error;
   }

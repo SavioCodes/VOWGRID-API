@@ -10,6 +10,7 @@ import { connectorRegistry } from '../modules/connectors/framework/connector.reg
 import { transitionIntent } from '../modules/intents/service.js';
 import { emitAuditEvent } from '../modules/audits/service.js';
 import { logger } from '../lib/logger.js';
+import { observeExecutionEvent } from '../lib/metrics.js';
 
 interface ExecutionJobData {
   intentId: string;
@@ -31,6 +32,7 @@ async function processExecution(job: Job<ExecutionJobData>) {
 
   // Transition intent to executing
   await transitionIntent(intentId, workspaceId, 'executing', 'system', 'system');
+  observeExecutionEvent('started');
 
   const intent = await prisma.intent.findUniqueOrThrow({
     where: { id: intentId },
@@ -95,6 +97,7 @@ async function processExecution(job: Job<ExecutionJobData>) {
       metadata: { executionJobId, duration: result.duration },
     });
 
+    observeExecutionEvent('completed');
     log.info({ duration: result.duration }, 'Execution completed successfully');
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -120,6 +123,7 @@ async function processExecution(job: Job<ExecutionJobData>) {
       metadata: { executionJobId, error: errorMessage, attempts: job.attemptsMade + 1 },
     });
 
+    observeExecutionEvent('failed');
     log.error({ error: errorMessage }, 'Execution failed');
     throw error; // Re-throw so BullMQ handles retries
   }

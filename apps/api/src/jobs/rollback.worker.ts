@@ -6,6 +6,7 @@ import { prisma } from '../lib/prisma.js';
 import { emitAuditEvent } from '../modules/audits/service.js';
 import { connectorRegistry } from '../modules/connectors/framework/connector.registry.js';
 import { transitionIntent } from '../modules/intents/service.js';
+import { observeRollbackEvent } from '../lib/metrics.js';
 
 interface RollbackJobData {
   intentId: string;
@@ -44,6 +45,7 @@ export async function processRollback(job: Job<RollbackJobData>) {
       startedAt: new Date(),
     },
   });
+  observeRollbackEvent('started');
 
   const intent = await prisma.intent.findUniqueOrThrow({
     where: { id: intentId },
@@ -113,6 +115,7 @@ export async function processRollback(job: Job<RollbackJobData>) {
       metadata: { rollbackAttemptId, duration: Date.now() - startTime },
     });
 
+    observeRollbackEvent('completed');
     log.info({ attemptNumber }, 'Rollback completed successfully');
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown rollback error';
@@ -142,6 +145,8 @@ export async function processRollback(job: Job<RollbackJobData>) {
         workspaceId,
         metadata: { rollbackAttemptId, error: errorMessage, attempts: attemptNumber },
       });
+
+      observeRollbackEvent('failed');
     } else {
       await prisma.rollbackAttempt.update({
         where: { id: rollbackAttemptId },

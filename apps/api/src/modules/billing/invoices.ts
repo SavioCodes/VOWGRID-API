@@ -10,6 +10,7 @@ import { PLAN_CATALOG } from '@vowgrid/contracts';
 import { Prisma } from '@prisma/client';
 import { env } from '../../config/env.js';
 import { prisma } from '../../lib/prisma.js';
+import { observeBillingInvoiceEvent } from '../../lib/metrics.js';
 import { getMercadoPagoProviderState, startMercadoPagoInvoicePayment } from './mercado-pago.js';
 import { getCurrentMonthlyWindow } from './usage.js';
 
@@ -281,7 +282,9 @@ export async function recordAutomaticOverageBilling(input: {
     return ensured;
   });
 
-  return syncInvoiceTotalsAndPaymentLink(invoice.id);
+  const updated = await syncInvoiceTotalsAndPaymentLink(invoice.id);
+  observeBillingInvoiceEvent('overage_recorded', input.metric);
+  return updated;
 }
 
 export function calculateProrationPreview(input: {
@@ -441,5 +444,7 @@ export async function recordProrationBilling(input: {
     return ensured;
   });
 
-  return syncInvoiceTotalsAndPaymentLink(invoice.id);
+  const updated = await syncInvoiceTotalsAndPaymentLink(invoice.id);
+  observeBillingInvoiceEvent('proration_recorded', 'proration');
+  return updated;
 }
