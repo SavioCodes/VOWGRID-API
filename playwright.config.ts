@@ -4,7 +4,8 @@ const isCi = Boolean(process.env.CI);
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: true,
+  fullyParallel: false,
+  workers: 1,
   retries: isCi ? 2 : 0,
   reporter: isCi
     ? [['github'], ['html', { open: 'never' }]]

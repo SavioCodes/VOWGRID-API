@@ -44,12 +44,13 @@ test('existing users can accept invites into another workspace and switch betwee
   await page.getByRole('button', { name: /accept invite/i }).click();
   await expect(page).toHaveURL(/\/app$/);
 
+  await expect(page.getByText(new RegExp(firstWorkspaceName))).toBeVisible();
+
   const firstWorkspaceButton = page.getByRole('button', { name: new RegExp(firstWorkspaceName) });
   const secondWorkspaceButton = page.getByRole('button', {
     name: new RegExp(secondWorkspaceName),
   });
 
-  await expect(firstWorkspaceButton).toBeVisible();
   await expect(secondWorkspaceButton).toBeDisabled();
 
   await firstWorkspaceButton.click();
