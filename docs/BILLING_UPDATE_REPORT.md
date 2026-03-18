@@ -1,5 +1,8 @@
 # Billing Update Report
 
+> Historical billing-phase report.
+> Later passes added dashboard session auth, workspace member management, invites, multi-workspace switching, API key self-service, rollback processing, automatic overage billing, proration previews, deploy scaffolding, and metrics. Use `README.md` and `docs/IMPLEMENTATION_STATUS.md` for the current product state.
+
 ## 1. What Was Inspected
 
 - Root workspace files: `package.json`, `pnpm-workspace.yaml`, `README.md`
@@ -98,10 +101,8 @@ Still requires manual setup rather than more code changes:
 
 ## 8. What Remains For Future Releases
 
-- automatic overage billing
-- proration logic
 - advanced tax and invoice handling
-- JWT dashboard auth
-- API key self-service
 - rollout of a real enterprise sales path
 - deeper E2E coverage
+- production-hardening of deploy workflows and Terraform values
+- centralized observability sinks and alerting

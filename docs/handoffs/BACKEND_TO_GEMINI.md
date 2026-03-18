@@ -5,7 +5,8 @@
 > **For:** Design/frontend pass (Gemini or equivalent)
 >
 > Historical note:
-> use `README.md`, `docs/RUNBOOK.md`, and `docs/FINAL_INTEGRATION_REPORT.md` as the current source of truth for local setup, ports, and verified integration status.
+> this document is preserved as the original backend-to-frontend handoff snapshot.
+> current truth now lives in `README.md`, `docs/RUN_GUIDE.md`, `docs/IMPLEMENTATION_STATUS.md`, `docs/AUTH_SETUP.md`, and `docs/ACCESS_MANAGEMENT.md`.
 
 ---
 
@@ -116,7 +117,16 @@ import type {
 
 ## 6. Authentication
 
-Requests need `X-Api-Key` header. In the frontend dashboard, this should be managed via a settings page where users create/revoke API keys. The dashboard itself will eventually use JWT (not yet implemented).
+Historical handoff assumption:
+
+- requests needed `X-Api-Key` only
+- the dashboard had not implemented session auth yet
+
+Current product truth:
+
+- agents and programmatic clients authenticate with `X-Api-Key`
+- the dashboard uses session-backed auth for human operators
+- `/app/settings` now exposes workspace member management and API key management
 
 ## 7. What You Should NOT Invent
 

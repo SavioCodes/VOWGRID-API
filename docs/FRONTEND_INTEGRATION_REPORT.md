@@ -1,5 +1,8 @@
 # Frontend Integration Report
 
+> Historical snapshot from the earlier frontend/design pass.
+> Current frontend truth now lives in `README.md`, `docs/IMPLEMENTATION_STATUS.md`, `docs/PROJECT_AUDIT_REPORT.md`, and `docs/AUTH_SETUP.md`.
+
 ## 1. What was inspected
 
 - `README.md`
@@ -60,12 +63,12 @@ The web app uses:
 - Added runtime rendering for the `/app` subtree so live mode is not frozen at build time
 - Updated the web env example to the API's local port `4000`
 
-## 6. What remains
+## 6. What remained at the time of this report
 
-- No user-facing JWT auth flow
-- No user-facing API key management UI or backend route
-- No live workspace directory API for human-readable labels
-- No rollback worker to move rollback attempts beyond visibility and pending state
+- There was no user-facing JWT auth flow
+- There was no user-facing API key management UI or backend route
+- There was no live workspace directory API for human-readable labels
+- There was no rollback worker to move rollback attempts beyond visibility and pending state
 
 ## 7. What commands were run
 

@@ -1,5 +1,8 @@
 # Final Integration Report
 
+> Historical snapshot from the first integration pass.
+> Current product truth now lives in `README.md`, `docs/IMPLEMENTATION_STATUS.md`, `docs/PROJECT_AUDIT_REPORT.md`, `docs/ACCESS_MANAGEMENT.md`, and `docs/ROLLBACK_PROCESSING.md`.
+
 ## 1. What was inspected
 
 - Root workspace files: `package.json`, `pnpm-workspace.yaml`, `README.md`
@@ -40,11 +43,11 @@
 - Forced the `/app` subtree to render dynamically so live mode is chosen at runtime.
 - Verified the web app can render in live contract mode against the seeded API.
 
-## 4. What still remains
+## 4. What still remained at the time of this report
 
-- Rollback processing is partial. A rollback request is created and becomes visible, but there is no rollback worker to complete it.
-- JWT dashboard auth is still not implemented.
-- User-facing API key management is still not implemented.
+- Rollback processing was partial. A rollback request was created and became visible, but there was no rollback worker to complete it.
+- JWT dashboard auth was not implemented yet.
+- User-facing API key management was not implemented yet.
 - The backend still does not expose live workspace directory labels, so the web app keeps provisional labels for that surface.
 - E2E coverage is still missing.
 

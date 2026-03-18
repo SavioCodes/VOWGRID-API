@@ -1,10 +1,25 @@
 # Deployment Flow
 
-## Current state
+## Current State
 
-The repository now has CI for validation, but it does **not** yet have automatic staging or production deployment. This document describes the intended release path so engineers can reason about environment boundaries consistently.
+The repository now has:
 
-## Suggested environments
+- validation CI in `.github/workflows/ci.yml`
+- staging deploy automation in `.github/workflows/deploy-staging.yml`
+- production deploy automation in `.github/workflows/deploy-production.yml`
+- release Dockerfiles for `apps/api` and `apps/web`
+- release compose in `infra/docker-compose.release.yml`
+- Terraform scaffold in `infra/terraform/aws-vps`
+
+Those pieces are real, but they still depend on external setup:
+
+- GitHub Actions secrets
+- GHCR or another image registry
+- a reachable SSH target
+- real production env files and secrets
+- infrastructure values for Terraform
+
+## Suggested Environments
 
 ### Development
 
@@ -16,25 +31,41 @@ The repository now has CI for validation, but it does **not** yet have automatic
 
 - production-like Postgres and Redis
 - real Mercado Pago sandbox configuration
+- `deploy-staging.yml` builds and pushes images, then deploys with Docker Compose over SSH
 - smoke E2E after each deploy
 
 ### Production
 
-- managed Postgres and Redis
+- managed Postgres and Redis or a hardened VPS stack
 - real Mercado Pago credentials
 - protected secrets store
-- centralized log shipping and error monitoring
+- `deploy-production.yml` runs only on manual dispatch
+- centralized log shipping and alerting layered on top of `/v1/metrics`
 
-## Release checklist
+## Release Checklist
 
 1. CI passes on the branch.
-2. Migrations are reviewed.
-3. Env changes are documented.
+2. Prisma migrations are reviewed and applied.
+3. Env changes are documented in the committed example files.
 4. Billing/contact paths are configured for the target environment.
-5. Smoke checks cover login, billing page, API key management, execution, and rollback.
+5. OAuth, SMTP, and Mercado Pago secrets are configured if those flows are expected.
+6. Smoke checks cover login, password reset, invite acceptance, billing page, API key management, execution, and rollback.
 
-## What is still missing
+## Terraform Scope
 
-- automated deployment workflow
-- Infrastructure as Code for staging/production
-- centralized metrics/alerting integration
+`infra/terraform/aws-vps` is a launch-stage scaffold for a simple VPS-style deployment:
+
+- VPC
+- subnet
+- security group
+- EC2 instance
+- cloud-init/user-data for Docker and Compose
+
+It is not yet a complete production platform module set. Database hardening, backups, secret distribution, TLS termination, and managed service choices still need to be designed for a real deployment target.
+
+## What Is Still Missing
+
+- reusable production modules beyond the single VPS scaffold
+- secret management beyond GitHub and `.env.production`
+- centralized dashboards and alerting on top of the metrics endpoint
+- rollout, rollback, and blue/green deployment strategy

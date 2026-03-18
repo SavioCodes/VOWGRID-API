@@ -9,7 +9,8 @@ This release adds the first monetization layer for VowGrid with these goals:
 - support a backend-managed 14-day free trial
 - surface clear entitlements and usage in the product
 - block critical write actions when hard limits are reached
-- keep the architecture ready for future metered billing without implementing overages yet
+- support automatic overage billing on paid plans
+- keep the architecture ready for richer metering and compliance later
 
 ## Source Of Truth
 
@@ -59,6 +60,8 @@ Billing models:
 - `BillingEvent`
 - `UsageCounter`
 - `TrialState`
+- `BillingInvoice`
+- `BillingInvoiceLineItem`
 
 ### Backend module
 
@@ -66,6 +69,7 @@ Files:
 
 - `apps/api/src/modules/billing/catalog.ts`
 - `apps/api/src/modules/billing/usage.ts`
+- `apps/api/src/modules/billing/invoices.ts`
 - `apps/api/src/modules/billing/mercado-pago.ts`
 - `apps/api/src/modules/billing/entitlements.ts`
 - `apps/api/src/modules/billing/service.ts`
@@ -78,6 +82,7 @@ Responsibilities:
 - manage checkout initiation
 - process Mercado Pago webhooks idempotently
 - translate provider state into internal subscription state
+- create invoice and proration records
 - expose provider readiness to the dashboard
 
 ### Frontend surfaces
@@ -95,6 +100,7 @@ Responsibilities:
 - workspace billing overview
 - trial countdown
 - usage meters
+- invoice visibility
 - upgrade and cancel entry points
 - provider-readiness messaging
 
@@ -125,8 +131,8 @@ Tracked metrics:
 
 Current enforcement:
 
-- intents: hard enforced
-- executed actions: hard enforced
+- intents: hard enforced on trial and inactive billing states, overage-billed on active paid subscriptions
+- executed actions: hard enforced on trial and inactive billing states, overage-billed on active paid subscriptions
 - active connectors: hard enforced
 - advanced policies: hard enforced
 - advanced approvals: hard enforced
@@ -165,10 +171,8 @@ Enterprise remains sales-assisted.
 
 ## Non-Goals In This Release
 
-- automatic overage charging
-- complex proration
-- tax engine
-- invoicing system
+- advanced tax engine
+- full invoice compliance system
 - marketplace billing
 - multiple billing providers
 - enterprise self-serve checkout
@@ -176,5 +180,5 @@ Enterprise remains sales-assisted.
 ## Honest Gaps
 
 - A real enterprise sales inbox or form is still needed before launch.
-- The product has no JWT billing portal because dashboard auth itself is not implemented yet.
-- Rollback processing is still incomplete outside the billing work.
+- Mercado Pago account setup, webhook URL, and webhook secret still require manual production configuration.
+- Enterprise SSO is still outside the billing release scope.

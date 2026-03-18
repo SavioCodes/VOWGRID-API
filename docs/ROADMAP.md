@@ -2,20 +2,18 @@
 
 ## Now
 
-- Harden API key management and programmatic access
-- Keep rollback execution fully visible and worker-backed
-- Improve CI, onboarding, and documentation quality
+- Production-harden deploy workflows, Terraform values, and release env handling
+- Expand browser coverage deeper into execution, billing, and rollback journeys
+- Wire centralized observability sinks on top of `/v1/metrics`
 
 ## Next
 
-- Password reset and email verification
-- Invites and workspace membership lifecycle
-- Richer billing operations and enterprise provisioning
-- Centralized observability
+- Enterprise sales/contact workflow and provisioning handoff
+- Advanced tax and invoice handling
+- Harder production posture around secrets, backups, and rollback strategy
 
 ## Later
 
 - SSO / enterprise identity
-- Multi-workspace membership and switching
-- Staging/production deploy automation
-- Infrastructure as Code
+- Deeper organization and tenant models beyond the current workspace abstraction
+- Managed-cloud infrastructure modules beyond the current VPS-style Terraform scaffold

@@ -26,11 +26,14 @@ flowchart LR
 ## Current Reality
 
 - The core trust workflow is implemented through receipt generation, audit visibility, queue-backed execution, and queue-backed rollback.
-- Dashboard auth is now real: email/password signup and login create a session-backed dashboard experience.
+- Dashboard auth is now real: email/password signup and login create a session-backed dashboard experience, password reset and email verification are implemented, and GitHub/Google OAuth can be enabled with env-backed provider credentials.
+- Workspace access management is real: owners and admins can create, update, disable, re-enable, and invite members directly from the dashboard.
+- Multi-workspace membership and switching are implemented through accepted invites and the workspace switcher in the app shell.
 - API keys exist as the machine-to-machine auth path and can now be created, rotated, and revoked from the dashboard.
-- Billing is implemented internally with launch pricing, a backend-managed 14-day trial, usage tracking, entitlements, and Mercado Pago provider integration foundations.
+- Billing is implemented internally with launch pricing, a backend-managed 14-day trial, usage tracking, entitlement enforcement, automatic overage invoicing on paid plans, proration previews for plan changes, invoice records, and Mercado Pago provider integration foundations.
 - Provisional data still exists, but only behind the explicit dev-only `/preview` route when enabled.
-- CI now validates typecheck, lint, unit tests, integration tests, coverage, build, and an E2E smoke path.
+- CI now validates typecheck, lint, unit tests, integration tests, coverage, build, and E2E auth/invite paths.
+- A Prometheus-compatible metrics endpoint exists at `/v1/metrics`, and release automation/IaC scaffolding now lives in `.github/workflows/*` and `infra/terraform/*`.
 
 ## Monorepo
 
@@ -80,8 +83,9 @@ Seeded local access:
 
 1. Sign up at `/signup` or log in at `/login`.
 2. Review the control plane at `/app`.
-3. Manage programmatic API keys from `/app/settings`.
-4. Review billing, usage, and trial state from `/app/billing`.
+3. Use `/forgot-password`, `/verify-email`, or social login when the current auth posture requires it.
+4. Manage workspace members, invites, workspace switching, and programmatic API keys from `/app/settings`.
+5. Review billing, usage, invoices, and trial state from `/app/billing`.
 
 ### Machine-to-machine path
 
@@ -97,8 +101,11 @@ See `docs/REAL_WORLD_SCENARIOS.md` for common intent, billing, and enterprise pa
 ## Auth Model
 
 - Human dashboard access uses session-backed auth through `/v1/auth/signup`, `/v1/auth/login`, `/v1/auth/me`, and `/v1/auth/logout`.
+- Recovery and verification routes exist for password reset, email verification, invite acceptance, and workspace switching.
+- GitHub and Google OAuth flows are supported when provider credentials are configured.
 - The web app stores the session token in an HttpOnly cookie named `vowgrid_dashboard_session`.
 - Protected product routes live under `/app`.
+- Owners and admins can manage members, invites, and workspace-scoped API keys directly from the dashboard.
 - API keys remain the direct auth layer for programmatic clients.
 
 ## Billing Snapshot
@@ -115,7 +122,8 @@ Launch billing notes:
 - Free trial: `14` days, managed internally by the VowGrid backend
 - Primary commercial metric: executed actions per month
 - Secondary usage guardrail: intents per month
-- No automatic overage billing in this release
+- Paid subscriptions can use automatic overage billing for intents and executed actions
+- Plan changes compute proration previews and record proration invoice line items
 - Enterprise remains sales-assisted
 
 ## Useful Commands
@@ -134,6 +142,12 @@ Launch billing notes:
 - `pnpm docker:status`
 - `pnpm docker:logs`
 
+Useful live endpoints:
+
+- `GET /v1/health`
+- `GET /v1/metrics`
+- `GET /v1/docs`
+
 ## Documentation
 
 Current docs:
@@ -147,6 +161,9 @@ Current docs:
 - `docs/ROADMAP.md`
 - `docs/RUN_GUIDE.md`
 - `docs/AUTH_SETUP.md`
+- `docs/ACCESS_MANAGEMENT.md`
+- `docs/ENTERPRISE_HANDOFF.md`
+- `docs/ROLLBACK_PROCESSING.md`
 - `docs/IMPLEMENTATION_STATUS.md`
 - `docs/PROJECT_AUDIT_REPORT.md`
 - `docs/billing/BILLING_ARCHITECTURE.md`
@@ -168,5 +185,7 @@ Historical reports:
 
 - Enterprise still depends on a configured contact inbox and manual commercial handling.
 - Mercado Pago checkout still requires real provider env configuration.
-- Password reset, email verification, invites, SSO, and multi-workspace membership are not implemented.
-- Deploy automation to staging/production and Infrastructure as Code are not implemented yet.
+- Social login requires real GitHub or Google OAuth credentials before the provider buttons become usable.
+- Advanced tax handling and full invoice compliance workflows are not implemented yet.
+- Centralized observability sinks and alert routing are not implemented yet beyond the local `/v1/metrics` endpoint.
+- Deploy automation and Terraform scaffolding exist, but they still require real GitHub secrets, registry setup, and target infrastructure values before they can be treated as production-ready.

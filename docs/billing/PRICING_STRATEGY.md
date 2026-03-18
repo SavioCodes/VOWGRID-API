@@ -14,7 +14,7 @@ Launch strategy:
 - lower-friction entry pricing for validation
 - serious B2B positioning
 - no fake "unlimited" packaging
-- no automatic overage surprises
+- no hidden automatic overage surprises
 
 ## Launch Plan Catalog
 
@@ -45,18 +45,14 @@ Rationale:
 
 ## Metering Strategy
 
-Not included in this release:
-
-- automatic overage billing
-- automatic overage charges
-- usage-based invoice adjustments
-
 Included in this release:
 
 - internal usage tracking
 - dashboard usage meters
 - warning thresholds near limits
-- hard blocking for critical write actions after hard limits
+- automatic overage billing for paid subscriptions on `intents` and `executed_actions`
+- invoice visibility for overage and proration adjustments
+- hard blocking for critical write actions after hard limits on trials or inactive billing states
 - preserved read access to history, audit, and receipt surfaces
 
 ## Messaging Principles

@@ -12,10 +12,10 @@ The repository now has a seeded local backend flow, but live environments can st
 
 Policy reasoning is important enough to deserve its own surface. Keeping it separate lets operators scan the workflow first, then inspect policy detail without overloading the primary intent view.
 
-## Why the workspace switcher exists even though multi-workspace routing is incomplete
+## Why the workspace switcher exists
 
-The shell needs the right long-term affordance, but the switcher still communicates that real workspace routing depends on backend support that is not finished yet.
+The switcher is now backed by real workspace memberships and invite acceptance. It stays intentionally lightweight in the shell so operators can move between active workspaces without turning the sidebar into an organization-management UI.
 
 ## Why there is no fake JWT login
 
-The backend truth today is API-key auth. Creating a fake sign-in experience would misrepresent the integration state, so the settings screen explains the current auth posture instead.
+The backend truth now is session auth for humans and API keys for machines. The UI keeps those surfaces explicit instead of pretending that machine credentials and operator sign-in are the same thing.

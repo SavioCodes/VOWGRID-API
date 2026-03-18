@@ -46,7 +46,7 @@ Warning threshold:
 | Capability               | Launch  | Pro      | Business  | Enterprise | Current enforcement                                                                                      |
 | ------------------------ | ------- | -------- | --------- | ---------- | -------------------------------------------------------------------------------------------------------- |
 | Workspaces               | `1`     | `3`      | `10`      | Custom     | Visible in billing, not actively enforced yet because there is no self-serve workspace provisioning flow |
-| Internal users           | `2`     | `10`     | `50`      | Custom     | Visible in billing, not actively enforced yet because there is no self-serve user provisioning flow      |
+| Internal users           | `2`     | `10`     | `50`      | Custom     | Hard-blocks direct member create and re-enable actions after the active-member limit                     |
 | Active connectors        | `2`     | `8`      | `25`      | Custom     | Hard-blocks enabling new connectors after the limit                                                      |
 | Intents / month          | `2,000` | `15,000` | `100,000` | Custom     | Hard-blocks new intent creation after the limit                                                          |
 | Executed actions / month | `300`   | `3,000`  | `20,000`  | Custom     | Hard-blocks new critical executions after the limit                                                      |
@@ -67,6 +67,12 @@ At hard limit:
 - the API returns `402 Payment Required` for the protected action
 - the dashboard continues to show history and upgrade options
 
+On active paid subscriptions for value metrics:
+
+- `intents` and `executed_actions` can enter `overage`
+- the API continues to allow the action
+- invoice line items are recorded internally for the overage usage
+
 ## Protected Write Paths
 
 Current hard-blocked paths:
@@ -79,9 +85,8 @@ Current hard-blocked paths:
 
 ## Future Release Notes
 
-Not implemented in this release:
+Still not implemented in this release:
 
-- automatic overage charging
-- metered billing invoices
-- proration engine
-- tax logic
+- advanced tax logic
+- full invoice compliance workflows
+- broader metering beyond the current value metrics

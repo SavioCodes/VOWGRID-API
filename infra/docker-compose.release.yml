@@ -1,0 +1,67 @@
+name: vowgrid
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vowgrid-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${VOWGRID_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${VOWGRID_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${VOWGRID_POSTGRES_DB}
+    volumes:
+      - vowgrid_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${VOWGRID_POSTGRES_USER} -d ${VOWGRID_POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: vowgrid-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - vowgrid_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    image: ${VOWGRID_API_IMAGE}
+    container_name: vowgrid-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ../apps/api/.env.production
+    environment:
+      DATABASE_URL: postgresql://${VOWGRID_POSTGRES_USER}:${VOWGRID_POSTGRES_PASSWORD}@postgres:5432/${VOWGRID_POSTGRES_DB}?schema=public
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "4000:4000"
+
+  web:
+    image: ${VOWGRID_WEB_IMAGE}
+    container_name: vowgrid-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    env_file:
+      - ../apps/web/.env.production
+    environment:
+      VOWGRID_API_BASE_URL: http://api:4000
+      VOWGRID_WEB_BASE_URL: ${VOWGRID_WEB_BASE_URL}
+    ports:
+      - "3000:3000"
+
+volumes:
+  vowgrid_postgres_data:
+  vowgrid_redis_data:

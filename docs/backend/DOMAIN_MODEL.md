@@ -35,6 +35,19 @@ Policy
 
 Multi-tenant root entity. All operational and billing data is scoped to a workspace.
 
+### User, WorkspaceMembership, And UserSession
+
+Users represent human dashboard operators that can now hold memberships in more than one workspace.
+
+Current behavior:
+
+- auth is email/password plus session token
+- `disabledAt` is used to suspend access without deleting history
+- disabling a user revokes active sessions
+- owner role is reserved to the initial signup flow
+- `WorkspaceMembership` is the active membership boundary for role, disable state, and switching
+- `WorkspaceInvite` lets an existing or future user join another workspace
+
 ### Intent
 
 Represents an action an AI agent wants to perform. It moves through the trust workflow:
@@ -105,6 +118,12 @@ Idempotent record of provider-originated events. Used for webhook processing, de
 
 Monthly counters for usage metrics such as `intents` and `executed_actions`.
 
+Paid workspaces can now cross the included `intents` and `executed_actions` caps through automatic overage billing instead of being blocked immediately. Trials and inactive billing states remain hard-limited.
+
+### BillingInvoice And BillingInvoiceLineItem
+
+Internal invoice records used for automatic overage charging visibility and plan-change proration adjustments.
+
 ### TrialState
 
 Application-managed 14-day free trial state. Trial behavior is owned by the VowGrid backend, not Mercado Pago.
@@ -136,6 +155,7 @@ The resolved entitlement snapshot drives:
 
 The current implementation actively enforces:
 
+- internal user limits for active workspace members
 - connector limits for enabled connectors
 - monthly intent limits
 - monthly executed action limits
@@ -143,4 +163,4 @@ The current implementation actively enforces:
 - advanced approval availability
 - read-only mode after trial expiry or inactive subscription state
 
-Internal user and workspace limits are modeled and surfaced in billing, but there are no self-serve provisioning paths yet that require dedicated hard enforcement on those surfaces.
+Workspace count limits remain modeled, but there is still no broader organization-level self-serve provisioning flow that would actively enforce them at scale.

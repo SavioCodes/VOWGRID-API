@@ -30,17 +30,27 @@ Local working files should remain:
 
 - `DATABASE_URL`
 - `REDIS_URL`
+- `APP_WEB_BASE_URL`
 - `SESSION_SECRET`
 - `API_KEY_SALT`
+- `MAIL_FROM_EMAIL`
+- SMTP variables
+- OAuth provider variables
 - Mercado Pago variables
+- `BILLING_DEFAULT_TAX_RATE_BPS`
+- `METRICS_AUTH_TOKEN`
 
 ### Web
 
+- `VOWGRID_WEB_BASE_URL`
 - `VOWGRID_API_BASE_URL`
 - `VOWGRID_ENABLE_PROVISIONAL_DATA`
+- OAuth provider variables
+- `NEXT_PUBLIC_VOWGRID_ENTERPRISE_CONTACT_URL`
 - `NEXT_PUBLIC_VOWGRID_ENTERPRISE_CONTACT_EMAIL`
 
 ### Infra
 
 - Postgres credentials and host port overrides
 - Redis host port override
+- release image tags and `VOWGRID_WEB_BASE_URL` for release compose

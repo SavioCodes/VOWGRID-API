@@ -22,9 +22,16 @@
 | Mercado Pago setup                      | Partial  | Code path exists, but provider account and env setup are still manual                                     |
 | Webhook authenticity in production mode | Partial  | Signature validation is implemented when a webhook secret is configured                                   |
 | Dashboard session auth                  | Complete | Signup, login, logout, and `/me` are implemented                                                          |
+| Password reset and email verification   | Complete | Request and confirmation paths are implemented and verified                                               |
+| OAuth dashboard auth                    | Partial  | GitHub and Google flows exist but require provider env configuration                                      |
+| Workspace member admin                  | Complete | Owners and admins can create, update, disable, and re-enable members                                      |
+| Workspace invites and switching         | Complete | Invite creation, acceptance, and multi-workspace switching are implemented                                |
 | API key self-service                    | Complete | Owners and admins can create, rotate, and revoke workspace API keys                                       |
 | Rollback worker                         | Complete | Dedicated BullMQ worker completes rollback attempts and writes receipts                                   |
-| Automated E2E coverage                  | Partial  | Smoke path exists through Playwright; coverage is still intentionally shallow                             |
+| Automatic overage billing               | Complete | Paid workspaces can exceed included limits and generate invoice line items                                |
+| Proration preview                       | Partial  | Proration math and invoice line items exist, but full provider-backed plan changes need provider setup    |
+| Metrics endpoint                        | Complete | `/v1/metrics` exposes Prometheus-style metrics with optional bearer-token protection                      |
+| Automated E2E coverage                  | Partial  | Auth, recovery, and invite/switch flows are covered; broader browser coverage is still intentionally thin |
 
 ## What Actually Works
 
@@ -36,18 +43,25 @@
 - Warn near plan limits and hard-block critical write paths at hard limits
 - Start Mercado Pago checkout when provider envs are configured
 - Accept and idempotently process Mercado Pago subscription webhooks
+- Request password resets and confirm them with expiring tokens
+- Request email verification and confirm it with expiring tokens
+- Create invites, accept them, and switch between active workspace memberships
+- Create, update, disable, re-enable, and list workspace members from session-backed dashboard routes
 - Create, rotate, revoke, and list workspace API keys from session-backed dashboard routes
 - Complete rollback asynchronously and record rollback receipts
+- Emit Prometheus-compatible application metrics from `/v1/metrics`
 
 ## Partial Or Known Gaps
 
-- Internal user and multi-workspace limits are surfaced but not yet tied to self-serve provisioning flows
 - Enterprise still needs a real sales path before launch
 - Slack connector is not ready for real execution
+- OAuth only becomes active when real provider credentials are configured
+- Proration is calculated internally, but full provider-backed plan change flows still depend on Mercado Pago setup
+- Observability is still local-first; dashboards and alert routing are not configured
 
 ## Known Limitations
 
-1. Automatic overage billing is intentionally not implemented in this release.
-2. Tax and invoice systems are intentionally out of scope for this release.
-3. Password reset, email verification, invites, and SSO are still missing.
-4. Multi-workspace membership and switching are still missing.
+1. Tax and invoice compliance systems are still intentionally out of scope for this release.
+2. Enterprise SSO is still not implemented.
+3. Centralized observability and alerting are still not wired.
+4. Deploy automation and Terraform need production secrets, hosts, and hardening before they should be treated as launch-ready.

@@ -1,0 +1,69 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image tags
+        run: |
+          echo "API_IMAGE=ghcr.io/${{ github.repository_owner }}/vowgrid-api-api:production-${{ github.sha }}" >> $GITHUB_ENV
+          echo "WEB_IMAGE=ghcr.io/${{ github.repository_owner }}/vowgrid-api-web:production-${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.API_IMAGE }}
+            ghcr.io/${{ github.repository_owner }}/vowgrid-api-api:production
+
+      - name: Build and push Web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./apps/web/Dockerfile
+          push: true
+          tags: |
+            ${{ env.WEB_IMAGE }}
+            ghcr.io/${{ github.repository_owner }}/vowgrid-api-web:production
+
+      - name: Configure SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PRODUCTION_DEPLOY_SSH_KEY }}
+
+      - name: Copy release compose file
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_DEPLOY_USER }}@${{ secrets.PRODUCTION_DEPLOY_HOST }} "mkdir -p '${{ secrets.PRODUCTION_DEPLOY_PATH }}/infra'"
+          scp -o StrictHostKeyChecking=no infra/docker-compose.release.yml ${{ secrets.PRODUCTION_DEPLOY_USER }}@${{ secrets.PRODUCTION_DEPLOY_HOST }}:${{ secrets.PRODUCTION_DEPLOY_PATH }}/infra/docker-compose.release.yml
+
+      - name: Deploy production stack
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_DEPLOY_USER }}@${{ secrets.PRODUCTION_DEPLOY_HOST }} "
+            cd '${{ secrets.PRODUCTION_DEPLOY_PATH }}' && \
+            export VOWGRID_API_IMAGE='${{ env.API_IMAGE }}' && \
+            export VOWGRID_WEB_IMAGE='${{ env.WEB_IMAGE }}' && \
+            export VOWGRID_WEB_BASE_URL='${{ secrets.PRODUCTION_WEB_BASE_URL }}' && \
+            docker compose -f infra/docker-compose.release.yml pull && \
+            docker compose -f infra/docker-compose.release.yml up -d --remove-orphans
+          "

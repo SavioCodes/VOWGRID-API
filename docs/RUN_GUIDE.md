@@ -49,6 +49,9 @@ Seeded billing state:
 - Pricing page: open `http://localhost:3000/pricing`
 - Billing page: open `http://localhost:3000/app/billing`
 - Settings page: open `http://localhost:3000/app/settings`
+- Forgot password: open `http://localhost:3000/forgot-password`
+- Verification flow: open `http://localhost:3000/verify-email`
+- Metrics: `curl http://localhost:4000/v1/metrics`
 - Docker status: `pnpm docker:status`
 - Docker logs: `pnpm docker:logs`
 
@@ -60,11 +63,25 @@ Session auth:
 - `POST /v1/auth/login`
 - `GET /v1/auth/me`
 - `POST /v1/auth/logout`
+- `POST /v1/auth/password-reset/request`
+- `POST /v1/auth/password-reset/confirm`
+- `POST /v1/auth/email-verification/request`
+- `POST /v1/auth/email-verification/verify`
+- `POST /v1/auth/oauth/complete`
+- `POST /v1/auth/oauth/signup/complete`
+- `POST /v1/auth/invites/accept`
+- `POST /v1/auth/switch-workspace`
 
 Machine auth:
 
 - Send `X-Api-Key: vowgrid_local_dev_key` to the workflow routes
 - Create and rotate workspace-scoped API keys from `/app/settings`
+
+Workspace admin auth:
+
+- Owners and admins can create, update, disable, and re-enable workspace members from `/app/settings`
+- Owners and admins can create, revoke, and inspect invites from `/app/settings`
+- Disabled members lose active sessions immediately and cannot log back in until re-enabled
 
 ## Minimal Product Workflow Check
 
@@ -78,6 +95,7 @@ Machine auth:
 8. Read the generated receipt.
 9. Inspect `/v1/audit-events`.
 10. Optionally request rollback and confirm the attempt completes through the rollback worker.
+11. Open `/app/settings` and confirm member management, invites, workspace switching, and API key management are all available to the current admin user.
 
 ## Preview Mode
 
@@ -99,6 +117,7 @@ The compose stack only manages Postgres and Redis. Persistent data lives in the 
 - Integration: `pnpm test:integration`
 - Coverage: `pnpm test:coverage`
 - E2E smoke: `pnpm test:e2e`
+- Browser install for E2E: `pnpm test:e2e:install`
 
 ## Billing Provider Setup
 
@@ -116,6 +135,25 @@ To enable checkout locally, set these in `apps/api/.env`:
 - `MERCADO_PAGO_RETURN_URL`
 
 See `docs/billing/MERCADO_PAGO_SETUP.md` for the full setup flow.
+
+Enterprise contact setup in `apps/web/.env.local`:
+
+- `NEXT_PUBLIC_VOWGRID_ENTERPRISE_CONTACT_URL`
+- or `NEXT_PUBLIC_VOWGRID_ENTERPRISE_CONTACT_EMAIL`
+
+OAuth setup for the web and API:
+
+- `GITHUB_OAUTH_CLIENT_ID`
+- `GITHUB_OAUTH_CLIENT_SECRET`
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+- `APP_WEB_BASE_URL`
+- `VOWGRID_WEB_BASE_URL`
+
+Metrics endpoint protection:
+
+- set `METRICS_AUTH_TOKEN` in `apps/api/.env`
+- then call `GET /v1/metrics` with `Authorization: Bearer <token>`
 
 ## Troubleshooting
 
