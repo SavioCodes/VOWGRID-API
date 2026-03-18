@@ -73,11 +73,16 @@ export function Sidebar({
           <Badge tone="accent">7 stages</Badge>
         </div>
         <div className="grid grid-cols-2 gap-2 text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
-          {['Propose', 'Simulate', 'Policy', 'Approve', 'Execute', 'Receipt', 'Rollback'].map((step) => (
-            <span key={step} className="rounded-full border border-[var(--color-border)] px-3 py-2 text-center">
-              {step}
-            </span>
-          ))}
+          {['Propose', 'Simulate', 'Policy', 'Approve', 'Execute', 'Receipt', 'Rollback'].map(
+            (step) => (
+              <span
+                key={step}
+                className="rounded-full border border-[var(--color-border)] px-3 py-2 text-center"
+              >
+                {step}
+              </span>
+            ),
+          )}
         </div>
       </div>
     </aside>

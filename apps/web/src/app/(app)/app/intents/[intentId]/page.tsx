@@ -26,10 +26,7 @@ export default async function IntentDetailPage({
   params: Promise<{ intentId: string }>;
 }) {
   const { intentId } = await params;
-  const [snapshot, intent] = await Promise.all([
-    getWorkspaceSnapshot(),
-    getIntentRecord(intentId),
-  ]);
+  const [snapshot, intent] = await Promise.all([getWorkspaceSnapshot(), getIntentRecord(intentId)]);
 
   if (!intent) {
     notFound();
@@ -107,7 +104,9 @@ export default async function IntentDetailPage({
               <Card>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">Simulation summary</p>
+                    <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
+                      Simulation summary
+                    </p>
                     <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
                       {intent.simulationResult.summary}
                     </h2>
@@ -121,7 +120,9 @@ export default async function IntentDetailPage({
                         <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
                           {resource.type}
                         </p>
-                        <p className="mt-2 font-medium text-[var(--color-text-primary)]">{resource.name}</p>
+                        <p className="mt-2 font-medium text-[var(--color-text-primary)]">
+                          {resource.name}
+                        </p>
                         <p className="mono mt-2 text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
                           {resource.id}
                         </p>
@@ -135,7 +136,8 @@ export default async function IntentDetailPage({
           ) : (
             <Card>
               <CardContent className="py-8 text-sm leading-6 text-[var(--color-text-secondary)]">
-                This intent has not been simulated yet, so no risk summary or diff preview is available.
+                This intent has not been simulated yet, so no risk summary or diff preview is
+                available.
               </CardContent>
             </Card>
           )}
@@ -195,7 +197,9 @@ export default async function IntentDetailPage({
           <Card>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">Lifecycle facts</p>
+                <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
+                  Lifecycle facts
+                </p>
                 <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
                   Operator context
                 </h2>

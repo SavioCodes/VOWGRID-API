@@ -1,7 +1,8 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@vowgrid/contracts", "@vowgrid/ui"],
+  transpilePackages: ['@vowgrid/contracts', '@vowgrid/ui'],
+  allowedDevOrigins: ['127.0.0.1'],
 };
 
 export default nextConfig;

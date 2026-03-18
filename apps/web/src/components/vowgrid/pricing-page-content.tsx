@@ -2,9 +2,26 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Badge, Button, Card, CardContent, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '@vowgrid/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+} from '@vowgrid/ui';
 import type { BillingCycle } from '@vowgrid/contracts';
-import { billingPlans, formatApprovalsMode, formatPlanPrice, formatSupportTier } from '@/lib/vowgrid/billing';
+import {
+  billingPlans,
+  formatApprovalsMode,
+  formatPlanPrice,
+  formatSupportTier,
+  getEnterpriseContactHref,
+} from '@/lib/vowgrid/billing';
 
 const faqItems = [
   {
@@ -31,12 +48,16 @@ const faqItems = [
 
 export function PricingPageContent() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
+  const enterpriseContactHref = getEnterpriseContactHref();
 
   return (
     <div className="space-y-10">
       <section className="grid gap-4 xl:grid-cols-4">
         {billingPlans.map((plan) => (
-          <Card key={plan.key} className={plan.key === 'pro' ? 'border-[var(--color-border-highlight)]' : undefined}>
+          <Card
+            key={plan.key}
+            className={plan.key === 'pro' ? 'border-[var(--color-border-highlight)]' : undefined}
+          >
             <CardContent className="space-y-5">
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
@@ -62,11 +83,13 @@ export function PricingPageContent() {
                 </p>
                 {plan.selfServeCheckout ? (
                   <p className="text-sm text-[var(--color-text-secondary)]">
-                    Also available as {formatPlanPrice(plan, cycle === 'monthly' ? 'yearly' : 'monthly')}.
+                    Also available as{' '}
+                    {formatPlanPrice(plan, cycle === 'monthly' ? 'yearly' : 'monthly')}.
                   </p>
                 ) : (
                   <p className="text-sm text-[var(--color-text-secondary)]">
-                    Starting around R$ {plan.suggestedStartingTicketBrl?.toLocaleString('pt-BR')} with custom scoping.
+                    Starting around R$ {plan.suggestedStartingTicketBrl?.toLocaleString('pt-BR')}{' '}
+                    with custom scoping.
                   </p>
                 )}
               </div>
@@ -77,19 +100,31 @@ export function PricingPageContent() {
                 <p>{plan.limits.activeConnectors ?? 'Custom'} active connectors</p>
                 <p>{plan.limits.internalUsers ?? 'Custom'} internal users</p>
                 <p>{plan.limits.auditRetentionDays ?? 'Custom'} days of audit retention</p>
-                <p>{plan.features.advancedPolicies ? 'Advanced policies included' : 'Core policy types only'}</p>
+                <p>
+                  {plan.features.advancedPolicies
+                    ? 'Advanced policies included'
+                    : 'Core policy types only'}
+                </p>
                 <p>{formatApprovalsMode(plan.features.approvalsMode)}</p>
                 <p>{formatSupportTier(plan.features.supportTier)}</p>
               </div>
 
               {plan.selfServeCheckout ? (
                 <Link href={plan.key === 'launch' ? '/signup' : '/login'}>
-                  <Button block>{plan.key === 'launch' ? 'Start 14-day trial' : 'Choose plan after login'}</Button>
+                  <Button block>
+                    {plan.key === 'launch' ? 'Start 14-day trial' : 'Choose plan after login'}
+                  </Button>
+                </Link>
+              ) : enterpriseContactHref ? (
+                <Link href={enterpriseContactHref}>
+                  <Button block tone="secondary">
+                    Contact sales
+                  </Button>
                 </Link>
               ) : (
-                <Link href="mailto:sales@vowgrid.local?subject=VowGrid%20Enterprise">
-                  <Button block tone="secondary">Contact sales</Button>
-                </Link>
+                <Button block tone="secondary" disabled>
+                  Enterprise contact not configured
+                </Button>
               )}
             </CardContent>
           </Card>
@@ -99,7 +134,9 @@ export function PricingPageContent() {
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">Pricing view</p>
+            <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
+              Pricing view
+            </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
               Compare the plans in the commercial language operators actually care about.
             </h2>
@@ -141,7 +178,9 @@ export function PricingPageContent() {
             <TableRow>
               <TableCell>Executed actions / month</TableCell>
               {billingPlans.map((plan) => (
-                <TableCell key={plan.key}>{plan.limits.executedActionsPerMonth ?? 'Custom'}</TableCell>
+                <TableCell key={plan.key}>
+                  {plan.limits.executedActionsPerMonth ?? 'Custom'}
+                </TableCell>
               ))}
             </TableRow>
             <TableRow>
@@ -166,20 +205,26 @@ export function PricingPageContent() {
               <TableCell>Audit retention</TableCell>
               {billingPlans.map((plan) => (
                 <TableCell key={plan.key}>
-                  {plan.limits.auditRetentionDays === null ? 'Custom' : `${plan.limits.auditRetentionDays} days`}
+                  {plan.limits.auditRetentionDays === null
+                    ? 'Custom'
+                    : `${plan.limits.auditRetentionDays} days`}
                 </TableCell>
               ))}
             </TableRow>
             <TableRow>
               <TableCell>Advanced policies</TableCell>
               {billingPlans.map((plan) => (
-                <TableCell key={plan.key}>{plan.features.advancedPolicies ? 'Included' : 'No'}</TableCell>
+                <TableCell key={plan.key}>
+                  {plan.features.advancedPolicies ? 'Included' : 'No'}
+                </TableCell>
               ))}
             </TableRow>
             <TableRow>
               <TableCell>Approvals mode</TableCell>
               {billingPlans.map((plan) => (
-                <TableCell key={plan.key}>{formatApprovalsMode(plan.features.approvalsMode)}</TableCell>
+                <TableCell key={plan.key}>
+                  {formatApprovalsMode(plan.features.approvalsMode)}
+                </TableCell>
               ))}
             </TableRow>
             <TableRow>

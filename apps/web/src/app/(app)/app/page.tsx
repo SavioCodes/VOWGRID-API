@@ -11,11 +11,15 @@ import { getWorkspaceSnapshot } from '@/lib/vowgrid/repository';
 export default async function OverviewPage() {
   const snapshot = await getWorkspaceSnapshot();
 
-  const pendingApprovals = snapshot.intents.filter((intent) => intent.status === 'pending_approval').length;
+  const pendingApprovals = snapshot.intents.filter(
+    (intent) => intent.status === 'pending_approval',
+  ).length;
   const activeExecutions = snapshot.intents.filter((intent) =>
     ['queued', 'executing'].includes(intent.status),
   ).length;
-  const completedReceipts = snapshot.intents.filter((intent) => intent.status === 'succeeded').length;
+  const completedReceipts = snapshot.intents.filter(
+    (intent) => intent.status === 'succeeded',
+  ).length;
   const rollbackExposure = snapshot.connectors.connectors.filter(
     (connector) => connector.rollbackSupport !== 'supported',
   ).length;
@@ -39,13 +43,28 @@ export default async function OverviewPage() {
         <MetricCard label="Pending approvals" value={String(pendingApprovals)} trend="Needs review">
           Human reviewers are still in the loop on these items.
         </MetricCard>
-        <MetricCard label="Active executions" value={String(activeExecutions)} tone="warning" trend="In flight">
+        <MetricCard
+          label="Active executions"
+          value={String(activeExecutions)}
+          tone="warning"
+          trend="In flight"
+        >
           Queue and worker activity visible in the same shell.
         </MetricCard>
-        <MetricCard label="Receipts generated" value={String(completedReceipts)} tone="mint" trend="Proof available">
+        <MetricCard
+          label="Receipts generated"
+          value={String(completedReceipts)}
+          tone="mint"
+          trend="Proof available"
+        >
           Completed work already has inspectable execution receipts.
         </MetricCard>
-        <MetricCard label="Rollback exposure" value={String(rollbackExposure)} tone="danger" trend="Connector posture">
+        <MetricCard
+          label="Rollback exposure"
+          value={String(rollbackExposure)}
+          tone="danger"
+          trend="Connector posture"
+        >
           Connectors with partial or unsupported rollback stay visible.
         </MetricCard>
       </section>
@@ -53,7 +72,9 @@ export default async function OverviewPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">Recent intents</p>
+              <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
+                Recent intents
+              </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
                 Trust workflow queue
               </h2>
@@ -76,23 +97,30 @@ export default async function OverviewPage() {
         <Card>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">Health and posture</p>
+              <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
+                Health and posture
+              </p>
               <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
                 Control plane signal
               </h2>
             </div>
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1">
               <div className="rounded-[22px] border border-[var(--color-border)] p-4">
-                <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Health status</p>
+                <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                  Health status
+                </p>
                 <p className="mt-2 text-xl font-semibold text-[var(--color-text-primary)]">
                   {snapshot.health?.status ?? 'Unknown'}
                 </p>
                 <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                  Database: {snapshot.health?.services.database ?? 'n/a'} / Redis: {snapshot.health?.services.redis ?? 'n/a'}
+                  Database: {snapshot.health?.services.database ?? 'n/a'} / Redis:{' '}
+                  {snapshot.health?.services.redis ?? 'n/a'}
                 </p>
               </div>
               <div className="rounded-[22px] border border-[var(--color-border)] p-4">
-                <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Connectors</p>
+                <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                  Connectors
+                </p>
                 <p className="mt-2 text-xl font-semibold text-[var(--color-text-primary)]">
                   {snapshot.connectors.connectors.length}
                 </p>
@@ -101,7 +129,9 @@ export default async function OverviewPage() {
                 </p>
               </div>
               <div className="rounded-[22px] border border-[var(--color-border)] p-4">
-                <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Policies</p>
+                <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                  Policies
+                </p>
                 <p className="mt-2 text-xl font-semibold text-[var(--color-text-primary)]">
                   {snapshot.policies.length}
                 </p>
@@ -111,7 +141,9 @@ export default async function OverviewPage() {
               </div>
               <div className="rounded-[22px] border border-[var(--color-border)] p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Billing</p>
+                  <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                    Billing
+                  </p>
                   <BillingStatusBadge status={billingStatus} />
                 </div>
                 <p className="mt-2 text-xl font-semibold text-[var(--color-text-primary)]">
@@ -129,7 +161,9 @@ export default async function OverviewPage() {
       </section>
       <section className="space-y-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">Audit trail</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
+            Audit trail
+          </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
             Recent proof events
           </h2>

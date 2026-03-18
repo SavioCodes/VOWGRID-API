@@ -6,11 +6,7 @@ import { PayloadViewer } from '@/components/vowgrid/payload-viewer';
 import { getReceiptRecord } from '@/lib/vowgrid/repository';
 import { compactId, formatDateTime, formatDuration } from '@/lib/vowgrid/format';
 
-export default async function ReceiptPage({
-  params,
-}: {
-  params: Promise<{ receiptId: string }>;
-}) {
+export default async function ReceiptPage({ params }: { params: Promise<{ receiptId: string }> }) {
   const { receiptId } = await params;
   const receipt = await getReceiptRecord(receiptId);
 
@@ -37,20 +33,32 @@ export default async function ReceiptPage({
       <section className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardContent className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-text-dim)]">Created</p>
-            <p className="text-xl font-semibold text-[var(--color-text-primary)]">{formatDateTime(receipt.createdAt)}</p>
+            <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-text-dim)]">
+              Created
+            </p>
+            <p className="text-xl font-semibold text-[var(--color-text-primary)]">
+              {formatDateTime(receipt.createdAt)}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-text-dim)]">Duration</p>
-            <p className="text-xl font-semibold text-[var(--color-text-primary)]">{formatDuration(receipt.duration)}</p>
+            <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-text-dim)]">
+              Duration
+            </p>
+            <p className="text-xl font-semibold text-[var(--color-text-primary)]">
+              {formatDuration(receipt.duration)}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-text-dim)]">Intent</p>
-            <p className="text-xl font-semibold text-[var(--color-text-primary)]">{receipt.intent.title}</p>
+            <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-text-dim)]">
+              Intent
+            </p>
+            <p className="text-xl font-semibold text-[var(--color-text-primary)]">
+              {receipt.intent.title}
+            </p>
           </CardContent>
         </Card>
       </section>

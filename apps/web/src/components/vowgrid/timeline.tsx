@@ -9,18 +9,14 @@ export interface TimelineItem {
   meta?: string;
 }
 
-export function Timeline({
-  title,
-  items,
-}: {
-  title: string;
-  items: TimelineItem[];
-}) {
+export function Timeline({ title, items }: { title: string; items: TimelineItem[] }) {
   return (
     <Card>
       <CardContent className="space-y-6">
         <div className="flex items-center justify-between gap-4">
-          <h3 className="text-lg font-semibold tracking-[-0.03em] text-[var(--color-text-primary)]">{title}</h3>
+          <h3 className="text-lg font-semibold tracking-[-0.03em] text-[var(--color-text-primary)]">
+            {title}
+          </h3>
           <Badge tone="neutral">{items.length} events</Badge>
         </div>
         <ol className="space-y-5">
@@ -32,7 +28,9 @@ export function Timeline({
               ) : null}
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-3">
-                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">{item.title}</p>
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                    {item.title}
+                  </p>
                   {item.meta ? <Badge tone={item.tone ?? 'accent'}>{item.meta}</Badge> : null}
                   {item.timestamp ? (
                     <span className="mono text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
@@ -40,7 +38,9 @@ export function Timeline({
                     </span>
                   ) : null}
                 </div>
-                <p className="text-sm leading-6 text-[var(--color-text-secondary)]">{item.detail}</p>
+                <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
+                  {item.detail}
+                </p>
               </div>
             </li>
           ))}

@@ -20,7 +20,10 @@ const toneStyles: Record<ButtonTone, string> = {
     'border border-[rgba(245,89,89,0.32)] bg-[rgba(245,89,89,0.14)] text-[var(--color-danger)] hover:bg-[rgba(245,89,89,0.2)]',
 };
 
-export function buttonStyles({ tone = 'primary', block = false }: Pick<ButtonProps, 'tone' | 'block'>) {
+export function buttonStyles({
+  tone = 'primary',
+  block = false,
+}: Pick<ButtonProps, 'tone' | 'block'>) {
   return cx(
     'inline-flex min-h-10 items-center justify-center rounded-full px-4 text-sm font-semibold tracking-[-0.02em] transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)] disabled:cursor-not-allowed disabled:opacity-50',
     block && 'w-full',

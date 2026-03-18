@@ -7,6 +7,7 @@ import { UsageMeter } from '@/components/vowgrid/usage-meter';
 import {
   billingPlans,
   formatApprovalsMode,
+  getEnterpriseContactHref,
   formatPlanPrice,
   formatSupportTier,
   getCurrentPlan,
@@ -22,6 +23,7 @@ export default async function BillingPage() {
   const currentPlan = getCurrentPlan(account);
   const currentStatus = getWorkspaceBillingStatus(account);
   const recommendedUpgrade = getUpgradeRecommendation(account);
+  const enterpriseContactHref = getEnterpriseContactHref();
 
   return (
     <div className="space-y-6">
@@ -60,14 +62,18 @@ export default async function BillingPage() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <BillingStatusBadge status={currentStatus} />
-                    {account.entitlements.source === 'trial' ? <Badge tone="accent">14-day trial</Badge> : null}
+                    {account.entitlements.source === 'trial' ? (
+                      <Badge tone="accent">14-day trial</Badge>
+                    ) : null}
                     {currentPlan ? <Badge tone="neutral">{currentPlan.badge}</Badge> : null}
                   </div>
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-3">
                   <div className="rounded-[22px] border border-[var(--color-border)] p-4">
-                    <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Plan source</p>
+                    <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                      Plan source
+                    </p>
                     <p className="mt-2 text-lg font-semibold text-[var(--color-text-primary)]">
                       {account.entitlements.source === 'subscription'
                         ? 'Paid subscription'
@@ -77,33 +83,48 @@ export default async function BillingPage() {
                     </p>
                   </div>
                   <div className="rounded-[22px] border border-[var(--color-border)] p-4">
-                    <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Trial remaining</p>
+                    <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                      Trial remaining
+                    </p>
                     <p className="mt-2 text-lg font-semibold text-[var(--color-text-primary)]">
-                      {account.trial.isActive ? `${account.trial.daysRemaining} day(s)` : 'Not active'}
+                      {account.trial.isActive
+                        ? `${account.trial.daysRemaining} day(s)`
+                        : 'Not active'}
                     </p>
                   </div>
                   <div className="rounded-[22px] border border-[var(--color-border)] p-4">
-                    <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Support tier</p>
+                    <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                      Support tier
+                    </p>
                     <p className="mt-2 text-lg font-semibold text-[var(--color-text-primary)]">
-                      {currentPlan ? formatSupportTier(currentPlan.features.supportTier) : 'Upgrade required'}
+                      {currentPlan
+                        ? formatSupportTier(currentPlan.features.supportTier)
+                        : 'Upgrade required'}
                     </p>
                   </div>
                 </div>
 
-                {account.entitlements.warnings.length > 0 || account.entitlements.blocks.length > 0 ? (
+                {account.entitlements.warnings.length > 0 ||
+                account.entitlements.blocks.length > 0 ? (
                   <div className="grid gap-3 md:grid-cols-2">
                     <div className="rounded-[22px] border border-[rgba(245,185,66,0.24)] bg-[rgba(245,185,66,0.08)] p-4">
-                      <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-warning)]">Warnings</p>
+                      <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-warning)]">
+                        Warnings
+                      </p>
                       <div className="mt-3 space-y-2 text-sm leading-6 text-[var(--color-text-secondary)]">
                         {account.entitlements.warnings.length > 0 ? (
-                          account.entitlements.warnings.map((warning) => <p key={warning}>{warning}</p>)
+                          account.entitlements.warnings.map((warning) => (
+                            <p key={warning}>{warning}</p>
+                          ))
                         ) : (
                           <p>No current warning thresholds are firing.</p>
                         )}
                       </div>
                     </div>
                     <div className="rounded-[22px] border border-[rgba(245,89,89,0.24)] bg-[rgba(245,89,89,0.08)] p-4">
-                      <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-danger)]">Blocks</p>
+                      <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-danger)]">
+                        Blocks
+                      </p>
                       <div className="mt-3 space-y-2 text-sm leading-6 text-[var(--color-text-secondary)]">
                         {account.entitlements.blocks.length > 0 ? (
                           account.entitlements.blocks.map((block) => <p key={block}>{block}</p>)
@@ -139,7 +160,9 @@ export default async function BillingPage() {
                   {account.provider.manualSetupRequired.length > 0 ? (
                     account.provider.manualSetupRequired.map((item) => <p key={item}>{item}</p>)
                   ) : (
-                    <p>Mercado Pago env and webhook configuration look ready for self-serve checkout.</p>
+                    <p>
+                      Mercado Pago env and webhook configuration look ready for self-serve checkout.
+                    </p>
                   )}
                 </div>
                 {account.subscription ? (
@@ -156,7 +179,9 @@ export default async function BillingPage() {
 
           <section className="space-y-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">Usage and limits</p>
+              <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
+                Usage and limits
+              </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
                 Make limit pressure visible before it turns into billing confusion.
               </h2>
@@ -185,25 +210,40 @@ export default async function BillingPage() {
                 const isCurrent = account.entitlements.effectivePlanKey === plan.key;
 
                 return (
-                  <Card key={plan.key} className={isCurrent ? 'border-[var(--color-border-highlight)]' : undefined}>
+                  <Card
+                    key={plan.key}
+                    className={isCurrent ? 'border-[var(--color-border-highlight)]' : undefined}
+                  >
                     <CardContent className="space-y-5">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-3">
                           <h3 className="text-xl font-semibold tracking-[-0.03em] text-[var(--color-text-primary)]">
                             {plan.label}
                           </h3>
-                          {isCurrent ? <Badge tone="accent">Current</Badge> : <Badge tone="neutral">{plan.badge}</Badge>}
+                          {isCurrent ? (
+                            <Badge tone="accent">Current</Badge>
+                          ) : (
+                            <Badge tone="neutral">{plan.badge}</Badge>
+                          )}
                         </div>
-                        <p className="text-sm leading-6 text-[var(--color-text-secondary)]">{plan.displayText}</p>
+                        <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
+                          {plan.displayText}
+                        </p>
                       </div>
 
                       <div className="space-y-2 text-sm leading-6 text-[var(--color-text-secondary)]">
-                        <p>{plan.limits.executedActionsPerMonth ?? 'Custom'} executed actions / month</p>
+                        <p>
+                          {plan.limits.executedActionsPerMonth ?? 'Custom'} executed actions / month
+                        </p>
                         <p>{plan.limits.intentsPerMonth ?? 'Custom'} intents / month</p>
                         <p>{plan.limits.activeConnectors ?? 'Custom'} active connectors</p>
                         <p>{plan.limits.internalUsers ?? 'Custom'} internal users</p>
                         <p>{plan.limits.auditRetentionDays ?? 'Custom'} days of audit retention</p>
-                        <p>{plan.features.advancedPolicies ? 'Advanced policies included' : 'Core policy types only'}</p>
+                        <p>
+                          {plan.features.advancedPolicies
+                            ? 'Advanced policies included'
+                            : 'Core policy types only'}
+                        </p>
                         <p>{formatApprovalsMode(plan.features.approvalsMode)}</p>
                         <p>{formatSupportTier(plan.features.supportTier)}</p>
                       </div>
@@ -214,22 +254,39 @@ export default async function BillingPage() {
                             <form action={startCheckoutAction}>
                               <input type="hidden" name="planKey" value={plan.key} />
                               <input type="hidden" name="billingCycle" value="monthly" />
-                              <Button block disabled={!account.provider.checkoutEnabled || isCurrent}>
-                                {isCurrent ? 'Current monthly plan' : `Choose ${formatPlanPrice(plan, 'monthly')}`}
+                              <Button
+                                block
+                                disabled={!account.provider.checkoutEnabled || isCurrent}
+                              >
+                                {isCurrent
+                                  ? 'Current monthly plan'
+                                  : `Choose ${formatPlanPrice(plan, 'monthly')}`}
                               </Button>
                             </form>
                             <form action={startCheckoutAction}>
                               <input type="hidden" name="planKey" value={plan.key} />
                               <input type="hidden" name="billingCycle" value="yearly" />
-                              <Button block tone="secondary" disabled={!account.provider.checkoutEnabled || isCurrent}>
-                                {isCurrent ? 'Current yearly plan' : `Choose ${formatPlanPrice(plan, 'yearly')}`}
+                              <Button
+                                block
+                                tone="secondary"
+                                disabled={!account.provider.checkoutEnabled || isCurrent}
+                              >
+                                {isCurrent
+                                  ? 'Current yearly plan'
+                                  : `Choose ${formatPlanPrice(plan, 'yearly')}`}
                               </Button>
                             </form>
                           </>
-                        ) : (
-                          <Link href="mailto:sales@vowgrid.local?subject=VowGrid%20Enterprise">
-                            <Button block tone="secondary">Talk to sales</Button>
+                        ) : enterpriseContactHref ? (
+                          <Link href={enterpriseContactHref}>
+                            <Button block tone="secondary">
+                              Talk to sales
+                            </Button>
                           </Link>
+                        ) : (
+                          <Button block tone="secondary" disabled>
+                            Enterprise contact not configured
+                          </Button>
                         )}
                       </div>
                     </CardContent>

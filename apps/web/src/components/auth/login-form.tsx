@@ -34,7 +34,13 @@ export function LoginForm() {
       <div className="space-y-4">
         <label className="block space-y-2">
           <span className="text-sm font-medium text-[var(--color-text-primary)]">Email</span>
-          <Input name="email" type="email" placeholder="you@company.com" autoComplete="email" required />
+          <Input
+            name="email"
+            type="email"
+            placeholder="you@company.com"
+            autoComplete="email"
+            required
+          />
         </label>
 
         <label className="block space-y-2">
@@ -54,7 +60,10 @@ export function LoginForm() {
 
       <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
         Need a workspace first?{' '}
-        <Link href="/signup" className="text-[var(--color-accent-soft)] hover:text-[var(--color-text-primary)]">
+        <Link
+          href="/signup"
+          className="text-[var(--color-accent-soft)] hover:text-[var(--color-text-primary)]"
+        >
           Create one here
         </Link>
         .

@@ -31,7 +31,9 @@ export function Topbar({
           </p>
         </div>
         <form action={logoutAction}>
-          <Button tone="ghost" type="submit">Log out</Button>
+          <Button tone="ghost" type="submit">
+            Log out
+          </Button>
         </form>
       </div>
     </header>

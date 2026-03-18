@@ -25,7 +25,9 @@ export function SignupForm() {
   return (
     <form action={formAction} className="space-y-5">
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">Signup</p>
+        <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
+          Signup
+        </p>
         <h2 className="text-3xl font-semibold tracking-[-0.05em] text-[var(--color-text-primary)]">
           Start a workspace trial
         </h2>
@@ -33,8 +35,15 @@ export function SignupForm() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block space-y-2 sm:col-span-2">
-          <span className="text-sm font-medium text-[var(--color-text-primary)]">Workspace name</span>
-          <Input name="workspaceName" placeholder="Primary Trust Workspace" autoComplete="organization" required />
+          <span className="text-sm font-medium text-[var(--color-text-primary)]">
+            Workspace name
+          </span>
+          <Input
+            name="workspaceName"
+            placeholder="Primary Trust Workspace"
+            autoComplete="organization"
+            required
+          />
         </label>
 
         <label className="block space-y-2">
@@ -44,7 +53,13 @@ export function SignupForm() {
 
         <label className="block space-y-2">
           <span className="text-sm font-medium text-[var(--color-text-primary)]">Work email</span>
-          <Input name="email" type="email" placeholder="you@company.com" autoComplete="email" required />
+          <Input
+            name="email"
+            type="email"
+            placeholder="you@company.com"
+            autoComplete="email"
+            required
+          />
         </label>
 
         <label className="block space-y-2 sm:col-span-2">
@@ -64,7 +79,10 @@ export function SignupForm() {
 
       <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
         Already have access?{' '}
-        <Link href="/login" className="text-[var(--color-accent-soft)] hover:text-[var(--color-text-primary)]">
+        <Link
+          href="/login"
+          className="text-[var(--color-accent-soft)] hover:text-[var(--color-text-primary)]"
+        >
           Log in here
         </Link>
         .

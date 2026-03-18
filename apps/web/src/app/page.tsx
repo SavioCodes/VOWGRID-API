@@ -29,7 +29,9 @@ export default function Home() {
                 VG
               </div>
               <div>
-                <p className="text-lg font-semibold tracking-[-0.03em] text-[var(--color-text-primary)]">VowGrid</p>
+                <p className="text-lg font-semibold tracking-[-0.03em] text-[var(--color-text-primary)]">
+                  VowGrid
+                </p>
                 <p className="text-sm text-[var(--color-text-secondary)]">
                   The trust layer between AI agents and real-world actions.
                 </p>
@@ -52,7 +54,9 @@ export default function Home() {
                 Ship AI agents into the real world without losing control of what they touch.
               </h1>
               <p className="max-w-3xl text-lg leading-8 text-[var(--color-text-secondary)]">
-                VowGrid turns risky automation into an accountable workflow. Operators can see intent, simulate consequences, evaluate policy, approve with context, monitor execution, and inspect receipts after the fact.
+                VowGrid turns risky automation into an accountable workflow. Operators can see
+                intent, simulate consequences, evaluate policy, approve with context, monitor
+                execution, and inspect receipts after the fact.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -73,7 +77,9 @@ export default function Home() {
           <Card className="overflow-hidden">
             <CardContent className="space-y-6">
               <div className="space-y-3">
-                <p className="text-xs uppercase tracking-[0.16em] text-[var(--color-accent-soft)]">Operator signal</p>
+                <p className="text-xs uppercase tracking-[0.16em] text-[var(--color-accent-soft)]">
+                  Operator signal
+                </p>
                 <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
                   One surface for intent, approvals, receipts, and rollback posture.
                 </h2>
@@ -99,10 +105,20 @@ export default function Home() {
           <MetricCard label="Decisions captured" value="100%" trend="Chain of proof">
             From simulation warnings through receipt payloads.
           </MetricCard>
-          <MetricCard label="Operator posture" value="High signal" tone="mint" trend="Calm interface">
+          <MetricCard
+            label="Operator posture"
+            value="High signal"
+            tone="mint"
+            trend="Calm interface"
+          >
             Risk, state, and reversibility stay visible without dashboard clutter.
           </MetricCard>
-          <MetricCard label="Rollback honesty" value="Explicit" tone="warning" trend="No false safety">
+          <MetricCard
+            label="Rollback honesty"
+            value="Explicit"
+            tone="warning"
+            trend="No false safety"
+          >
             Connectors declare whether rollback is supported, partial, or unavailable.
           </MetricCard>
         </section>
@@ -111,15 +127,22 @@ export default function Home() {
           <Card>
             <CardContent className="space-y-6">
               <div className="space-y-3">
-                <p className="text-xs uppercase tracking-[0.16em] text-[var(--color-accent-soft)]">Why teams use it</p>
+                <p className="text-xs uppercase tracking-[0.16em] text-[var(--color-accent-soft)]">
+                  Why teams use it
+                </p>
                 <h2 className="text-3xl font-semibold tracking-[-0.05em] text-[var(--color-text-primary)]">
                   Serious automation needs a serious trust layer.
                 </h2>
               </div>
               <div className="space-y-4">
                 {principles.map((principle) => (
-                  <div key={principle} className="rounded-[22px] border border-[var(--color-border)] px-4 py-4">
-                    <p className="text-base leading-7 text-[var(--color-text-secondary)]">{principle}</p>
+                  <div
+                    key={principle}
+                    className="rounded-[22px] border border-[var(--color-border)] px-4 py-4"
+                  >
+                    <p className="text-base leading-7 text-[var(--color-text-secondary)]">
+                      {principle}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -128,30 +151,39 @@ export default function Home() {
           <Card>
             <CardContent className="grid gap-4 md:grid-cols-2">
               <div className="rounded-[24px] border border-[var(--color-border)] p-5">
-                <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-text-dim)]">For operators</p>
+                <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-text-dim)]">
+                  For operators
+                </p>
                 <h3 className="mt-3 text-xl font-semibold tracking-[-0.03em] text-[var(--color-text-primary)]">
                   Approval clarity
                 </h3>
                 <p className="mt-3 text-sm leading-6 text-[var(--color-text-secondary)]">
-                  Timelines show who approved, what policy mattered, which connector will execute, and what receipt will be generated.
+                  Timelines show who approved, what policy mattered, which connector will execute,
+                  and what receipt will be generated.
                 </p>
               </div>
               <div className="rounded-[24px] border border-[var(--color-border)] p-5">
-                <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-text-dim)]">For developers</p>
+                <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-text-dim)]">
+                  For developers
+                </p>
                 <h3 className="mt-3 text-xl font-semibold tracking-[-0.03em] text-[var(--color-text-primary)]">
                   Contract-aware integration
                 </h3>
                 <p className="mt-3 text-sm leading-6 text-[var(--color-text-secondary)]">
-                  Shared contracts drive the UI, and any missing backend surface is called out instead of papered over with made-up states.
+                  Shared contracts drive the UI, and any missing backend surface is called out
+                  instead of papered over with made-up states.
                 </p>
               </div>
               <div className="rounded-[24px] border border-[var(--color-border)] p-5 md:col-span-2">
-                <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-text-dim)]">Control plane feel</p>
+                <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-text-dim)]">
+                  Control plane feel
+                </p>
                 <h3 className="mt-3 text-xl font-semibold tracking-[-0.03em] text-[var(--color-text-primary)]">
                   Premium, modern, and security-grade without visual noise.
                 </h3>
                 <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--color-text-secondary)]">
-                  Dark-first surfaces, precise spacing, strong typography, and restrained motion keep the product confident without falling into generic AI-dashboard styling.
+                  Dark-first surfaces, precise spacing, strong typography, and restrained motion
+                  keep the product confident without falling into generic AI-dashboard styling.
                 </p>
               </div>
             </CardContent>
@@ -161,7 +193,9 @@ export default function Home() {
         <section className="space-y-6">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.16em] text-[var(--color-accent-soft)]">Launch pricing</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-[var(--color-accent-soft)]">
+                Launch pricing
+              </p>
               <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-[var(--color-text-primary)]">
                 Accessible enough for market entry, disciplined enough for B2B trust infrastructure.
               </h2>

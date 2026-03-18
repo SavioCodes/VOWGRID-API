@@ -14,7 +14,7 @@ export default async function IntentsPage() {
       current.push(intent);
       accumulator.set(intent.status, current);
       return accumulator;
-    }, new Map<typeof snapshot.intents[number]['status'], typeof snapshot.intents>()),
+    }, new Map<(typeof snapshot.intents)[number]['status'], typeof snapshot.intents>()),
   );
 
   return (
@@ -37,7 +37,9 @@ export default async function IntentsPage() {
                     <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
                       {meta.label}
                     </h2>
-                    <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{meta.detail}</p>
+                    <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">
+                      {meta.detail}
+                    </p>
                   </div>
                   <Badge tone={meta.tone}>{intents.length} intents</Badge>
                 </div>

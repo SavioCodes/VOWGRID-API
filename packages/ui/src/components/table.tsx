@@ -1,4 +1,9 @@
-import type { HTMLAttributes, TableHTMLAttributes } from 'react';
+import type {
+  HTMLAttributes,
+  TableHTMLAttributes,
+  TdHTMLAttributes,
+  ThHTMLAttributes,
+} from 'react';
 import { cx } from '../lib/cx';
 
 export function Table({ className, children, ...props }: TableHTMLAttributes<HTMLTableElement>) {
@@ -49,9 +54,16 @@ export function TableRow({ className, children, ...props }: HTMLAttributes<HTMLT
   );
 }
 
-export function TableCell({ className, children, ...props }: HTMLAttributes<HTMLTableCellElement>) {
+export function TableCell({
+  className,
+  children,
+  ...props
+}: TdHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td className={cx('px-4 py-3 align-top text-[var(--color-text-secondary)]', className)} {...props}>
+    <td
+      className={cx('px-4 py-3 align-top text-[var(--color-text-secondary)]', className)}
+      {...props}
+    >
       {children}
     </td>
   );
@@ -61,7 +73,7 @@ export function TableHeaderCell({
   className,
   children,
   ...props
-}: HTMLAttributes<HTMLTableCellElement>) {
+}: ThHTMLAttributes<HTMLTableCellElement>) {
   return (
     <th className={cx('px-4 py-3 font-medium', className)} {...props}>
       {children}

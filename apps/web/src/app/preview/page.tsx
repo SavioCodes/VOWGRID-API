@@ -23,7 +23,8 @@ export default async function PreviewPage() {
                 Provisional workspace preview
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--color-text-secondary)]">
-                This route exists only for local UI exploration. The authenticated product flow lives behind real session auth at <span className="mono">/app</span>.
+                This route exists only for local UI exploration. The authenticated product flow
+                lives behind real session auth at <span className="mono">/app</span>.
               </p>
             </div>
           </div>
@@ -41,7 +42,9 @@ export default async function PreviewPage() {
       <section className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardContent className="space-y-4">
-            <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">Preview state</p>
+            <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
+              Preview state
+            </p>
             <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
               {snapshot.workspaceName}
             </h2>
@@ -50,21 +53,33 @@ export default async function PreviewPage() {
             </p>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-[22px] border border-[var(--color-border)] p-4">
-                <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Intents</p>
-                <p className="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">{snapshot.intents.length}</p>
+                <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                  Intents
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+                  {snapshot.intents.length}
+                </p>
               </div>
               <div className="rounded-[22px] border border-[var(--color-border)] p-4">
-                <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Connectors</p>
+                <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                  Connectors
+                </p>
                 <p className="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
                   {snapshot.connectors.connectors.length}
                 </p>
               </div>
               <div className="rounded-[22px] border border-[var(--color-border)] p-4">
-                <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Policies</p>
-                <p className="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">{snapshot.policies.length}</p>
+                <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                  Policies
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+                  {snapshot.policies.length}
+                </p>
               </div>
               <div className="rounded-[22px] border border-[var(--color-border)] p-4">
-                <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Audit events</p>
+                <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                  Audit events
+                </p>
                 <p className="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
                   {snapshot.auditEvents.length}
                 </p>
@@ -75,7 +90,9 @@ export default async function PreviewPage() {
 
         <Card>
           <CardContent className="space-y-3">
-            <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">Notes</p>
+            <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
+              Notes
+            </p>
             {snapshot.integration.notes.map((note) => (
               <p key={note} className="text-sm leading-7 text-[var(--color-text-secondary)]">
                 {note}

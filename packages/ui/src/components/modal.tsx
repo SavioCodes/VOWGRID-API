@@ -54,8 +54,14 @@ export function Modal({
         )}
       >
         <div className="space-y-2">
-          <h3 className="text-xl font-semibold tracking-[-0.03em] text-[var(--color-text-primary)]">{title}</h3>
-          {description ? <div className="text-sm leading-6 text-[var(--color-text-secondary)]">{description}</div> : null}
+          <h3 className="text-xl font-semibold tracking-[-0.03em] text-[var(--color-text-primary)]">
+            {title}
+          </h3>
+          {description ? (
+            <div className="text-sm leading-6 text-[var(--color-text-secondary)]">
+              {description}
+            </div>
+          ) : null}
         </div>
         {children ? <div className="mt-5">{children}</div> : null}
         {actions ? <div className="mt-6 flex flex-wrap justify-end gap-3">{actions}</div> : null}

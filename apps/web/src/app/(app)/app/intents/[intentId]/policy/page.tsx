@@ -5,11 +5,7 @@ import { PageHeader } from '@/components/vowgrid/page-header';
 import { getPolicyReviewContext } from '@/lib/vowgrid/repository';
 import { titleFromSlug } from '@/lib/vowgrid/status';
 
-export default async function PolicyPage({
-  params,
-}: {
-  params: Promise<{ intentId: string }>;
-}) {
+export default async function PolicyPage({ params }: { params: Promise<{ intentId: string }> }) {
   const { intentId } = await params;
   const context = await getPolicyReviewContext(intentId);
 
@@ -43,7 +39,9 @@ export default async function PolicyPage({
                   </h2>
                   <PolicyChip result={evaluation.result} />
                 </div>
-                <p className="text-sm leading-6 text-[var(--color-text-secondary)]">{evaluation.reason}</p>
+                <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
+                  {evaluation.reason}
+                </p>
               </CardContent>
             </Card>
           ))}

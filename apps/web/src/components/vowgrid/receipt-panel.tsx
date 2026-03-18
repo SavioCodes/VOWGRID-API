@@ -20,20 +20,28 @@ export function ReceiptPanel({ receipt }: { receipt: ReceiptResponse }) {
         </div>
         <div className="grid gap-3 md:grid-cols-3">
           <div className="rounded-[20px] border border-[var(--color-border)] p-3">
-            <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Created</p>
+            <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+              Created
+            </p>
             <p className="mt-2 text-sm font-medium text-[var(--color-text-primary)]">
               {formatShortDate(receipt.createdAt)}
             </p>
           </div>
           <div className="rounded-[20px] border border-[var(--color-border)] p-3">
-            <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Duration</p>
+            <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+              Duration
+            </p>
             <p className="mt-2 text-sm font-medium text-[var(--color-text-primary)]">
               {formatDuration(receipt.duration)}
             </p>
           </div>
           <div className="rounded-[20px] border border-[var(--color-border)] p-3">
-            <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Intent</p>
-            <p className="mono mt-2 text-sm font-medium text-[var(--color-text-primary)]">{compactId(receipt.intentId)}</p>
+            <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+              Intent
+            </p>
+            <p className="mono mt-2 text-sm font-medium text-[var(--color-text-primary)]">
+              {compactId(receipt.intentId)}
+            </p>
           </div>
         </div>
         <Link href={`/app/receipts/${receipt.id}`}>

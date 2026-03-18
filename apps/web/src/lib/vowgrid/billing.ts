@@ -10,6 +10,16 @@ import { PLAN_CATALOG } from '@vowgrid/contracts';
 
 export const billingPlans = Object.values(PLAN_CATALOG);
 
+export function getEnterpriseContactHref() {
+  const email = process.env.NEXT_PUBLIC_VOWGRID_ENTERPRISE_CONTACT_EMAIL?.trim();
+
+  if (!email) {
+    return null;
+  }
+
+  return `mailto:${email}?subject=VowGrid%20Enterprise`;
+}
+
 export function formatBrlAmount(amount: number | null) {
   if (amount === null) {
     return 'Sob consulta';
@@ -74,7 +84,9 @@ export function getBillingStatusTone(status: BillingSubscriptionStatus) {
   }
 }
 
-export function getWorkspaceBillingStatus(account: BillingAccountResponse | null): BillingSubscriptionStatus {
+export function getWorkspaceBillingStatus(
+  account: BillingAccountResponse | null,
+): BillingSubscriptionStatus {
   if (!account) {
     return 'incomplete';
   }
@@ -94,7 +106,9 @@ export function getWorkspaceBillingStatus(account: BillingAccountResponse | null
   return 'incomplete';
 }
 
-export function getCurrentPlan(account: BillingAccountResponse | null): BillingPlanCatalogEntry | null {
+export function getCurrentPlan(
+  account: BillingAccountResponse | null,
+): BillingPlanCatalogEntry | null {
   const planKey = account?.entitlements.effectivePlanKey ?? null;
   return planKey ? PLAN_CATALOG[planKey] : null;
 }

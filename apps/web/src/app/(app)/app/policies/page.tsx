@@ -37,7 +37,9 @@ export default async function PoliciesPage() {
                   {policy.description ?? 'No description provided.'}
                 </p>
                 <div className="rounded-[24px] border border-[var(--color-border)] bg-[rgba(6,10,20,0.82)] p-4">
-                  <p className="mb-3 text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Rules payload</p>
+                  <p className="mb-3 text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                    Rules payload
+                  </p>
                   <pre className="mono overflow-x-auto text-xs leading-6 text-[var(--color-text-secondary)]">
                     {JSON.stringify(policy.rules, null, 2)}
                   </pre>

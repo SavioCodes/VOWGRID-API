@@ -52,9 +52,7 @@ const connectors: ListConnectorsResponse = {
       updatedAt: '2026-03-15T08:10:00.000Z',
     },
   ],
-  registeredTypes: [
-    { type: 'mock', rollbackSupport: 'supported' },
-  ],
+  registeredTypes: [{ type: 'mock', rollbackSupport: 'supported' }],
 };
 
 const policies: PolicyResponse[] = [
@@ -177,7 +175,9 @@ const intents: ProvisionalIntentRecord[] = [
       estimatedImpact: 'low',
       riskLevel: 'low',
       reversibility: 'full',
-      affectedResources: [{ type: 'secret', id: 'billing-sandbox', name: 'Billing Sandbox Secret' }],
+      affectedResources: [
+        { type: 'secret', id: 'billing-sandbox', name: 'Billing Sandbox Secret' },
+      ],
       diffPreview: {
         before: { credentialVersion: 'v14', rotationWindow: 'closed' },
         after: { credentialVersion: 'v15', rotationWindow: 'open' },
@@ -387,7 +387,9 @@ const intents: ProvisionalIntentRecord[] = [
       estimatedImpact: 'medium',
       riskLevel: 'medium',
       reversibility: 'full',
-      affectedResources: [{ type: 'api_token', id: 'support-router', name: 'Support Router Token' }],
+      affectedResources: [
+        { type: 'api_token', id: 'support-router', name: 'Support Router Token' },
+      ],
       diffPreview: {
         before: { tokenVersion: 'v7' },
         after: { tokenVersion: 'v8' },
@@ -454,8 +456,7 @@ const intents: ProvisionalIntentRecord[] = [
   {
     id: 'intent_rb_001',
     title: 'Restore connector sandbox webhook',
-    description:
-      'A rollback attempt failed because the remote endpoint remained locked.',
+    description: 'A rollback attempt failed because the remote endpoint remained locked.',
     action: 'restore_webhook',
     connectorId: 'conn_mock_primary',
     agentId: 'agent_risk_copilot',
@@ -482,7 +483,9 @@ const intents: ProvisionalIntentRecord[] = [
       estimatedImpact: 'high',
       riskLevel: 'high',
       reversibility: 'partial',
-      affectedResources: [{ type: 'webhook', id: 'alerts-primary', name: 'Alerts Primary Webhook' }],
+      affectedResources: [
+        { type: 'webhook', id: 'alerts-primary', name: 'Alerts Primary Webhook' },
+      ],
       diffPreview: {
         before: { state: 'disabled' },
         after: { state: 'enabled' },
@@ -544,8 +547,7 @@ const intents: ProvisionalIntentRecord[] = [
         status: 'failed',
         reason: 'Remote webhook endpoint remained locked during rollback.',
         result: {
-          error:
-            'Connector rollback is partial and the endpoint lock prevented reversal.',
+          error: 'Connector rollback is partial and the endpoint lock prevented reversal.',
         },
         startedAt: '2026-03-15T06:55:00.000Z',
         completedAt: '2026-03-15T06:57:40.000Z',

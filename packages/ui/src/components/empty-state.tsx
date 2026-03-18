@@ -15,8 +15,12 @@ export function EmptyState({ title, description, children }: EmptyStateProps) {
           VG
         </div>
         <div className="space-y-2">
-          <h3 className="text-lg font-semibold tracking-[-0.03em] text-[var(--color-text-primary)]">{title}</h3>
-          <p className="mx-auto max-w-xl text-sm leading-6 text-[var(--color-text-secondary)]">{description}</p>
+          <h3 className="text-lg font-semibold tracking-[-0.03em] text-[var(--color-text-primary)]">
+            {title}
+          </h3>
+          <p className="mx-auto max-w-xl text-sm leading-6 text-[var(--color-text-secondary)]">
+            {description}
+          </p>
         </div>
         {children}
       </CardContent>

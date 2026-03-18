@@ -1,11 +1,7 @@
 import { Badge, Card, CardContent, EmptyState } from '@vowgrid/ui';
 import { notFound } from 'next/navigation';
 import { DiffPreview } from '@/components/vowgrid/diff-preview';
-import {
-  ReversibilityBadge,
-  RiskBadge,
-  StatusBadge,
-} from '@/components/vowgrid/badges';
+import { ReversibilityBadge, RiskBadge, StatusBadge } from '@/components/vowgrid/badges';
 import { PageHeader } from '@/components/vowgrid/page-header';
 import { PayloadViewer } from '@/components/vowgrid/payload-viewer';
 import { getIntentRecord } from '@/lib/vowgrid/repository';
@@ -40,7 +36,9 @@ export default async function SimulationPage({
           <Card>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">Summary</p>
+                <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
+                  Summary
+                </p>
                 <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
                   {intent.simulationResult.summary}
                 </h2>
@@ -54,7 +52,9 @@ export default async function SimulationPage({
                     <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
                       {resource.type}
                     </p>
-                    <p className="mt-2 font-medium text-[var(--color-text-primary)]">{resource.name}</p>
+                    <p className="mt-2 font-medium text-[var(--color-text-primary)]">
+                      {resource.name}
+                    </p>
                     <p className="mono mt-2 text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
                       {resource.id}
                     </p>

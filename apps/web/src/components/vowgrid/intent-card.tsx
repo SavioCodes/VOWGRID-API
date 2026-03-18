@@ -14,18 +14,24 @@ export function IntentCard({ intent }: { intent: IntentResponse }) {
             <Badge tone="neutral">{intent.environment}</Badge>
           </div>
           <div className="space-y-2">
-            <h3 className="text-xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">{intent.title}</h3>
+            <h3 className="text-xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
+              {intent.title}
+            </h3>
             <p className="line-clamp-2 text-sm leading-6 text-[var(--color-text-secondary)]">
               {intent.description ?? 'No description was supplied for this intent.'}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="rounded-[20px] border border-[var(--color-border)] p-3">
-              <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Action</p>
+              <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                Action
+              </p>
               <p className="mt-2 font-medium text-[var(--color-text-primary)]">{intent.action}</p>
             </div>
             <div className="rounded-[20px] border border-[var(--color-border)] p-3">
-              <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Intent ID</p>
+              <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                Intent ID
+              </p>
               <p className="mono mt-2 text-[var(--color-text-primary)]">{compactId(intent.id)}</p>
             </div>
           </div>

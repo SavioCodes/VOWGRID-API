@@ -7,7 +7,9 @@ export default function NotFound() {
       <Card className="w-full">
         <CardContent className="space-y-6 text-center">
           <div className="space-y-3">
-            <p className="text-xs uppercase tracking-[0.16em] text-[var(--color-accent-soft)]">Not found</p>
+            <p className="text-xs uppercase tracking-[0.16em] text-[var(--color-accent-soft)]">
+              Not found
+            </p>
             <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
               The requested VowGrid surface does not exist.
             </h1>

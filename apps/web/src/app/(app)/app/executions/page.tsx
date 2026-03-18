@@ -43,10 +43,12 @@ export default async function ExecutionsPage() {
                       title: 'Execution started',
                       detail: `Attempt ${intent.executionJob.attempts} of ${intent.executionJob.maxAttempts}.`,
                       timestamp: intent.executionJob.startedAt,
-                      meta: formatDuration(intent.executionJob.completedAt && intent.executionJob.startedAt
-                        ? new Date(intent.executionJob.completedAt).getTime() -
-                          new Date(intent.executionJob.startedAt).getTime()
-                        : undefined),
+                      meta: formatDuration(
+                        intent.executionJob.completedAt && intent.executionJob.startedAt
+                          ? new Date(intent.executionJob.completedAt).getTime() -
+                              new Date(intent.executionJob.startedAt).getTime()
+                          : undefined,
+                      ),
                     },
                   ]}
                 />

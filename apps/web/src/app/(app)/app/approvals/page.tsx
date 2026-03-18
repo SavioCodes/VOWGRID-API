@@ -3,7 +3,11 @@ import { ApprovalBadge, PolicyChip, RiskBadge, StatusBadge } from '@/components/
 import { IntegrationBanner } from '@/components/vowgrid/integration-banner';
 import { PageHeader } from '@/components/vowgrid/page-header';
 import { Timeline } from '@/components/vowgrid/timeline';
-import { findDirectoryLabel, getApprovalQueue, getWorkspaceSnapshot } from '@/lib/vowgrid/repository';
+import {
+  findDirectoryLabel,
+  getApprovalQueue,
+  getWorkspaceSnapshot,
+} from '@/lib/vowgrid/repository';
 
 export default async function ApprovalsPage() {
   const [snapshot, approvals] = await Promise.all([getWorkspaceSnapshot(), getApprovalQueue()]);
@@ -28,7 +32,9 @@ export default async function ApprovalsPage() {
                       {intent.approvalRequest ? (
                         <ApprovalBadge status={intent.approvalRequest.status} />
                       ) : null}
-                      {intent.simulationResult ? <RiskBadge risk={intent.simulationResult.riskLevel} /> : null}
+                      {intent.simulationResult ? (
+                        <RiskBadge risk={intent.simulationResult.riskLevel} />
+                      ) : null}
                     </div>
                     <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
                       {intent.title}
@@ -38,7 +44,9 @@ export default async function ApprovalsPage() {
                     </p>
                   </div>
                   <div className="rounded-[24px] border border-[var(--color-border)] px-4 py-3 text-right">
-                    <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">Decision progress</p>
+                    <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                      Decision progress
+                    </p>
                     <p className="mt-2 text-xl font-semibold text-[var(--color-text-primary)]">
                       {intent.approvalRequest
                         ? `${intent.approvalRequest.currentCount}/${intent.approvalRequest.requiredCount}`

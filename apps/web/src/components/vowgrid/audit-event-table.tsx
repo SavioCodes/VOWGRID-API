@@ -20,7 +20,9 @@ export function AuditEventTable({ events }: { events: AuditEventResponse[] }) {
           <TableRow key={event.id}>
             <TableCell>
               <div className="space-y-1">
-                <p className="font-medium text-[var(--color-text-primary)]">{titleFromSlug(event.action)}</p>
+                <p className="font-medium text-[var(--color-text-primary)]">
+                  {titleFromSlug(event.action)}
+                </p>
                 <p className="mono text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
                   {event.action}
                 </p>
@@ -28,7 +30,10 @@ export function AuditEventTable({ events }: { events: AuditEventResponse[] }) {
             </TableCell>
             <TableCell>
               {event.entityType === 'intent' ? (
-                <Link className="font-medium text-[var(--color-accent-soft)]" href={`/app/intents/${event.entityId}`}>
+                <Link
+                  className="font-medium text-[var(--color-accent-soft)]"
+                  href={`/app/intents/${event.entityId}`}
+                >
                   {compactId(event.entityId)}
                 </Link>
               ) : (
@@ -37,8 +42,12 @@ export function AuditEventTable({ events }: { events: AuditEventResponse[] }) {
             </TableCell>
             <TableCell>
               <div className="space-y-1">
-                <p className="font-medium text-[var(--color-text-primary)]">{compactId(event.actorId)}</p>
-                <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">{event.actorType}</p>
+                <p className="font-medium text-[var(--color-text-primary)]">
+                  {compactId(event.actorId)}
+                </p>
+                <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                  {event.actorType}
+                </p>
               </div>
             </TableCell>
             <TableCell className="mono text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">

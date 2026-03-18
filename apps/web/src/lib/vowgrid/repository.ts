@@ -3,6 +3,7 @@ import type {
   BillingAccountResponse,
   BillingCheckoutResponse,
   CancelSubscriptionInput,
+  CreateWorkspaceApiKeyInput,
   CreateCheckoutInput,
   CurrentSessionResponse,
   HealthResponse,
@@ -10,7 +11,10 @@ import type {
   IntentResponse,
   ListConnectorsResponse,
   PolicyResponse,
+  RevokeWorkspaceApiKeyResponse,
   ReceiptDetailResponse,
+  WorkspaceApiKeyResponse,
+  WorkspaceApiKeySecretResponse,
 } from '@vowgrid/contracts';
 import { fetchApiEnvelope, fetchPublicJson, getApiBaseUrl } from './api';
 import { getDashboardSessionToken, requireCurrentSession } from './auth';
@@ -102,7 +106,9 @@ function buildDirectory(session: CurrentSessionResponse): DirectoryEntry[] {
   ];
 }
 
-export async function getWorkspaceSnapshot(session?: CurrentSessionResponse): Promise<WorkspaceSnapshot> {
+export async function getWorkspaceSnapshot(
+  session?: CurrentSessionResponse,
+): Promise<WorkspaceSnapshot> {
   const currentSession = session ?? (await requireCurrentSession());
 
   const [health, billingAccount, intents, connectors, policies, auditEvents] = await Promise.all([
@@ -165,6 +171,41 @@ export async function cancelWorkspaceSubscription(input: CancelSubscriptionInput
   });
 }
 
+export async function listWorkspaceApiKeys() {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<WorkspaceApiKeyResponse[]>('/v1/workspace/api-keys');
+}
+
+export async function createWorkspaceApiKey(input: CreateWorkspaceApiKeyInput) {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<WorkspaceApiKeySecretResponse>('/v1/workspace/api-keys', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function rotateWorkspaceApiKey(apiKeyId: string) {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<WorkspaceApiKeySecretResponse>(
+    `/v1/workspace/api-keys/${apiKeyId}/rotate`,
+    {
+      method: 'POST',
+      body: JSON.stringify({}),
+    },
+  );
+}
+
+export async function revokeWorkspaceApiKey(apiKeyId: string) {
+  await requireCurrentSession();
+  return fetchSessionEnvelope<RevokeWorkspaceApiKeyResponse>(
+    `/v1/workspace/api-keys/${apiKeyId}/revoke`,
+    {
+      method: 'POST',
+      body: JSON.stringify({}),
+    },
+  );
+}
+
 export async function getApprovalQueue() {
   const snapshot = await getWorkspaceSnapshot();
   const detailItems = await Promise.all(
@@ -182,9 +223,14 @@ export async function getExecutionQueue() {
   const detailItems = await Promise.all(
     snapshot.intents
       .filter((intent) =>
-        ['queued', 'executing', 'succeeded', 'failed', 'rollback_pending', 'rollback_failed'].includes(
-          intent.status,
-        ),
+        [
+          'queued',
+          'executing',
+          'succeeded',
+          'failed',
+          'rollback_pending',
+          'rollback_failed',
+        ].includes(intent.status),
       )
       .slice(0, 12)
       .map((intent) => getIntentRecord(intent.id)),
@@ -218,7 +264,9 @@ export function getReceiptLinkCandidate(intent: IntentDetailResponse) {
 
 export async function getPreviewSnapshot() {
   if (!getPreviewEnabled()) {
-    throw new Error('Preview mode is disabled. Set VOWGRID_ENABLE_PROVISIONAL_DATA=true to use /preview.');
+    throw new Error(
+      'Preview mode is disabled. Set VOWGRID_ENABLE_PROVISIONAL_DATA=true to use /preview.',
+    );
   }
 
   return {
@@ -226,10 +274,7 @@ export async function getPreviewSnapshot() {
       mode: 'preview' as const,
       label: 'Explicit preview adapter',
       description: 'Rendering isolated preview data outside the authenticated product flow.',
-      notes: [
-        'This path is for local UI exploration only.',
-        ...provisionalWorkspaceData.notes,
-      ],
+      notes: ['This path is for local UI exploration only.', ...provisionalWorkspaceData.notes],
     },
     currentUser: {
       id: 'preview-user',
