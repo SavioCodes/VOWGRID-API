@@ -1,9 +1,14 @@
 # Blue Green Deploy
 
-## Purpose
+VowGrid includes a single-host blue/green rollout path for teams that want safer cutovers without adding Kubernetes.
 
-VowGrid now includes a single-host blue/green deployment path for operators who want safer cutovers
-without switching to Kubernetes.
+## When To Use It
+
+Use blue/green when you want:
+
+- lower-risk releases on one VPS
+- clean traffic cutover between two app slots
+- fast rollback to the previous slot
 
 ## Files
 
@@ -15,19 +20,42 @@ without switching to Kubernetes.
 ## Model
 
 - one host
-- two application slots: `blue` and `green`
-- Caddy routes traffic to the active slot
-- the deploy workflow updates the inactive slot, validates it, then flips traffic
+- two app slots: `blue` and `green`
+- one live slot at a time behind Caddy
+- deploy updates the inactive slot first
+- validation runs before traffic flips
 
-## What It Solves
+## Practical Flow
 
-- safer deploy cutovers
-- easier rollbacks than in-place replacement
-- no need for a cluster scheduler at current scale
+1. create `infra/.env`, `infra/api.env`, and `infra/web.env`
+2. render config with:
 
-## What It Does Not Solve
+```bash
+docker compose --env-file infra/.env.bluegreen.example \
+  -f infra/docker-compose.bluegreen.yml config
+```
 
-- multi-region failover
-- managed autoscaling
+3. deploy the inactive slot
+4. validate health before cutover
+5. flip Caddy to the new slot
+6. validate auth, `/v1/health`, `/v1/docs`, billing, and one trust workflow
+7. roll back to the previous slot if validation fails
+
+## Example Validation Commands
+
+```bash
+docker compose --env-file infra/.env.bluegreen.example \
+  -f infra/docker-compose.bluegreen.yml ps
+
+docker compose --env-file infra/.env.bluegreen.example \
+  -f infra/docker-compose.bluegreen.yml logs --tail=200
+```
+
+## Limits
+
+Blue/green still does not solve:
+
 - secrets management
-- infrastructure provisioning by itself
+- database failover
+- multi-node scale-out
+- cross-region disaster recovery

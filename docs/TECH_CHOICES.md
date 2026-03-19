@@ -1,38 +1,98 @@
 # Technical Choices
 
-## Why these tools
+This document explains not only what VowGrid uses, but why those choices were made and what trade-offs they carry.
 
-### Fastify
+## Fastify
 
-- High performance without hiding HTTP details
-- Good plugin model for auth, docs, and middleware
-- Clear fit for a typed infrastructure API
+Chosen because:
 
-### Prisma + PostgreSQL
+- high performance with low abstraction overhead
+- strong plugin model
+- good fit for typed infrastructure APIs
 
-- Strong fit for relational workflow state
-- Good migration story for a monorepo
-- PostgreSQL handles audit, billing, auth, and workflow data in one consistent source of truth
+Trade-off:
 
-### Redis + BullMQ
+- less out-of-the-box structure than opinionated full frameworks
 
-- Redis is already useful for rate limiting and queue coordination
-- BullMQ provides retryable background jobs for execution and rollback flows
-- Keeps asynchronous work explicit and inspectable
+## Prisma + PostgreSQL
 
-### Next.js + React
+Chosen because:
 
-- Good balance between marketing site, auth pages, and protected control plane
-- Server components fit session-backed dashboard loading well
-- Strong ecosystem for premium B2B SaaS UX
+- workflow, billing, auth, and audit data are relational
+- Prisma gives a workable schema and migration story for a monorepo
+- PostgreSQL is strong for transactional correctness and operational familiarity
 
-### Shared contracts package
+Trade-off:
 
-- Prevents frontend/backend drift
-- Gives one place to evolve request and response shapes
-- Improves DX and reviewability
+- some advanced polymorphism and cross-entity patterns require care
 
-### Mercado Pago
+## Redis + BullMQ
 
-- Chosen provider for launch billing
-- Provider logic stays isolated so internal billing truth does not depend on raw provider payloads
+Chosen because:
+
+- execution and rollback need explicit asynchronous jobs
+- Redis is already useful for queues and coordination
+- BullMQ keeps job behavior inspectable
+
+Trade-off:
+
+- operators must own Redis health and queue reliability
+
+## Next.js + React
+
+Chosen because:
+
+- one stack can serve marketing, auth, and dashboard surfaces
+- server components fit the session-backed dashboard well
+- strong ecosystem for polished B2B product UI
+
+Trade-off:
+
+- build output and runtime behavior are more complex than a static-only site
+
+## Shared Contracts Package
+
+Chosen because:
+
+- prevents frontend/backend drift
+- keeps request/response truth close to the code
+- helps the SDK and tests stay aligned
+
+Trade-off:
+
+- package build order matters and must stay disciplined
+
+## Mercado Pago
+
+Chosen because:
+
+- it fits the launch geography and go-to-market better than Stripe for this project
+- provider code is kept isolated from internal billing truth
+
+Trade-off:
+
+- production readiness still depends on real account setup and webhook validation
+
+## Self-hosted Observability First
+
+Chosen because:
+
+- keeps launch cost lower
+- works locally and in release-like environments
+- avoids forcing a vendor before product-market validation
+
+Trade-off:
+
+- external alert routing and hosted incident tooling still need extra setup
+
+## Single-VPS Production Blueprint
+
+Chosen because:
+
+- fastest path to launch
+- easy to reason about
+- low operational overhead for an early-stage product
+
+Trade-off:
+
+- no native multi-node failover or autoscaling

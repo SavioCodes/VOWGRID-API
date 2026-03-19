@@ -1,108 +1,57 @@
 # Billing Update Report
 
-> Historical billing-phase report.
-> Later passes added dashboard session auth, workspace member management, invites, multi-workspace switching, API key self-service, rollback processing, automatic overage billing, proration previews, deploy scaffolding, and metrics. Use `README.md` and `docs/IMPLEMENTATION_STATUS.md` for the current product state.
+> Historical billing-phase report kept for traceability.
+> Current billing truth lives in `README.md`, `docs/IMPLEMENTATION_STATUS.md`, and `docs/billing/*`.
 
-## 1. What Was Inspected
+## Pricing Snapshot
 
-- Root workspace files: `package.json`, `pnpm-workspace.yaml`, `README.md`
-- Backend docs: `docs/backend/*`
-- Existing reports: `docs/FINAL_INTEGRATION_REPORT.md`, `docs/IMPLEMENTATION_STATUS.md`, `docs/RUNBOOK.md`
-- Shared packages: `packages/contracts/*`, `packages/ui/*`
-- API implementation: `apps/api/*`
-- Web implementation: `apps/web/*`
-- Prisma and infra setup: `apps/api/prisma/*`, `infra/docker-compose.yml`
+| Plan       | Monthly  | Yearly     | Executed actions | Intents   | Notes              |
+| ---------- | -------- | ---------- | ---------------- | --------- | ------------------ |
+| Launch     | `R$ 79`  | `R$ 790`   | `300`            | `2,000`   | entry plan         |
+| Pro        | `R$ 249` | `R$ 2,490` | `3,000`          | `15,000`  | advanced approvals |
+| Business   | `R$ 799` | `R$ 7,990` | `20,000`         | `100,000` | higher scale       |
+| Enterprise | custom   | custom     | custom           | custom    | sales-assisted     |
 
-## 2. What Billing Or Pricing Structures Already Existed
+## What Was Added
 
-- No dedicated billing module existed before this update.
-- No subscription, billing customer, billing event, trial, or usage-counter models existed in Prisma.
-- No pricing page or in-app billing page existed.
-- No Mercado Pago provider layer existed.
-- The frontend already had a settings surface and an app shell that could host billing UX once backend support was added.
+- plan catalog
+- trial state
+- entitlements
+- usage tracking
+- overage support
+- invoices
+- proration preview
+- coupon support
+- tax profile controls
+- Mercado Pago provider layer
 
-## 3. What Was Implemented
+## Overage Example
 
-- Shared billing catalog and contract types in `packages/contracts/src/billing.ts`
-- Prisma billing data model and migration
-- Backend billing module with:
-  - plan catalog endpoint
-  - billing account endpoint
-  - checkout start endpoint
-  - subscription cancel endpoint
-  - Mercado Pago webhook endpoint
-  - internal entitlement resolution
-  - trial management
-  - usage tracking
-  - limit enforcement hooks in intents, executions, connectors, policies, and approvals
-- Seed data for trial state and usage counters
-- Public pricing page
-- In-app billing page with plan summary, trial countdown, usage meters, warnings, and upgrade actions
-- Billing status presentation on the landing page, overview page, settings page, sidebar, and command bar
-- Billing documentation set
+Illustrative invoice pattern:
 
-## 4. What Mercado Pago Pieces Are Fully Wired
+| Line item               | Quantity | Unit amount             | Subtotal       |
+| ----------------------- | -------- | ----------------------- | -------------- |
+| included subscription   | 1        | plan price              | plan subtotal  |
+| executed action overage | N        | configured overage unit | usage subtotal |
+| intents overage         | N        | configured overage unit | usage subtotal |
 
-Fully wired in code:
+Total invoice:
 
-- provider adapter
-- checkout creation for Launch, Pro, and Business
-- internal subscription persistence
-- provider status mapping
-- webhook endpoint
-- idempotent event recording
-- internal subscription sync after webhook receipt
-- provider-readiness reporting to the dashboard
+- subtotal
+- tax amount from current customer tax profile
+- final total in BRL cents
 
-## 5. What Still Requires Manual Setup In Mercado Pago
+## What Is Real Versus External
 
-- Create and configure the Mercado Pago application/account
-- Provide `MERCADO_PAGO_ACCESS_TOKEN`
-- Configure a public webhook URL
-- Set `MERCADO_PAGO_WEBHOOK_SECRET`
-- Set `MERCADO_PAGO_RETURN_URL`
-- Replace the temporary enterprise sales contact path with a real inbox or form
+Implemented in code:
 
-## 6. What Commands Were Run
+- internal billing truth
+- invoice records
+- provider webhook handling
+- checkout foundation
 
-- `pnpm lint`
-- `pnpm typecheck`
-- `pnpm build`
-- `pnpm test`
-- `pnpm docker:status`
-- `GET http://localhost:4000/v1/billing/plans`
-- `GET http://localhost:4000/v1/billing/account` with `X-Api-Key: vowgrid_local_dev_key`
-- `POST http://localhost:4000/v1/billing/checkout` with a Launch monthly payload and provider envs intentionally missing
-- `GET http://localhost:3000/pricing`
-- `GET http://localhost:3000/app/billing`
+Still external:
 
-## 7. What Passed / Failed
-
-Passed:
-
-- root `lint`
-- root `typecheck`
-- root `build`
-- root `test`
-- live billing plan catalog route
-- live billing account route
-- pricing page render check
-- in-app billing page render check against the live adapter
-
-Expected failure path verified:
-
-- `POST /v1/billing/checkout` returned `503` while Mercado Pago provider envs were intentionally not configured
-
-Still requires manual setup rather than more code changes:
-
-- Mercado Pago account configuration
-- webhook public URL and secret
-- enterprise sales contact path
-
-## 8. What Remains For Future Releases
-
-- advanced tax and invoice handling
-- rollout of a real enterprise sales path
-- deeper E2E coverage
-- production-hardening of deploy workflows and Terraform values
-- centralized observability sinks and alerting
+- Mercado Pago account credentials
+- public webhook delivery
+- live transaction validation

@@ -27,13 +27,16 @@
 | Workspace data export and member anonymization                     | Implemented and verified            |
 | Rollback worker and rollback receipts                              | Implemented                         |
 | Runtime connectors for mock, HTTP, and GitHub                      | Implemented and verified            |
-| TypeScript client SDK package                                      | Implemented                         |
+| Multi-step approval stages                                         | Implemented and verified            |
+| TypeScript client SDK package                                      | Implemented and publish-ready       |
 | Generic enterprise OIDC auth path                                  | Implemented                         |
 | Coupon application and tax profile controls                        | Implemented                         |
 | GitHub Actions CI with integration, coverage, and smoke E2E        | Implemented                         |
 | Prometheus-compatible metrics endpoint                             | Implemented                         |
 | Self-hosted Prometheus, Alertmanager, and Grafana stack            | Implemented                         |
-| Optional Sentry, Datadog, and New Relic error sinks                | Implemented                         |
+| Optional Sentry, Slack, Datadog, and New Relic error sinks         | Implemented                         |
+| Workspace JSON export and audit CSV export                         | Implemented and verified            |
+| Postgres backup and restore scripts                                | Implemented                         |
 | Release Dockerfiles, release compose, and Terraform scaffold       | Implemented                         |
 | Blue/green single-host deploy path                                 | Implemented                         |
 | Root `build`, `lint`, `typecheck`, and `test` scripts              | Implemented and verified            |
@@ -41,25 +44,25 @@
 
 ## Partially Implemented
 
-| Area                       | Current state                                                                                                                                                                       |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Mercado Pago account setup | Code path exists, but checkout remains disabled until provider envs are configured                                                                                                  |
-| Social login               | GitHub and Google OAuth flows exist, but require provider envs before the buttons become active                                                                                     |
-| Enterprise OIDC            | Generic OIDC flow exists in the web auth layer, but still requires issuer, client credentials, and enterprise IdP setup                                                             |
-| Deploy automation          | GitHub Actions workflows now target a concrete AWS VPS + Compose + Caddy path, but still require real secrets, registry setup, and hosts                                            |
-| Infrastructure as Code     | Terraform scaffold exists for the chosen AWS VPS launch topology, but still needs real values and hardening for production                                                          |
-| Enterprise contact path    | Enterprise is sales-assisted and now env-configurable, but still depends on manual commercial handling                                                                              |
-| Preview mode               | Available only through explicit `/preview` access when `VOWGRID_ENABLE_PROVISIONAL_DATA=true`                                                                                       |
-| Observability vendor sinks | Self-hosted metrics, dashboards, and alert rules exist, and optional Sentry / Datadog / New Relic sinks are wired, but provider setup and alert routing remain environment-specific |
-| Deep E2E coverage          | Core auth, invite, workspace switch, billing surface, execution, receipt, rollback, and metrics flows are covered, but the full regression matrix still needs more scenarios        |
-| Privacy controls           | Workspace export and member anonymization exist, but broad GDPR automation and repository-wide soft delete semantics are still incomplete                                           |
-| Advanced billing           | Coupons, tax profile controls, overage, and proration exist, but refunds and full multi-jurisdiction invoice compliance remain incomplete                                           |
+| Area                       | Current state                                                                                                                                                                               |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mercado Pago account setup | Code path exists, but checkout remains disabled until provider envs are configured                                                                                                          |
+| Social login               | GitHub and Google OAuth flows exist, but require provider envs before the buttons become active                                                                                             |
+| Enterprise OIDC            | Generic OIDC flow exists in the web auth layer, but still requires issuer, client credentials, and enterprise IdP setup                                                                     |
+| Deploy automation          | GitHub Actions workflows now target a concrete AWS VPS + Compose + Caddy path, but still require real secrets, registry setup, and hosts                                                    |
+| Infrastructure as Code     | Terraform scaffold exists for the chosen AWS VPS launch topology, but still needs real values and hardening for production                                                                  |
+| Enterprise contact path    | Enterprise is sales-assisted and now env-configurable, but still depends on manual commercial handling                                                                                      |
+| Preview mode               | Available only through explicit `/preview` access when `VOWGRID_ENABLE_PROVISIONAL_DATA=true`                                                                                               |
+| Observability vendor sinks | Self-hosted metrics, dashboards, and alert rules exist, and optional Sentry / Slack / Datadog / New Relic sinks are wired, but provider setup and alert routing remain environment-specific |
+| Deep E2E coverage          | Core auth, invite, workspace switch, billing surface, execution, receipt, rollback, and metrics flows are covered, but the full regression matrix still needs more scenarios                |
+| Privacy controls           | Workspace export and member anonymization exist, but broad GDPR automation and repository-wide soft delete semantics are still incomplete                                                   |
+| Advanced billing           | Coupons, tax profile controls, overage, and proration exist, but refunds and full multi-jurisdiction invoice compliance remain incomplete                                                   |
 
 ## Not Implemented Yet
 
-| Area                             | Gap                                                                                                             |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| SAML enterprise SSO              | Generic OIDC is available, but SAML-specific enterprise federation is not implemented                           |
-| Advanced tax and invoice systems | No jurisdiction-aware fiscal issuance or full compliance engine exists                                          |
-| Refund processing                | Coupons, overage, and proration exist, but provider-backed refund automation is not implemented                 |
-| Production-grade deploy setup    | The path is now chosen, but workflows and Terraform still need real secrets, DNS, infra values, and host wiring |
+| Area                             | Gap                                                                                                                                                           |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SAML enterprise SSO              | Generic OIDC is available, but SAML-specific enterprise federation is not implemented                                                                         |
+| Advanced tax and invoice systems | No jurisdiction-aware fiscal issuance or full compliance engine exists                                                                                        |
+| Refund processing                | Coupons, overage, and proration exist, but provider-backed refund automation is not implemented                                                               |
+| Production-grade deploy setup    | The path is now chosen, bootstrap scripts and readiness checks exist, but workflows and Terraform still need real secrets, DNS, infra values, and host wiring |

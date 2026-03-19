@@ -1,68 +1,138 @@
-# Docker
+# Docker Guide
 
-## Scope
+VowGrid uses Docker in two different ways:
 
-VowGrid uses Docker only for local infrastructure services:
+- local infrastructure for development
+- release-style runtime topology for API, web, and ingress
 
-- PostgreSQL 16
-- Redis 7
+## Local Development Stack
 
-There are currently no committed application `Dockerfile`s for the API or web app. Local application processes still run directly with `pnpm`.
+Primary local file:
 
-## Compose stack
+- `infra/docker-compose.yml`
 
-The stack lives in `infra/docker-compose.yml` and is intentionally small:
+Services:
 
-- Compose project: `infra`
-- Containers: `vowgrid-postgres`, `vowgrid-redis`
-- Network: `infra_default`
-- Persistent volumes: `infra_pgdata`, `infra_redisdata`
+- `postgres`
+- `redis`
 
-## Commands
+Commands:
 
-- Start or reconcile infra: `pnpm docker:up`
-- Stop infra: `pnpm docker:down`
-- Show status: `pnpm docker:status`
-- Tail service logs: `pnpm docker:logs`
-- Render resolved compose config: `pnpm docker:config`
-- Reset infra volumes from scratch: `pnpm docker:reset`
+```bash
+pnpm docker:up
+pnpm docker:down
+pnpm docker:status
+pnpm docker:logs
+pnpm docker:config
+pnpm docker:reset
+```
 
-`docker:reset` is destructive because it removes the named Postgres and Redis volumes before recreating the stack.
+Named volumes:
 
-## Local overrides
+- `infra_pgdata`
+- `infra_redisdata`
 
-Optional overrides can be defined in `infra/.env` using `infra/.env.example` as the template.
+## Observability Overlay
 
-Supported variables:
+Compose overlay:
 
-- `VOWGRID_POSTGRES_USER`
-- `VOWGRID_POSTGRES_PASSWORD`
-- `VOWGRID_POSTGRES_DB`
-- `VOWGRID_POSTGRES_PORT`
-- `VOWGRID_REDIS_PORT`
+- `infra/docker-compose.observability.yml`
 
-Defaults are development-safe and match the API example env file.
+Commands:
 
-## Health and persistence
+```bash
+pnpm docker:obs:up
+pnpm docker:obs:down
+pnpm docker:obs:status
+pnpm docker:obs:logs
+pnpm docker:obs:config
+```
 
-- Postgres healthcheck: `pg_isready`
-- Redis healthcheck: `redis-cli ping`
-- Both services use `restart: unless-stopped`
-- Redis runs with append-only mode enabled for more durable local persistence
-- Container logs are capped with Docker `json-file` rotation options
+This adds:
 
-## Cleanup policy
+- Prometheus
+- Alertmanager
+- Grafana
 
-Safe cleanup:
+## Release Topology
 
-- Remove stopped orphan containers
-- Remove empty orphan networks
-- Remove dangling images or build cache when they exist
+Release compose:
 
-Protected by default:
+- `infra/docker-compose.release.yml`
 
-- Named database volumes
-- Named Redis volumes
-- Any volume from another project unless its data is known to be disposable
+Services:
 
-This repository favors preserving local state over aggressive pruning.
+- `caddy`
+- `postgres`
+- `redis`
+- `api`
+- `web`
+- optional observability profile
+
+## Dockerfiles
+
+Application images are built from:
+
+- `apps/api/Dockerfile`
+- `apps/web/Dockerfile`
+
+The API image builds the contracts package and the API dist output.
+
+The web image builds the contracts package, typechecks shared UI, and runs a Next standalone production build.
+
+## Volume Management
+
+Local important volumes:
+
+- `infra_pgdata`
+- `infra_redisdata`
+
+Release important volumes:
+
+- `vowgrid_postgres_data`
+- `vowgrid_redis_data`
+- `vowgrid_caddy_data`
+- `vowgrid_caddy_config`
+- observability volumes when that profile is enabled
+
+## Destructive Commands
+
+Be careful with:
+
+```bash
+pnpm docker:reset
+docker compose down -v
+```
+
+These remove persistent volumes and can wipe local development data.
+
+## Useful Compose Checks
+
+```bash
+docker compose -f infra/docker-compose.yml ps
+docker compose -f infra/docker-compose.yml logs --tail=200
+docker compose --env-file infra/.env.production.example -f infra/docker-compose.release.yml config
+```
+
+## Recommended Local Flow
+
+1. `pnpm docker:up`
+2. `pnpm migrate`
+3. `pnpm seed`
+4. `pnpm dev:api`
+5. `pnpm dev:web`
+
+## Recommended Release Flow
+
+1. build and publish images
+2. fill `infra/.env`, `infra/api.env`, and `infra/web.env`
+3. render config with `pnpm docker:release:config`
+4. deploy with the release compose or the blue/green flow
+
+## Current Limits
+
+Docker is production-capable for the chosen single-host launch path, but it is not yet:
+
+- a Kubernetes deployment
+- a managed multi-node topology
+- an IaC-complete platform by itself

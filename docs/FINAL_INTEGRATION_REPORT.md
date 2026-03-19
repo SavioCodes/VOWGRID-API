@@ -1,116 +1,59 @@
 # Final Integration Report
 
-> Historical snapshot from the first integration pass.
-> Current product truth now lives in `README.md`, `docs/IMPLEMENTATION_STATUS.md`, `docs/PROJECT_AUDIT_REPORT.md`, `docs/ACCESS_MANAGEMENT.md`, and `docs/ROLLBACK_PROCESSING.md`.
+> Historical integration report kept for traceability.
+> Current truth lives in `README.md`, `docs/IMPLEMENTATION_STATUS.md`, and `docs/PROJECT_AUDIT_REPORT.md`.
 
-## 1. What was inspected
+## Scope Completed
 
-- Root workspace files: `package.json`, `pnpm-workspace.yaml`, `README.md`
-- Backend docs: `docs/backend/*`
-- Design docs: `docs/design/*`
-- Handoff docs: `docs/handoffs/BACKEND_TO_GEMINI.md`
-- Shared packages: `packages/contracts/*`, `packages/ui/*`
-- API implementation: `apps/api/*`
-- Web implementation: `apps/web/*`
-- Docker and Prisma setup: `infra/docker-compose.yml`, `apps/api/prisma/*`
+The integration pass unified:
 
-## 2. What was broken
+- backend workflow truth
+- dashboard session auth
+- workspace access management
+- billing foundation
+- rollback processing
+- observability baseline
+- release topology
 
-- Root `lint` was broken because it depended on a missing root ESLint configuration.
-- Root `build` only built the API and did not reflect the actual workspace.
-- Root `test:e2e` pointed to a script that did not exist.
-- The API build had TypeScript issues around Fastify augmentation, BullMQ typing, import paths, and Prisma JSON values.
-- The repo had no Prisma migration history and no repeatable seed flow.
-- The API expected env vars in the shell even though `apps/api/.env` existed.
-- The API and web both targeted port `3000`, causing local collisions.
-- The backend exposed `draft` intents but not a public `draft -> proposed` route.
-- Intent detail did not expose live policy evaluation history.
-- The built web app froze into provisional mode when backend env vars were absent at build time.
+## Test Results Summary
 
-## 3. What was fixed
+Validated successfully in the repository:
 
-- Repaired the API TypeScript/build issues and restored a clean API build.
-- Added shared JSON helpers for Prisma writes.
-- Added a real `POST /v1/intents/:intentId/propose` route.
-- Added `policyEvaluations` to live intent detail responses and shared contracts.
-- Fixed root scripts so `build`, `lint`, `typecheck`, `test`, `migrate`, and `seed` work from the workspace root.
-- Added explicit `typecheck` scripts for API, contracts, and UI.
-- Added the first Prisma migration and applied it locally.
-- Added a local seed script for workspace, users, connectors, policies, and API key.
-- Made the API load `apps/api/.env` automatically on startup.
-- Moved the API's local default port to `4000`.
-- Updated the web env example to point at the API on `4000`.
-- Forced the `/app` subtree to render dynamically so live mode is chosen at runtime.
-- Verified the web app can render in live contract mode against the seeded API.
-
-## 4. What still remained at the time of this report
-
-- Rollback processing was partial. A rollback request was created and became visible, but there was no rollback worker to complete it.
-- JWT dashboard auth was not implemented yet.
-- User-facing API key management was not implemented yet.
-- The backend still does not expose live workspace directory labels, so the web app keeps provisional labels for that surface.
-- E2E coverage is still missing.
-
-## 5. What commands were run
-
-- `pnpm test`
-- `pnpm --filter @vowgrid/contracts build`
-- `pnpm --filter @vowgrid/api build`
-- `pnpm --filter @vowgrid/api test`
-- `pnpm --filter web typecheck`
-- `pnpm --filter web lint`
-- `pnpm --filter web build`
-- `pnpm lint`
 - `pnpm typecheck`
+- `pnpm lint`
+- `pnpm test`
+- `pnpm test:integration`
+- `pnpm test:coverage`
+- `pnpm test:e2e`
 - `pnpm build`
-- `pnpm docker:up`
-- `pnpm --filter @vowgrid/api exec prisma migrate dev --name init`
-- `pnpm seed`
-- `pnpm exec next start --port 3002` with live API env
-- Live HTTP verification against `http://localhost:4000/v1/*`
 
-## 6. What passed / failed
+## Integration Outcomes
 
-Passed after fixes:
+- API and web now share live contracts
+- dashboard routes are session-protected
+- billing/account surfaces use backend truth
+- settings surface handles members, invites, workspaces, and API keys
+- rollout docs and release files match the chosen topology
 
-- Root `build`
-- Root `lint`
-- Root `typecheck`
-- Root `test`
-- API build and tests
-- Web build, lint, and typecheck
-- Docker compose startup
-- Prisma migration creation and apply
-- Seed script
-- Health check
-- Create -> propose -> simulate -> submit-for-approval -> approve -> execute -> receipt -> audit -> rollback visibility
-- Web live adapter verification
+## Performance Notes
 
-Initial failures that were fixed:
+No formal load benchmark was added in this pass.
 
-- Root `lint`
-- API build
-- API startup without exported env vars
-- Local API/web port collision
-- Web provisional-mode freeze after build
+What was verified:
 
-Environment-only blocker encountered during verification:
+- local build success
+- healthy local workflow latency for development
+- E2E flow completion through the product
 
-- `pnpm docker:up` failed until Docker Desktop was started locally
+What was not verified:
 
-## 7. What is production-ready vs not yet ready
+- sustained high concurrency
+- production latency SLOs
+- load-test thresholds
 
-Closer to production-ready:
+## Remaining External Dependencies
 
-- Shared contract alignment between API and web
-- Premium read surfaces across the control plane
-- Local developer setup with migration and seed support
-- Verified core execution flow through receipt generation
-- Root workspace verification commands
-
-Not yet production-ready:
-
-- Rollback execution lifecycle
-- Real auth and key management UX
-- Full connector ecosystem beyond the mock connector and Slack skeleton
-- E2E/integration automation coverage
+- Mercado Pago production credentials
+- OAuth provider credentials
+- SMTP provider
+- final host and DNS

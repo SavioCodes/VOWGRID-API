@@ -1,20 +1,27 @@
 # Privacy And Exports
 
-## Workspace Export
+This document explains what privacy-related controls already exist in VowGrid and where the current limits still are.
 
-The dashboard now exposes a workspace export flow through `/app/settings`.
+## Current Capabilities
 
-The backing API route is:
+## Workspace JSON export
+
+Route:
 
 - `GET /v1/workspace/export`
 
-The export includes:
+Who can use it:
+
+- `owner`
+- `admin`
+
+Current export includes:
 
 - workspace identity
 - billing summary
 - members
 - invites
-- API keys metadata
+- API key metadata
 - agents
 - connectors
 - policies
@@ -22,26 +29,77 @@ The export includes:
 - receipts
 - audit events
 
-## Member Anonymization
+## Audit CSV export
 
-Owners can anonymize disabled members.
+Dashboard path:
 
-The backing API route is:
+- `/app/settings/export/audit`
+
+Purpose:
+
+- quick audit extraction for reviewers, compliance, or incident timelines
+
+## Member anonymization
+
+Route:
 
 - `POST /v1/workspace/members/:userId/anonymize`
 
-Current behavior:
+Rules:
 
-- revokes active sessions
-- invalidates recovery and verification flows
+- only workspace owners can trigger it
+- the member must already be disabled
+- historical operational records are preserved
+
+Current anonymization behavior:
+
+- revokes sessions
+- invalidates recovery and verification tokens
 - removes linked OAuth identities
-- replaces personal email with a redacted address
-- replaces personal name with an anonymized placeholder
-- keeps operational history intact
+- replaces email with a redacted placeholder
+- replaces display name with an anonymized placeholder
 
-## What This Does Not Yet Cover
+## Privacy Posture Today
 
-- workspace-wide hard delete
-- global soft delete semantics for every domain entity
-- automated GDPR workflow orchestration
-- data retention automation by jurisdiction
+Already true:
+
+- practical export paths exist
+- anonymization exists for disabled members
+- audit and workflow history remain inspectable
+
+Not yet true:
+
+- full self-serve user data deletion
+- automated retention enforcement by jurisdiction
+- full GDPR workflow orchestration
+- repository-wide soft delete semantics
+
+## GDPR And Compliance Roadmap
+
+Near-term improvements:
+
+1. retention policies by entity family
+2. stronger export filtering and scoped export options
+3. workspace export history and access logging
+4. broader anonymization across non-user entities when legally required
+
+Longer-term:
+
+1. deletion request workflow
+2. regulatory-region data handling rules
+3. automated retention expiration jobs
+4. compliance reporting surfaces
+
+## Operational Guidance
+
+Use export when:
+
+- onboarding a new operator
+- supporting compliance reviews
+- preparing for workspace migration
+- capturing an incident snapshot
+
+Use anonymization when:
+
+- a user should no longer be identifiable
+- history must remain intact for trust and audit reasons

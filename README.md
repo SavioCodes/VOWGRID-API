@@ -33,14 +33,16 @@ flowchart LR
 - API keys exist as the machine-to-machine auth path and can now be created, rotated, and revoked from the dashboard.
 - Billing is implemented internally with launch pricing, a backend-managed 14-day trial, usage tracking, entitlement enforcement, automatic overage invoicing on paid plans, proration previews for plan changes, invoice records, coupon support, tax profile controls, and Mercado Pago provider integration foundations.
 - Runtime connectors now include `mock`, `http`, and `github`, with configuration validation, execution support, and honest rollback capability reporting.
-- Workspace data export and member anonymization are now available from the settings area for compliance-oriented operator workflows.
-- A TypeScript SDK package now lives in `packages/sdk` for client integrations that do not want to hand-roll HTTP calls.
+- Workspace data export, audit CSV export, and member anonymization are now available from the settings area for compliance-oriented operator workflows.
+- A TypeScript SDK package now lives in `packages/sdk` for client integrations that do not want to hand-roll HTTP calls, and it is now structured to be publish-ready.
+- Approval requests can now run as single-step or staged multi-step reviewer chains instead of only raw approval counts.
 - Provisional data still exists, but only behind the explicit dev-only `/preview` route when enabled.
 - CI now validates typecheck, lint, unit tests, integration tests, coverage, build, and deep E2E paths that cover auth, invites, billing surfaces, execution, receipts, rollback, and observability assertions.
 - A Prometheus-compatible metrics endpoint exists at `/v1/metrics`, and a self-hosted observability stack now lives in `infra/observability` with Prometheus, Alertmanager, and Grafana wiring for both local and release-style environments.
-- Optional vendor sinks for Sentry, Datadog logs, and New Relic logs can now be enabled through environment variables without changing application code.
+- Optional vendor sinks for Sentry, Slack, Datadog logs, and New Relic logs can now be enabled through environment variables without changing application code.
 - The chosen launch-stage production path is now explicit: AWS VPS, Docker Compose, Caddy TLS termination, one primary domain, and only `80` / `443` exposed publicly.
 - A single-host blue/green deployment path also exists for operators who want slot-based cutovers without jumping to Kubernetes.
+- Repository-managed backup and restore scripts now exist for Postgres, along with a production readiness check for external provider setup.
 
 ## Monorepo
 
@@ -154,6 +156,10 @@ Launch billing notes:
 - `pnpm docker:obs:status`
 - `pnpm docker:obs:logs`
 - `pnpm docker:release:config`
+- `pnpm db:backup`
+- `pnpm db:restore -- --input backups/postgres/<file>.sql.gz`
+- `pnpm sdk:pack`
+- `pnpm ops:readiness`
 
 Useful live endpoints:
 
@@ -165,24 +171,32 @@ Useful live endpoints:
 
 Current docs:
 
+- `docs/RUNBOOK.md`
+- `docs/RUN_GUIDE.md`
+- `docs/OPERATIONS.md`
 - `docs/ARCHITECTURE.md`
 - `docs/TECH_CHOICES.md`
 - `docs/ENVIRONMENT_STRATEGY.md`
 - `docs/DEPLOYMENT_FLOW.md`
 - `docs/PRODUCTION_BLUEPRINT.md`
+- `docs/API_REFERENCE.md`
+- `docs/SECURITY.md`
+- `docs/TESTING.md`
+- `docs/DATABASE_SCHEMA.md`
 - `docs/OBSERVABILITY_STACK.md`
 - `docs/OBSERVABILITY_VENDORS.md`
 - `docs/GO_LIVE_CHECKLIST.md`
 - `docs/EXTERNAL_SETUP_STATUS.md`
 - `docs/AGENT_INTEGRATION_GUIDE.md`
 - `docs/SDK_GUIDE.md`
+- `docs/BACKUP_AND_RECOVERY.md`
 - `docs/CONNECTOR_IMPLEMENTATIONS.md`
+- `docs/CONNECTOR_DEV_GUIDE.md`
 - `docs/PRIVACY_AND_EXPORTS.md`
 - `docs/BLUE_GREEN_DEPLOY.md`
 - `docs/TROUBLESHOOTING.md`
 - `docs/REAL_WORLD_SCENARIOS.md`
 - `docs/ROADMAP.md`
-- `docs/RUN_GUIDE.md`
 - `docs/AUTH_SETUP.md`
 - `docs/ACCESS_MANAGEMENT.md`
 - `docs/ENTERPRISE_HANDOFF.md`
@@ -209,6 +223,7 @@ Historical reports:
 - Enterprise still depends on a configured contact inbox and manual commercial handling.
 - Mercado Pago checkout still requires real provider env configuration.
 - Social login and enterprise OIDC require real provider credentials before the buttons become usable.
+- The repository now includes a readiness checker for Mercado Pago, OAuth, SMTP, and domain configuration, but it still needs real production values to pass.
 - Advanced tax handling is now configurable at the customer profile level, but full jurisdiction-specific compliance workflows and fiscal issuance are still not implemented.
 - The self-hosted observability stack is included, and vendor-specific sinks can be enabled, but external receivers, dashboards, and on-call routing still require environment-specific setup.
 - Deploy automation, Terraform scaffolding, and blue/green workflow files now encode concrete production paths, but they still require real GitHub secrets, DNS, registry setup, remote env files, and target infrastructure values before they can be treated as production-ready.

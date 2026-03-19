@@ -64,6 +64,7 @@ Recommended bootstrap on a new host:
 2. Copy `infra/api.env.example` to `infra/api.env`.
 3. Copy `infra/web.env.example` to `infra/web.env`.
 4. Replace all placeholder secrets and URLs before the first deploy.
+5. Run `infra/scripts/bootstrap-host.sh` if you want the repository-standard Docker/bootstrap posture on a fresh Ubuntu VPS.
 
 For repository-side validation, the compose file falls back to the committed production example env files under `infra/`.
 
@@ -90,4 +91,4 @@ This keeps the same single-VPS philosophy while allowing slot-based cutovers bet
 
 - This is not a multi-node production platform yet.
 - Secrets are still host-managed rather than coming from a dedicated secrets manager.
-- Managed databases, fully hosted observability vendors, and multi-region rollout remain future upgrades.
+- Managed databases, fully hosted observability vendors, automated off-host backups, and multi-region rollout remain future upgrades.

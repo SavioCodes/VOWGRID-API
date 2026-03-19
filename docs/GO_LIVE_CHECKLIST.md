@@ -8,6 +8,7 @@ This checklist is the final bridge between "repository complete" and "production
 - Point DNS for the primary domain to the host.
 - Confirm only `80`, `443`, and restricted `22` are reachable publicly.
 - Prepare persistent backups for Postgres volumes before customer traffic.
+- Run `infra/scripts/bootstrap-host.sh` if you want the repository-standard Docker host posture.
 
 ## 2. Remote Runtime Files
 
@@ -52,6 +53,7 @@ Replace every placeholder secret before the first deploy.
 - Decide whether the bundled self-hosted stack is enough for launch.
 - If using Grafana/Prometheus only, change default Grafana credentials.
 - If using external tools, wire Datadog, Sentry, New Relic, Slack, email, or PagerDuty separately.
+- If you only need lightweight Slack delivery, set `SLACK_ALERT_WEBHOOK_URL` in the API environment.
 - Validate alerts for API down, elevated 5xx, slow latency, execution failures, and rollback failures.
 
 ## 7. Deploy Automation
@@ -76,7 +78,7 @@ Replace every placeholder secret before the first deploy.
 
 These items are still outside the current release scope even after go-live:
 
-- enterprise SSO / SAML / generic OIDC
+- enterprise SSO / SAML
 - advanced jurisdiction-aware tax compliance
 - full invoice compliance engine
 - managed multi-node production platform

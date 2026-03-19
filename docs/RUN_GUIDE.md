@@ -131,6 +131,10 @@ Workspace admin auth:
 - Recreate infra volumes from scratch: `pnpm docker:reset`
 - Render the resolved compose file: `pnpm docker:config`
 - Render the production release compose file: `pnpm docker:release:config`
+- Create a compressed Postgres dump: `pnpm db:backup`
+- Restore a Postgres dump: `pnpm db:restore -- --input backups/postgres/<file>.sql.gz`
+- Pack the SDK like an npm publish candidate: `pnpm sdk:pack`
+- Validate production env completeness: `pnpm ops:readiness`
 
 The compose stack only manages Postgres and Redis. Persistent data lives in the named volumes `infra_pgdata` and `infra_redisdata`.
 
@@ -157,8 +161,21 @@ Recommended bootstrap:
 - copy `infra/.env.production.example` to `infra/.env`
 - copy `infra/api.env.example` to `infra/api.env`
 - copy `infra/web.env.example` to `infra/web.env`
+- optionally run `infra/scripts/bootstrap-host.sh` on a new Ubuntu VPS before the first deploy
 
 See `docs/PRODUCTION_BLUEPRINT.md` for the full decision record.
+
+## Backup And Recovery
+
+- create a compressed Postgres dump: `pnpm db:backup`
+- restore from a dump: `pnpm db:restore -- --input backups/postgres/<file>.sql.gz`
+- see `docs/BACKUP_AND_RECOVERY.md` for the operational policy notes
+
+## Production Readiness Check
+
+- run `pnpm ops:readiness` after filling real production env files
+- it validates Mercado Pago, OAuth, SMTP, and domain-related requirements
+- when `VOWGRID_PRIMARY_DOMAIN` is configured, it also probes `/v1/health` and `/v1/docs`
 
 ## Test Commands
 

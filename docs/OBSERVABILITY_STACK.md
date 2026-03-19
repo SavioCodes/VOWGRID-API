@@ -1,20 +1,30 @@
 # Observability Stack
 
-## What Exists
+VowGrid ships with a self-hosted observability path under `infra/observability`.
 
-VowGrid now ships with a self-hosted observability stack under `infra/observability`:
+## Components
 
-- Prometheus for scraping `/v1/metrics`
-- Alertmanager for local alert routing
-- Grafana with a pre-provisioned VowGrid control-plane dashboard
+- Prometheus
+- Alertmanager
+- Grafana
+- API metrics endpoint at `/v1/metrics`
 
-The API exposes Prometheus-compatible metrics at `GET /v1/metrics`.
+## What Is Measured
 
-## Local Development
+Current metric families include:
 
-1. Start Docker Desktop.
-2. Start the normal infra and the API/web stack.
-3. Run `pnpm docker:obs:up`.
+- HTTP request totals and latency
+- auth lifecycle counters
+- execution lifecycle counters
+- rollback lifecycle counters
+- billing invoice, proration, and overage counters
+
+## Local Startup
+
+```bash
+pnpm docker:obs:up
+pnpm docker:obs:status
+```
 
 Local URLs:
 
@@ -22,44 +32,77 @@ Local URLs:
 - Alertmanager: `http://localhost:9093`
 - Grafana: `http://localhost:3001`
 
-Default Grafana credentials:
+## Prometheus Query Cheat Sheet
 
-- username: `admin`
-- password: `vowgrid_admin`
+### API request rate
 
-## Metrics Included
+```promql
+sum(rate(vowgrid_http_requests_total[5m]))
+```
 
-- HTTP request totals and latency histograms
-- Auth lifecycle counters
-- Execution lifecycle counters
-- Rollback lifecycle counters
-- Billing invoice/proration/overage counters
+### 5xx request rate
+
+```promql
+sum(rate(vowgrid_http_requests_total{status_code=~"5.."}[5m]))
+```
+
+### p95 API latency
+
+```promql
+histogram_quantile(0.95, sum(rate(vowgrid_http_request_duration_ms_bucket[5m])) by (le))
+```
+
+### Execution failures
+
+```promql
+sum(increase(vowgrid_execution_failures_total[15m]))
+```
+
+### Rollback failures
+
+```promql
+sum(increase(vowgrid_rollback_failures_total[15m]))
+```
 
 ## Alert Rules Included
 
+Current bundled rules cover:
+
 - API target down
-- Elevated 5xx rate
-- Slow p95 request latency
-- Execution failures observed
-- Rollback failures observed
+- elevated 5xx rate
+- slow p95 latency
+- execution failures
+- rollback failures
 
-## Release Compose
+## Recommended Tuning
 
-`infra/docker-compose.release.yml` now has an optional `observability` profile.
+Before real production:
 
-Example:
+1. adjust thresholds for expected traffic
+2. define who receives which severity
+3. confirm alert noise stays manageable
+4. validate scrape auth if `METRICS_AUTH_TOKEN` is set
+
+## Dashboards
+
+Grafana ships with a VowGrid control-plane dashboard in:
+
+- `infra/observability/grafana/dashboards/vowgrid-control-plane.json`
+
+## Release Compose Behavior
+
+The release stack supports an optional observability profile:
 
 ```bash
 docker compose --env-file infra/.env.production.example \
   -f infra/docker-compose.release.yml \
-  --profile observability \
-  config
+  --profile observability config
 ```
 
-In the chosen production topology, the observability services bind to `127.0.0.1` on the host. They are meant to be reached through SSH tunneling, a private VPN, or a separate hardened ingress path rather than public internet exposure.
+In the chosen topology, observability ports bind to `127.0.0.1`.
 
-## What Still Requires Environment Setup
+## External Extensions
 
-- Grafana admin credentials should be changed outside local development.
-- If you want vendor tooling such as Datadog, Sentry, New Relic, or hosted alert receivers, you still need to wire those separately.
-- If you enable `METRICS_AUTH_TOKEN`, make sure your scrape topology can still authenticate to `/v1/metrics`.
+For vendor sinks and external receivers, see:
+
+- `docs/OBSERVABILITY_VENDORS.md`

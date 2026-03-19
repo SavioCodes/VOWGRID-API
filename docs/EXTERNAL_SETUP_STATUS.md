@@ -1,6 +1,6 @@
 # External Setup Status
 
-This document separates repository-complete work from external setup that must be finished outside Git.
+This document separates repository-complete work from setup that must be finished outside Git.
 
 ## Repository-Complete
 
@@ -10,59 +10,52 @@ This document separates repository-complete work from external setup that must b
 - invites and multi-workspace switching
 - API key management
 - billing catalog, trial, entitlements, overage, invoices, and proration preview
-- billing coupons, tax profiles, and workspace billing customer controls
 - Mercado Pago provider adapter and webhook endpoint
-- generic enterprise OIDC path in the web auth layer
+- generic enterprise OIDC path
 - policy evaluation engine
 - execution and rollback workers
-- runtime connectors for mock, HTTP, and GitHub
+- runtime connectors for `mock`, `http`, and `github`
 - workspace export and member anonymization
 - TypeScript SDK package
 - self-hosted observability stack
-- optional Sentry, Datadog, and New Relic sinks
 - release compose, deploy workflows, and AWS VPS scaffold
 - blue/green single-host deployment files
 
 ## External Setup Required
 
-### Production billing
+## Billing
 
-- real Mercado Pago account
-- production token
-- webhook URL
-- webhook secret
-- live checkout validation
+- create Mercado Pago app/account
+- set `MERCADO_PAGO_ACCESS_TOKEN`
+- set `MERCADO_PAGO_WEBHOOK_SECRET`
+- publish webhook URL
+- validate one real checkout and one webhook event
 
-### Production auth
+## Auth
 
-- real SMTP provider
-- optional GitHub OAuth credentials
-- optional Google OAuth credentials
-- optional enterprise OIDC issuer and client credentials
+- configure SMTP provider
+- configure optional GitHub OAuth app
+- configure optional Google OAuth app
+- configure optional enterprise OIDC issuer/client
 
-### Production deploy
+## Deploy
 
-- target VPS
-- DNS
-- GitHub Actions secrets
-- registry access
-- remote runtime env files
+- provision VPS
+- configure DNS
+- configure GitHub Actions secrets
+- configure image registry access
+- place `infra/.env`, `infra/api.env`, and `infra/web.env` on target host
 
-### Enterprise path
+## Enterprise
 
-- real sales inbox or form
-- manual provisioning process owned by an operator
+- configure real contact inbox or form
+- define internal provisioning ownership
 
-### Observability
+## Troubleshooting External Setup
 
-- external alert receivers if desired
-- optional vendor tooling such as Datadog, Sentry, or New Relic
+Use these checks:
 
-## Intentionally Not In Scope
-
-- SAML-specific enterprise federation
-- advanced tax compliance engine
-- jurisdiction-specific invoice compliance engine
-- managed multi-region deployment platform
-- provider-backed refund automation
-- repository-wide soft delete semantics for every domain entity
+- `pnpm ops:readiness`
+- `https://<domain>/v1/health`
+- `https://<domain>/v1/docs`
+- provider-specific credential validation in their console

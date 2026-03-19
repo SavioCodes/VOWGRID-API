@@ -1,27 +1,22 @@
-# Real-World Scenarios
+# Real World Scenarios
 
-## Scenario 1: Controlled production action
+This document shows how VowGrid is intended to be used, with realistic operator and agent flows.
 
-1. An operator or agent creates an intent.
-2. The intent is proposed.
-3. Simulation estimates impact and reversibility.
-4. Policies decide whether approval is required.
-5. A reviewer approves.
-6. The execution worker performs the action.
-7. A receipt proves what happened.
-8. Audit history keeps the actor and timeline visible.
+## Scenario 1: Controlled Production Secret Rotation
 
-## Scenario 2: Programmatic machine access
-
-Use a workspace API key from `/app/settings` for trusted automation:
-
-```bash
-curl -X GET \
-  http://localhost:4000/v1/intents?pageSize=5 \
-  -H "X-Api-Key: <workspace-api-key>"
+```mermaid
+flowchart LR
+  A[Create intent] --> B[Propose]
+  B --> C[Simulate]
+  C --> D[Evaluate policy]
+  D --> E[Approval]
+  E --> F[Execute]
+  F --> G[Receipt]
+  G --> H[Audit]
+  F --> I[Rollback visibility]
 ```
 
-## Scenario 3: Full local workflow
+Example API sequence:
 
 ```bash
 curl -X POST http://localhost:4000/v1/intents \
@@ -30,20 +25,68 @@ curl -X POST http://localhost:4000/v1/intents \
   -d "{\"title\":\"Rotate support token\",\"action\":\"rotate_secret\",\"agentId\":\"cmg0000000000000000000002\",\"connectorId\":\"cmg0000000000000000000004\",\"environment\":\"production\"}"
 ```
 
-Then continue with:
+Then:
 
-- `POST /v1/intents/:intentId/propose`
-- `POST /v1/intents/:intentId/simulate`
-- `POST /v1/intents/:intentId/submit-for-approval`
-- `POST /v1/approvals/:approvalRequestId/approve`
-- `POST /v1/intents/:intentId/execute`
-- `POST /v1/intents/:intentId/rollback`
+1. `POST /v1/intents/:intentId/propose`
+2. `POST /v1/intents/:intentId/simulate`
+3. `POST /v1/intents/:intentId/submit-for-approval`
+4. `POST /v1/approvals/:approvalRequestId/decisions`
+5. `POST /v1/intents/:intentId/execute`
+6. inspect receipt and audit trail
 
-## Scenario 4: Enterprise commercial path
+## Scenario 2: Programmatic Agent Integration
 
-Enterprise remains sales-assisted:
+```bash
+curl -X GET \
+  http://localhost:4000/v1/intents?pageSize=5 \
+  -H "X-Api-Key: <workspace-api-key>"
+```
 
-- no self-serve checkout
-- custom limits and support posture
-- explicit commercial handoff
-- environment-configured contact path in the site and dashboard
+## Scenario 3: Human Operator Workflow In The Dashboard
+
+1. sign up or log in
+2. review `/app`
+3. inspect billing, usage, approvals, and audit surfaces
+4. manage members, invites, workspaces, and API keys in `/app/settings`
+5. follow one intent from creation to receipt
+
+## Scenario 4: Multi-step Approval Chain
+
+Example staged approval:
+
+- stage 1: operations review by `admin`
+- stage 2: business sign-off by `member`
+
+## Scenario 5: External HTTP Action
+
+Use the `http` connector when the target system exposes a webhook-style endpoint.
+
+Example config shape:
+
+```json
+{
+  "url": "https://example.com/webhook",
+  "rollbackUrl": "https://example.com/webhook/rollback",
+  "headers": {
+    "X-VowGrid-Test": "runtime"
+  }
+}
+```
+
+## Scenario 6: Lightweight GitHub Operational Action
+
+Use the `github` connector for limited actions such as:
+
+- `create_issue`
+- `add_issue_comment`
+- `close_issue`
+
+## Scenario 7: Enterprise Sales-Assisted Onboarding
+
+Enterprise is still manual by design:
+
+1. customer reaches out through the configured CTA
+2. requirements are reviewed
+3. billing and support posture are negotiated
+4. workspace is provisioned manually
+5. the customer receives onboarding instructions

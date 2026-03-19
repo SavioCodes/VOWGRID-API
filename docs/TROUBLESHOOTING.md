@@ -1,61 +1,105 @@
 # Troubleshooting
 
-## Common local problems
+This document collects the most common local, staging, and release-side issues for VowGrid.
+
+## Local Development
 
 ### Docker containers do not start
 
-- Confirm Docker Desktop is running.
-- Run `pnpm docker:status`.
-- If ports are occupied, override them in `infra/.env`.
+- confirm Docker Desktop is running
+- run `pnpm docker:status`
+- confirm ports `5432` and `6379` are free or overridden in `infra/.env`
 
-### Release compose does not render
+### Prisma commands fail
 
-- Run `pnpm docker:release:config`.
-- Confirm `infra/.env.production.example` still matches the current release compose variables.
-- On a real host, confirm `infra/.env`, `infra/api.env`, and `infra/web.env` exist.
-
-### Prisma or integration tests fail
-
-- Confirm Postgres is running with `pnpm docker:status`.
-- Re-run `pnpm migrate`.
-- Re-run `pnpm seed`.
+- run `pnpm generate`
+- confirm `apps/api/.env` exists
+- confirm Postgres is healthy
+- rerun `pnpm migrate`
 
 ### Web keeps redirecting to `/login`
 
-- Log in again or create a new workspace through `/signup`.
-- Confirm `apps/web/.env.local` points to the correct API base URL.
+- confirm the session is still valid
+- confirm `apps/web/.env.local` points to the correct API base URL
+- clear old cookies if the auth shape changed during local development
 
 ### API key does not authenticate
 
-- Check whether the key was revoked or rotated from `/app/settings`.
-- Confirm the request sends `X-Api-Key`.
+- confirm the key was not revoked or rotated
+- confirm the request sends `X-Api-Key`
+- confirm the key belongs to the intended workspace
 
-### Mercado Pago checkout is disabled
+### Checkout is disabled
 
-- This is expected until provider envs are configured.
-- Verify the Mercado Pago variables in `apps/api/.env`.
+- inspect `apps/api/.env`
+- run `pnpm ops:readiness`
 
 ### OAuth buttons do not appear or do nothing
 
-- Confirm GitHub or Google client ids and secrets are set in both API and web env files.
-- Confirm the provider redirect URIs match the current web base URL.
-- In production, confirm the callback domain matches the primary Caddy-served domain.
+- confirm provider envs exist in API and web env files
+- confirm callback URLs match the current web base URL
+- confirm provider apps are configured for the active domain
 
-### Metrics or observability look empty
+### E2E tests fail to boot
 
-- Confirm the API is up and `/v1/metrics` is reachable.
-- If `METRICS_AUTH_TOKEN` is set, include `Authorization: Bearer <token>` when scraping.
-- Run `pnpm docker:obs:status` and confirm Prometheus, Alertmanager, and Grafana are healthy.
+- confirm `apps/api/.env` exists
+- confirm `apps/web/.env.local` exists
+- run `pnpm test:e2e:install`
+- confirm Postgres and Redis are running
 
-### Production deploy looks healthy but the site is not reachable
+## Release And Production
 
-- Confirm DNS points at the host.
-- Confirm only `80` and `443` are exposed publicly and that Caddy is running.
-- Confirm the remote `infra/.env` contains the expected `VOWGRID_PRIMARY_DOMAIN`.
-- Confirm the host firewall and cloud security group allow `80` and `443`.
+### Release compose does not render
 
-### E2E tests fail to boot the app
+- run `pnpm docker:release:config`
+- confirm `infra/.env`, `infra/api.env`, and `infra/web.env` exist on the real host
 
-- Ensure `apps/api/.env` and `apps/web/.env.local` exist.
-- Install browsers with `pnpm test:e2e:install`.
-- Confirm Postgres and Redis are running.
+### Site is deployed but unreachable
+
+- confirm DNS points to the host
+- confirm ports `80` and `443` are allowed
+- confirm Caddy is healthy
+- confirm `VOWGRID_PRIMARY_DOMAIN` matches the requested host
+
+### `/v1/health` fails in production
+
+- inspect API container logs
+- inspect Postgres and Redis health
+- confirm API envs are mounted
+- confirm migrations were applied
+
+### Billing webhook does not update subscription state
+
+- confirm `MERCADO_PAGO_WEBHOOK_SECRET`
+- confirm public webhook reachability
+- inspect API logs around `/v1/billing/webhooks/mercado-pago`
+
+### SMTP-backed auth emails never arrive
+
+- confirm SMTP credentials are real
+- inspect logs for fallback-to-application-log delivery
+- confirm `MAIL_FROM_EMAIL` and `MAIL_FROM_NAME`
+
+### Observability looks empty
+
+- confirm `/v1/metrics` is reachable
+- confirm Prometheus is scraping the API
+- if `METRICS_AUTH_TOKEN` is set, confirm the scraper includes it
+
+### Blue/green cutover behaves oddly
+
+- confirm which slot is active
+- validate the inactive slot before flipping
+- inspect Caddy routing
+- keep the previous slot alive until post-cutover validation is complete
+
+## When To Stop And Escalate
+
+Treat the problem as external setup, not code, when the blocker is:
+
+- missing Mercado Pago credentials
+- missing OAuth credentials
+- missing SMTP provider
+- missing domain or DNS
+- missing host secrets
+- GitHub Actions billing/account lock

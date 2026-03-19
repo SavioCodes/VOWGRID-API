@@ -1,56 +1,69 @@
 # Enterprise Handoff
 
-## Current commercial path
+Enterprise remains sales-assisted in the current release. This document describes the expected handoff shape instead of pretending there is already a fully automated enterprise sales system.
 
-Enterprise remains **sales-assisted** in this release.
+## Entry Path
 
-There is no self-serve checkout for Enterprise.
-
-The product uses one of these web envs for the CTA path:
+The product uses one of these web envs for Enterprise CTA routing:
 
 - `NEXT_PUBLIC_VOWGRID_ENTERPRISE_CONTACT_URL`
 - fallback: `NEXT_PUBLIC_VOWGRID_ENTERPRISE_CONTACT_EMAIL`
 
-If neither is configured, the site and dashboard show `Enterprise contact not configured` instead of pretending the CTA works.
+If neither is configured, the UI shows `Enterprise contact not configured`.
 
-## What sales should collect
+## What Sales Or Success Should Collect
 
 - company name
-- primary technical contact
-- primary business contact
-- expected monthly executed action volume
-- expected monthly intent volume
-- connector count and connector types
+- business owner
+- technical owner
+- expected executed actions per month
+- expected intent volume
+- required connector types
+- expected approval complexity
 - required audit retention
-- approval and governance needs
-- security or procurement requirements
-- expected support posture
+- support expectations
+- procurement or security review requirements
+- identity-provider requirements
 
-## What is negotiated manually today
+## Manual Qualification Checklist
 
-- commercial price and term
-- support tier
+1. confirm whether generic OIDC is enough or SAML is explicitly required
+2. confirm whether custom connectors are needed
+3. confirm billing model and contract term
+4. confirm audit/export expectations
+5. confirm known product gaps are understood
+
+## Current Provisioning Reality
+
+1. lead arrives through the configured CTA
+2. commercial and technical scope are reviewed manually
+3. pricing and limits are negotiated manually
+4. workspace is provisioned manually
+5. auth, billing, and support expectations are aligned manually
+6. onboarding guidance is handed over
+
+## SLA Template For Early Enterprise Deals
+
+| Area                    | Suggested launch posture                                     |
+| ----------------------- | ------------------------------------------------------------ |
+| Support hours           | business-hours response unless otherwise negotiated          |
+| Initial response target | same day for critical incidents                              |
+| Identity                | OIDC if provider-compatible; SAML is not first-class yet     |
+| Billing                 | sales-assisted, manual provisioning                          |
+| Deployment              | single-region, single-host topology unless separately scoped |
+| Audit export            | JSON and CSV export supported                                |
+
+## What Can Be Negotiated Today
+
 - custom limits
-- advanced governance expectations
-- provisioning timing
-- any non-standard procurement or security review steps
+- support tier
+- audit retention expectations
+- connector onboarding priority
+- billing terms
 
-## Provisioning reality
+## What Cannot Yet Be Promised As Native Product Features
 
-Today, Enterprise provisioning is still manual.
-
-Typical path:
-
-1. commercial contact is captured through the configured CTA
-2. the team confirms scope and commercial terms
-3. the workspace is provisioned by the VowGrid team
-4. billing/provider state is aligned manually as needed
-5. the customer receives the admin login path and operating guidance
-
-## Honest limitations
-
-- no CRM integration
-- no automated sales pipeline
-- no enterprise self-serve checkout
-- no custom provisioning console
-- no automated contract-to-workspace handoff yet
+- SAML-specific federation
+- self-serve enterprise checkout
+- automated CRM to provisioning workflow
+- deep enterprise org hierarchy model

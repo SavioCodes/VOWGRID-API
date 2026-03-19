@@ -1,25 +1,24 @@
 # SDK Guide
 
-## Status
+VowGrid ships with a repository-local TypeScript SDK in `packages/sdk`.
 
-VowGrid now includes a repository-local TypeScript SDK in `packages/sdk`.
+This guide focuses on packaging, local usage, and publication readiness. For workflow examples, also read:
 
-It is intended for:
+- `docs/AGENT_INTEGRATION_GUIDE.md`
+- `packages/sdk/README.md`
 
-- internal apps in this monorepo
-- external teams vendoring the package source
-- integrators who want typed access without writing raw `fetch` wrappers
-
-It is not published to npm yet.
-
-## Package
+## Package Status
 
 - package name: `@vowgrid/sdk`
-- entrypoint: `packages/sdk/src/index.ts`
+- source: `packages/sdk/src/index.ts`
+- publication metadata: `packages/sdk/package.json`
+- local artifact check: `pnpm sdk:pack`
 
-## Current Coverage
+The package is publish-ready in structure, but it is not published to npm yet.
 
-The SDK includes typed helpers for:
+## Covered Operations
+
+The SDK currently includes typed helpers for:
 
 - health and metrics
 - billing plans, billing account, and checkout
@@ -41,14 +40,40 @@ const client = new VowGridClient({
   apiKey: process.env.VOWGRID_API_KEY!,
 });
 
-const health = await client.health();
-const intents = await client.listIntents({ pageSize: 10 });
+const created = await client.createIntent({
+  title: 'Rotate support token',
+  action: 'rotate_secret',
+  agentId: 'cmg0000000000000000000002',
+  connectorId: 'cmg0000000000000000000004',
+  environment: 'production',
+});
 
-console.log(health.status, intents.length);
+const submitted = await client.submitForApproval(created.id, {
+  stages: [
+    {
+      label: 'Ops review',
+      requiredCount: 1,
+      reviewerRoles: ['admin'],
+    },
+  ],
+});
+
+console.log(submitted.approvalRequest.status);
 ```
 
-## Current Limitations
+## Local Publication Check
 
-- not published as an npm package
-- no generated Python client
-- no generated OpenAPI-based SDK pipeline
+```bash
+pnpm sdk:pack
+```
+
+Expected output:
+
+- tarball under `test-results/sdk-pack/`
+
+## What Still Does Not Exist
+
+- published npm release pipeline
+- Python or Go SDK
+- OpenAPI codegen pipeline
+- versioned public SDK release process
