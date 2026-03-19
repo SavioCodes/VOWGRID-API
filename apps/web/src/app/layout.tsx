@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
+import { CsrfProvider } from '@/components/security/csrf-provider';
+import { getInitialCsrfToken } from '@/lib/vowgrid/csrf';
 import './globals.css';
 
 const inter = Inter({
@@ -22,14 +24,18 @@ export const metadata: Metadata = {
   description: 'Every AI action needs context, permission, and proof.',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const csrfToken = await getInitialCsrfToken();
+
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${jetbrainsMono.variable}`}>{children}</body>
+      <body className={`${inter.variable} ${jetbrainsMono.variable}`}>
+        <CsrfProvider initialToken={csrfToken}>{children}</CsrfProvider>
+      </body>
     </html>
   );
 }

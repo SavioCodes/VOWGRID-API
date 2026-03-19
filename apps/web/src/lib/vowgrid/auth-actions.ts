@@ -12,6 +12,7 @@ import {
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { ApiRequestError } from './api';
+import { assertValidCsrfToken } from './csrf';
 import {
   acceptWorkspaceInvite,
   completeOauthSignup,
@@ -42,6 +43,14 @@ export async function loginAction(
   _previousState: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
+  try {
+    await assertValidCsrfToken(formData);
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Security validation failed.',
+    };
+  }
+
   const parsed = loginSchema.safeParse({
     email: getField(formData, 'email'),
     password: getField(formData, 'password'),
@@ -70,6 +79,14 @@ export async function signupAction(
   _previousState: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
+  try {
+    await assertValidCsrfToken(formData);
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Security validation failed.',
+    };
+  }
+
   const parsed = signupSchema.safeParse({
     name: getField(formData, 'name'),
     workspaceName: getField(formData, 'workspaceName'),
@@ -100,6 +117,14 @@ export async function completeOauthSignupAction(
   _previousState: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
+  try {
+    await assertValidCsrfToken(formData);
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Security validation failed.',
+    };
+  }
+
   const pending = await getPendingOauthCandidateCookie();
 
   if (!pending) {
@@ -134,6 +159,14 @@ export async function requestPasswordResetAction(
   _previousState: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
+  try {
+    await assertValidCsrfToken(formData);
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Security validation failed.',
+    };
+  }
+
   const parsed = passwordResetRequestSchema.safeParse({
     email: getField(formData, 'email'),
   });
@@ -161,6 +194,14 @@ export async function confirmPasswordResetAction(
   _previousState: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
+  try {
+    await assertValidCsrfToken(formData);
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Security validation failed.',
+    };
+  }
+
   const parsed = passwordResetConfirmSchema.safeParse({
     token: getField(formData, 'token'),
     password: getField(formData, 'password'),
@@ -183,7 +224,9 @@ export async function confirmPasswordResetAction(
   redirect('/login');
 }
 
-export async function requestEmailVerificationAction() {
+export async function requestEmailVerificationAction(formData: FormData) {
+  await assertValidCsrfToken(formData);
+
   try {
     await requestEmailVerification();
   } catch {
@@ -198,6 +241,14 @@ export async function confirmEmailVerificationAction(
   _previousState: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
+  try {
+    await assertValidCsrfToken(formData);
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Security validation failed.',
+    };
+  }
+
   const parsed = emailVerificationConfirmSchema.safeParse({
     token: getField(formData, 'token'),
   });
@@ -224,6 +275,14 @@ export async function acceptWorkspaceInviteAction(
   _previousState: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
+  try {
+    await assertValidCsrfToken(formData);
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Security validation failed.',
+    };
+  }
+
   const parsed = acceptWorkspaceInviteSchema.safeParse({
     token: getField(formData, 'token'),
     name: getField(formData, 'name') || undefined,
@@ -249,6 +308,8 @@ export async function acceptWorkspaceInviteAction(
 }
 
 export async function switchWorkspaceAction(formData: FormData) {
+  await assertValidCsrfToken(formData);
+
   const workspaceId = getField(formData, 'workspaceId');
 
   if (!workspaceId) {
@@ -269,12 +330,14 @@ export async function switchWorkspaceAction(formData: FormData) {
   redirect('/app');
 }
 
-export async function logoutAction() {
+export async function logoutAction(formData: FormData) {
+  await assertValidCsrfToken(formData);
   await logoutCurrentSession();
   redirect('/login');
 }
 
-export async function clearDashboardSessionAction() {
+export async function clearDashboardSessionAction(formData: FormData) {
+  await assertValidCsrfToken(formData);
   await clearDashboardSessionCookie();
   redirect('/login');
 }

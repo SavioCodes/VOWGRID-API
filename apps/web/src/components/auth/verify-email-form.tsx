@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import { Input } from '@vowgrid/ui';
 import { type AuthActionState, confirmEmailVerificationAction } from '@/lib/vowgrid/auth-actions';
 import { initialAuthActionState } from '@/lib/vowgrid/auth-form-state';
+import { CsrfTokenField } from '@/components/security/csrf-token-field';
 import { AuthSubmitButton } from './auth-submit-button';
 
 function ErrorMessage({ state }: { state: AuthActionState }) {
@@ -26,6 +27,7 @@ export function VerifyEmailForm({ token }: { token: string }) {
 
   return (
     <form action={formAction} className="space-y-5">
+      <CsrfTokenField />
       <Input name="token" type="hidden" value={token} readOnly />
       <div className="space-y-2">
         <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">

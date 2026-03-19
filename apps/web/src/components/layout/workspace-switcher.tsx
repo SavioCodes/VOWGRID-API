@@ -1,6 +1,7 @@
 import { Badge, Button } from '@vowgrid/ui';
 import type { IntegrationState } from '@/lib/vowgrid/repository';
 import { switchWorkspaceAction } from '@/lib/vowgrid/auth-actions';
+import { CsrfTokenField } from '@/components/security/csrf-token-field';
 
 export function WorkspaceSwitcher({
   workspaceName,
@@ -58,6 +59,7 @@ export function WorkspaceSwitcher({
           <div className="space-y-2">
             {availableWorkspaces.map((workspace) => (
               <form key={workspace.workspaceId} action={switchWorkspaceAction}>
+                <CsrfTokenField />
                 <input type="hidden" name="workspaceId" value={workspace.workspaceId} />
                 <Button
                   type="submit"

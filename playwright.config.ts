@@ -18,13 +18,13 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'pnpm dev:api',
+      command: 'pnpm --filter @vowgrid/api start',
       url: 'http://127.0.0.1:4000/v1/health',
       reuseExistingServer: !isCi,
       timeout: 120_000,
     },
     {
-      command: 'pnpm dev:web',
+      command: 'pnpm --filter web start',
       url: 'http://127.0.0.1:3000/login',
       reuseExistingServer: !isCi,
       timeout: 120_000,

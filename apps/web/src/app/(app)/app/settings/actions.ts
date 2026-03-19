@@ -13,6 +13,7 @@ import {
   rotateWorkspaceApiKey as rotateWorkspaceApiKeyRecord,
   updateWorkspaceMember as updateWorkspaceMemberRecord,
 } from '@/lib/vowgrid/repository';
+import { assertValidCsrfToken } from '@/lib/vowgrid/csrf';
 
 export interface ApiKeyActionResult {
   ok: boolean;
@@ -77,6 +78,8 @@ function revalidateSettings() {
 
 export async function createMemberAction(formData: FormData): Promise<MemberActionResult> {
   try {
+    await assertValidCsrfToken(formData);
+
     const created = await createWorkspaceMemberRecord({
       name: getRequiredString(formData, 'name', 'Provide the member name.'),
       email: getRequiredString(formData, 'email', 'Provide the member email.'),
@@ -107,6 +110,8 @@ export async function updateMemberAction(
   formData: FormData,
 ): Promise<MemberActionResult> {
   try {
+    await assertValidCsrfToken(formData);
+
     const updated = await updateWorkspaceMemberRecord(userId, {
       name: getOptionalString(formData, 'name'),
       role: getRole(formData),
@@ -126,8 +131,12 @@ export async function updateMemberAction(
   }
 }
 
-export async function disableMemberAction(userId: string): Promise<MemberActionResult> {
+export async function disableMemberAction(
+  userId: string,
+  csrfToken: string,
+): Promise<MemberActionResult> {
   try {
+    await assertValidCsrfToken(csrfToken);
     const disabled = await disableWorkspaceMemberRecord(userId);
     revalidateSettings();
 
@@ -143,8 +152,12 @@ export async function disableMemberAction(userId: string): Promise<MemberActionR
   }
 }
 
-export async function enableMemberAction(userId: string): Promise<MemberActionResult> {
+export async function enableMemberAction(
+  userId: string,
+  csrfToken: string,
+): Promise<MemberActionResult> {
   try {
+    await assertValidCsrfToken(csrfToken);
     const enabled = await enableWorkspaceMemberRecord(userId);
     revalidateSettings();
 
@@ -160,8 +173,12 @@ export async function enableMemberAction(userId: string): Promise<MemberActionRe
   }
 }
 
-export async function anonymizeMemberAction(userId: string): Promise<MemberActionResult> {
+export async function anonymizeMemberAction(
+  userId: string,
+  csrfToken: string,
+): Promise<MemberActionResult> {
   try {
+    await assertValidCsrfToken(csrfToken);
     const anonymized = await anonymizeWorkspaceMemberRecord(userId);
     revalidateSettings();
 
@@ -179,6 +196,7 @@ export async function anonymizeMemberAction(userId: string): Promise<MemberActio
 
 export async function createApiKeyAction(formData: FormData): Promise<ApiKeyActionResult> {
   try {
+    await assertValidCsrfToken(formData);
     const name = formData.get('name');
     if (typeof name !== 'string' || name.trim().length < 2) {
       return {
@@ -210,6 +228,7 @@ export async function createApiKeyAction(formData: FormData): Promise<ApiKeyActi
 
 export async function createInviteAction(formData: FormData): Promise<InviteActionResult> {
   try {
+    await assertValidCsrfToken(formData);
     const created = await createWorkspaceInviteRecord({
       email: getRequiredString(formData, 'email', 'Provide the invite email.'),
       role: getRole(formData),
@@ -230,8 +249,12 @@ export async function createInviteAction(formData: FormData): Promise<InviteActi
   }
 }
 
-export async function revokeInviteAction(inviteId: string): Promise<InviteActionResult> {
+export async function revokeInviteAction(
+  inviteId: string,
+  csrfToken: string,
+): Promise<InviteActionResult> {
   try {
+    await assertValidCsrfToken(csrfToken);
     await revokeWorkspaceInviteRecord(inviteId);
     revalidateSettings();
 
@@ -247,8 +270,12 @@ export async function revokeInviteAction(inviteId: string): Promise<InviteAction
   }
 }
 
-export async function rotateApiKeyAction(apiKeyId: string): Promise<ApiKeyActionResult> {
+export async function rotateApiKeyAction(
+  apiKeyId: string,
+  csrfToken: string,
+): Promise<ApiKeyActionResult> {
   try {
+    await assertValidCsrfToken(csrfToken);
     const rotated = await rotateWorkspaceApiKeyRecord(apiKeyId);
 
     revalidateSettings();
@@ -267,8 +294,12 @@ export async function rotateApiKeyAction(apiKeyId: string): Promise<ApiKeyAction
   }
 }
 
-export async function revokeApiKeyAction(apiKeyId: string): Promise<ApiKeyActionResult> {
+export async function revokeApiKeyAction(
+  apiKeyId: string,
+  csrfToken: string,
+): Promise<ApiKeyActionResult> {
   try {
+    await assertValidCsrfToken(csrfToken);
     await revokeWorkspaceApiKeyRecord(apiKeyId);
     revalidateSettings();
 

@@ -5,6 +5,7 @@ import { useActionState } from 'react';
 import { Input } from '@vowgrid/ui';
 import { type AuthActionState, requestPasswordResetAction } from '@/lib/vowgrid/auth-actions';
 import { initialAuthActionState } from '@/lib/vowgrid/auth-form-state';
+import { CsrfTokenField } from '@/components/security/csrf-token-field';
 import { AuthSubmitButton } from './auth-submit-button';
 
 function Message({ state }: { state: AuthActionState }) {
@@ -28,6 +29,7 @@ export function ForgotPasswordForm() {
 
   return (
     <form action={formAction} className="space-y-5">
+      <CsrfTokenField />
       <div className="space-y-2">
         <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
           Password reset

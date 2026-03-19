@@ -10,9 +10,12 @@ import {
   type BillingActionResult,
   updateBillingCustomerAction,
 } from '@/app/(app)/app/billing/actions';
+import { CsrfTokenField } from '@/components/security/csrf-token-field';
+import { useCsrfToken } from '@/components/security/csrf-provider';
 
 export function BillingAdminPanel({ account }: { account: BillingAccountResponse }) {
   const router = useRouter();
+  const csrfToken = useCsrfToken();
   const profileFormRef = useRef<HTMLFormElement>(null);
   const couponFormRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
@@ -47,7 +50,7 @@ export function BillingAdminPanel({ account }: { account: BillingAccountResponse
   const handleCouponClear = () => {
     startTransition(async () => {
       setActiveAction('clear-coupon');
-      const next = await clearBillingCouponAction();
+      const next = await clearBillingCouponAction(csrfToken);
       setResult(next);
       setActiveAction(null);
 
@@ -104,6 +107,7 @@ export function BillingAdminPanel({ account }: { account: BillingAccountResponse
             }}
             className="grid gap-3 md:grid-cols-2"
           >
+            <CsrfTokenField />
             <Input
               name="legalName"
               placeholder="VowGrid Labs Ltda"
@@ -203,6 +207,7 @@ export function BillingAdminPanel({ account }: { account: BillingAccountResponse
             }}
             className="grid gap-3 md:grid-cols-[1fr_auto]"
           >
+            <CsrfTokenField />
             <Input name="code" placeholder="LAUNCH10" />
             <Button type="submit" block disabled={pending && activeAction === 'coupon'}>
               {pending && activeAction === 'coupon' ? 'Applying...' : 'Apply coupon'}
@@ -212,7 +217,9 @@ export function BillingAdminPanel({ account }: { account: BillingAccountResponse
           <Button
             tone="ghost"
             block
-            disabled={!account.activeCoupon || (pending && activeAction === 'clear-coupon')}
+            disabled={
+              !csrfToken || !account.activeCoupon || (pending && activeAction === 'clear-coupon')
+            }
             onClick={handleCouponClear}
           >
             {pending && activeAction === 'clear-coupon' ? 'Clearing...' : 'Clear active coupon'}

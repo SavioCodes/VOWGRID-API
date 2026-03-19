@@ -160,12 +160,61 @@ export default async function IntentDetailPage({
               title="Approval timeline"
               items={intent.approvalRequest.decisions.map((decision) => ({
                 title: findDirectoryLabel(snapshot.directory, decision.userId),
-                detail: decision.rationale ?? 'No rationale was recorded.',
+                detail: decision.stageLabel
+                  ? `${decision.stageLabel}: ${decision.rationale ?? 'No rationale was recorded.'}`
+                  : (decision.rationale ?? 'No rationale was recorded.'),
                 timestamp: decision.createdAt,
                 meta: decision.decision,
                 tone: decision.decision === 'approved' ? 'mint' : 'danger',
               }))}
             />
+          ) : null}
+          {intent.approvalRequest?.stages && intent.approvalRequest.stages.length > 0 ? (
+            <Card>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
+                    Approval stages
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
+                    Reviewer chain
+                  </h2>
+                </div>
+                <div className="grid gap-3">
+                  {intent.approvalRequest.stages.map((stage) => (
+                    <div
+                      key={`${intent.approvalRequest?.id}-${stage.index}`}
+                      className="rounded-[20px] border border-[var(--color-border)] p-4"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                            {stage.label}
+                          </p>
+                          <p className="mt-1 text-sm leading-6 text-[var(--color-text-secondary)]">
+                            {stage.currentCount}/{stage.requiredCount} approvals from{' '}
+                            {stage.reviewerRoles.join(', ')}
+                          </p>
+                        </div>
+                        <Badge
+                          tone={
+                            stage.status === 'approved'
+                              ? 'mint'
+                              : stage.status === 'active'
+                                ? 'accent'
+                                : stage.status === 'rejected'
+                                  ? 'danger'
+                                  : 'neutral'
+                          }
+                        >
+                          {stage.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           ) : null}
           {intent.executionJob ? (
             <Timeline

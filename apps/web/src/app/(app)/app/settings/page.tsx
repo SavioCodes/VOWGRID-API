@@ -138,12 +138,20 @@ export default async function SettingsPage() {
                 audit and execution history inspectable.
               </p>
               {isWorkspaceAdmin ? (
-                <Link
-                  href="/app/settings/export"
-                  className="inline-flex rounded-[16px] border border-[var(--color-border-strong)] px-4 py-2 font-medium text-[var(--color-text-primary)] transition hover:border-[var(--color-accent)]"
-                >
-                  Download workspace export
-                </Link>
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    href="/app/settings/export"
+                    className="inline-flex rounded-[16px] border border-[var(--color-border-strong)] px-4 py-2 font-medium text-[var(--color-text-primary)] transition hover:border-[var(--color-accent)]"
+                  >
+                    Download workspace export
+                  </Link>
+                  <Link
+                    href="/app/settings/export/audit"
+                    className="inline-flex rounded-[16px] border border-[var(--color-border)] px-4 py-2 font-medium text-[var(--color-text-primary)] transition hover:border-[var(--color-accent)]"
+                  >
+                    Export audit CSV
+                  </Link>
+                </div>
               ) : null}
             </div>
           </CardContent>

@@ -10,6 +10,7 @@ import {
   signupAction,
 } from '@/lib/vowgrid/auth-actions';
 import { initialAuthActionState } from '@/lib/vowgrid/auth-form-state';
+import { CsrfTokenField } from '@/components/security/csrf-token-field';
 import { AuthSubmitButton } from './auth-submit-button';
 
 function ErrorMessage({ state }: { state: AuthActionState }) {
@@ -36,6 +37,7 @@ export function SignupForm({
 
   return (
     <form action={formAction} className="space-y-5">
+      <CsrfTokenField />
       <div className="space-y-2">
         <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
           Signup

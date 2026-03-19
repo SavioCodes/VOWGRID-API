@@ -20,6 +20,15 @@ export function ConnectorCard({ connector }: { connector: ConnectorResponse }) {
         <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
           {connector.description ?? 'No connector description is available.'}
         </p>
+        {connector.hasConfig ? (
+          <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+            {connector.configEncrypted ? 'Encrypted config stored at rest' : 'Legacy config stored'}
+          </p>
+        ) : (
+          <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+            No connector secrets stored
+          </p>
+        )}
       </CardContent>
     </Card>
   );

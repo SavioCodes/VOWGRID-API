@@ -59,12 +59,50 @@ export default async function ApprovalsPage() {
                     title="Approval timeline"
                     items={intent.approvalRequest.decisions.map((decision) => ({
                       title: findDirectoryLabel(snapshot.directory, decision.userId),
-                      detail: decision.rationale ?? 'Decision recorded without rationale.',
+                      detail: decision.stageLabel
+                        ? `${decision.stageLabel}: ${decision.rationale ?? 'Decision recorded without rationale.'}`
+                        : (decision.rationale ?? 'Decision recorded without rationale.'),
                       timestamp: decision.createdAt,
                       meta: decision.decision,
                       tone: decision.decision === 'approved' ? 'mint' : 'danger',
                     }))}
                   />
+                ) : null}
+                {intent.approvalRequest?.stages && intent.approvalRequest.stages.length > 0 ? (
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {intent.approvalRequest.stages.map((stage) => (
+                      <div
+                        key={`${intent.approvalRequest?.id}-${stage.index}`}
+                        className="rounded-[22px] border border-[var(--color-border)] p-4"
+                      >
+                        <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-dim)]">
+                          Stage {stage.index + 1}
+                        </p>
+                        <p className="mt-2 font-medium text-[var(--color-text-primary)]">
+                          {stage.label}
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">
+                          {stage.currentCount}/{stage.requiredCount} approvals from{' '}
+                          {stage.reviewerRoles.join(', ')}
+                        </p>
+                        <div className="mt-3">
+                          <Badge
+                            tone={
+                              stage.status === 'approved'
+                                ? 'mint'
+                                : stage.status === 'active'
+                                  ? 'accent'
+                                  : stage.status === 'rejected'
+                                    ? 'danger'
+                                    : 'neutral'
+                            }
+                          >
+                            {stage.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : null}
                 {intent.simulationResult ? (
                   <div className="flex flex-wrap gap-3">

@@ -26,6 +26,8 @@ import {
   type MemberActionResult,
   updateMemberAction,
 } from '@/app/(app)/app/settings/actions';
+import { CsrfTokenField } from '@/components/security/csrf-token-field';
+import { useCsrfToken } from '@/components/security/csrf-provider';
 
 const editableRoles = [
   { value: 'admin', label: 'Admin' },
@@ -81,6 +83,7 @@ export function MemberManager({
   internalUsersMetric: UsageMetricResponse | null;
 }) {
   const router = useRouter();
+  const csrfToken = useCsrfToken();
   const createFormRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<MemberActionResult | null>(null);
@@ -121,6 +124,7 @@ export function MemberManager({
     const formData = new FormData();
     formData.set('name', editName);
     formData.set('role', editRole);
+    formData.set('_csrf', csrfToken);
 
     setActiveMemberId(editingMember.id);
     const next = await updateMemberAction(editingMember.id, formData);
@@ -147,7 +151,7 @@ export function MemberManager({
 
     startTransition(async () => {
       setActiveMemberId(member.id);
-      const next = await action(member.id);
+      const next = await action(member.id, csrfToken);
       setResult(next);
       setActiveMemberId(null);
 
@@ -168,7 +172,7 @@ export function MemberManager({
 
     startTransition(async () => {
       setActiveMemberId(member.id);
-      const next = await anonymizeMemberAction(member.id);
+      const next = await anonymizeMemberAction(member.id, csrfToken);
       setResult(next);
       setActiveMemberId(null);
 
@@ -228,6 +232,7 @@ export function MemberManager({
             }}
             className="grid gap-3 lg:grid-cols-[1.1fr_1fr_1fr_0.8fr_auto]"
           >
+            <CsrfTokenField />
             <Input name="name" placeholder="Priya Shah" required />
             <Input name="email" type="email" placeholder="priya@company.com" required />
             <Input name="password" type="password" placeholder="Initial password" required />
@@ -291,7 +296,7 @@ export function MemberManager({
                     </Button>
                     <Button
                       tone={member.status === 'active' ? 'ghost' : 'secondary'}
-                      disabled={!canToggle || pending}
+                      disabled={!csrfToken || !canToggle || pending}
                       onClick={() => handleStatusChange(member)}
                     >
                       {pending && activeMemberId === member.id
@@ -302,7 +307,7 @@ export function MemberManager({
                     </Button>
                     <Button
                       tone="ghost"
-                      disabled={!canAnonymize || pending}
+                      disabled={!csrfToken || !canAnonymize || pending}
                       onClick={() => handleAnonymize(member)}
                     >
                       {pending && activeMemberId === member.id ? 'Working...' : 'Anonymize'}
@@ -326,7 +331,11 @@ export function MemberManager({
               Cancel
             </Button>
             <Button
-              disabled={editingMember === null || (pending && activeMemberId === editingMember?.id)}
+              disabled={
+                !csrfToken ||
+                editingMember === null ||
+                (pending && activeMemberId === editingMember?.id)
+              }
               onClick={() => {
                 startTransition(async () => {
                   await handleUpdate();

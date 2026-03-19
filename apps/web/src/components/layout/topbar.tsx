@@ -2,6 +2,7 @@ import { Badge, Button } from '@vowgrid/ui';
 import type { IntentResponse } from '@vowgrid/contracts';
 import type { IntegrationState } from '@/lib/vowgrid/repository';
 import { logoutAction } from '@/lib/vowgrid/auth-actions';
+import { CsrfTokenField } from '@/components/security/csrf-token-field';
 import { CommandBar } from './command-bar';
 
 export function Topbar({
@@ -31,6 +32,7 @@ export function Topbar({
           </p>
         </div>
         <form action={logoutAction}>
+          <CsrfTokenField />
           <Button tone="ghost" type="submit">
             Log out
           </Button>

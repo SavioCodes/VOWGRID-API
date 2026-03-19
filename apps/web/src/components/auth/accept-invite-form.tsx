@@ -5,6 +5,7 @@ import { useActionState } from 'react';
 import { Input } from '@vowgrid/ui';
 import { type AuthActionState, acceptWorkspaceInviteAction } from '@/lib/vowgrid/auth-actions';
 import { initialAuthActionState } from '@/lib/vowgrid/auth-form-state';
+import { CsrfTokenField } from '@/components/security/csrf-token-field';
 import { AuthSubmitButton } from './auth-submit-button';
 
 function ErrorMessage({ state }: { state: AuthActionState }) {
@@ -24,6 +25,7 @@ export function AcceptInviteForm({ token }: { token: string }) {
 
   return (
     <form action={formAction} className="space-y-5">
+      <CsrfTokenField />
       <input type="hidden" name="token" value={token} />
       <div className="space-y-2">
         <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">

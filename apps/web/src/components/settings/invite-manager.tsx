@@ -22,6 +22,8 @@ import {
   revokeInviteAction,
   type InviteActionResult,
 } from '@/app/(app)/app/settings/actions';
+import { CsrfTokenField } from '@/components/security/csrf-token-field';
+import { useCsrfToken } from '@/components/security/csrf-provider';
 
 const editableRoles = [
   { value: 'admin', label: 'Admin' },
@@ -54,6 +56,7 @@ function getStatusTone(status: WorkspaceInviteResponse['status']) {
 
 export function InviteManager({ invites }: { invites: WorkspaceInviteResponse[] }) {
   const router = useRouter();
+  const csrfToken = useCsrfToken();
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
   const [activeInviteId, setActiveInviteId] = useState<string | null>(null);
@@ -78,7 +81,7 @@ export function InviteManager({ invites }: { invites: WorkspaceInviteResponse[] 
 
     startTransition(async () => {
       setActiveInviteId(inviteId);
-      const next = await revokeInviteAction(inviteId);
+      const next = await revokeInviteAction(inviteId, csrfToken);
       setResult(next);
       setActiveInviteId(null);
 
@@ -136,6 +139,7 @@ export function InviteManager({ invites }: { invites: WorkspaceInviteResponse[] 
             }}
             className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr_auto]"
           >
+            <CsrfTokenField />
             <Input name="email" type="email" placeholder="invitee@company.com" required />
             <Select name="role" defaultValue="member">
               {editableRoles.map((role) => (
@@ -174,7 +178,7 @@ export function InviteManager({ invites }: { invites: WorkspaceInviteResponse[] 
                 <TableCell className="text-right">
                   <Button
                     tone="ghost"
-                    disabled={invite.status !== 'pending' || pending}
+                    disabled={!csrfToken || invite.status !== 'pending' || pending}
                     onClick={() => handleRevoke(invite.id)}
                   >
                     {pending && activeInviteId === invite.id ? 'Working...' : 'Revoke'}

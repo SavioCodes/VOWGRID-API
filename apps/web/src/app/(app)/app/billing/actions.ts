@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { cancelSubscriptionSchema, createCheckoutSchema } from '@vowgrid/contracts';
+import { assertValidCsrfToken } from '@/lib/vowgrid/csrf';
 import {
   applyBillingCoupon,
   cancelWorkspaceSubscription,
@@ -12,6 +13,8 @@ import {
 } from '@/lib/vowgrid/repository';
 
 export async function startCheckoutAction(formData: FormData) {
+  await assertValidCsrfToken(formData);
+
   const parsed = createCheckoutSchema.safeParse({
     planKey: formData.get('planKey'),
     billingCycle: formData.get('billingCycle'),
@@ -27,6 +30,8 @@ export async function startCheckoutAction(formData: FormData) {
 }
 
 export async function cancelSubscriptionAction(formData: FormData) {
+  await assertValidCsrfToken(formData);
+
   const parsed = cancelSubscriptionSchema.safeParse({
     immediate: formData.get('immediate') === 'true',
   });
@@ -58,6 +63,7 @@ export async function updateBillingCustomerAction(
   formData: FormData,
 ): Promise<BillingActionResult> {
   try {
+    await assertValidCsrfToken(formData);
     const documentType = getOptionalString(formData, 'documentType');
     const taxRateOverride = getOptionalString(formData, 'taxRateBpsOverride');
 
@@ -100,6 +106,7 @@ export async function updateBillingCustomerAction(
 
 export async function applyBillingCouponAction(formData: FormData): Promise<BillingActionResult> {
   try {
+    await assertValidCsrfToken(formData);
     const code = getString(formData, 'code');
 
     if (!code) {
@@ -123,8 +130,9 @@ export async function applyBillingCouponAction(formData: FormData): Promise<Bill
   }
 }
 
-export async function clearBillingCouponAction(): Promise<BillingActionResult> {
+export async function clearBillingCouponAction(csrfToken: string): Promise<BillingActionResult> {
   try {
+    await assertValidCsrfToken(csrfToken);
     await clearBillingCoupon();
     revalidatePath('/app/billing');
     return {

@@ -22,6 +22,8 @@ import {
   rotateApiKeyAction,
   type ApiKeyActionResult,
 } from '@/app/(app)/app/settings/actions';
+import { CsrfTokenField } from '@/components/security/csrf-token-field';
+import { useCsrfToken } from '@/components/security/csrf-provider';
 
 function formatDate(value: string | null) {
   if (!value) {
@@ -47,6 +49,7 @@ function getStatusTone(status: WorkspaceApiKeyResponse['status']) {
 
 export function ApiKeyManager({ apiKeys }: { apiKeys: WorkspaceApiKeyResponse[] }) {
   const router = useRouter();
+  const csrfToken = useCsrfToken();
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<ApiKeyActionResult | null>(null);
@@ -66,7 +69,7 @@ export function ApiKeyManager({ apiKeys }: { apiKeys: WorkspaceApiKeyResponse[] 
   const handleRotate = (apiKeyId: string) => {
     startTransition(async () => {
       setActiveKeyId(apiKeyId);
-      const next = await rotateApiKeyAction(apiKeyId);
+      const next = await rotateApiKeyAction(apiKeyId, csrfToken);
       setResult(next);
       setActiveKeyId(null);
       if (next.ok) {
@@ -78,7 +81,7 @@ export function ApiKeyManager({ apiKeys }: { apiKeys: WorkspaceApiKeyResponse[] 
   const handleRevoke = (apiKeyId: string) => {
     startTransition(async () => {
       setActiveKeyId(apiKeyId);
-      const next = await revokeApiKeyAction(apiKeyId);
+      const next = await revokeApiKeyAction(apiKeyId, csrfToken);
       setResult(next);
       setActiveKeyId(null);
       if (next.ok) {
@@ -131,6 +134,7 @@ export function ApiKeyManager({ apiKeys }: { apiKeys: WorkspaceApiKeyResponse[] 
             }}
             className="grid gap-3 md:grid-cols-[1.3fr_1fr_auto]"
           >
+            <CsrfTokenField />
             <Input name="name" placeholder="Production automation key" required />
             <Input name="expiresAt" type="datetime-local" />
             <Button type="submit" block disabled={pending && activeKeyId === 'create'}>
@@ -175,14 +179,14 @@ export function ApiKeyManager({ apiKeys }: { apiKeys: WorkspaceApiKeyResponse[] 
                 <div className="flex justify-end gap-2">
                   <Button
                     tone="secondary"
-                    disabled={pending || apiKey.status === 'revoked'}
+                    disabled={!csrfToken || pending || apiKey.status === 'revoked'}
                     onClick={() => handleRotate(apiKey.id)}
                   >
                     {pending && activeKeyId === apiKey.id ? 'Working...' : 'Rotate'}
                   </Button>
                   <Button
                     tone="ghost"
-                    disabled={pending || apiKey.status === 'revoked'}
+                    disabled={!csrfToken || pending || apiKey.status === 'revoked'}
                     onClick={() => handleRevoke(apiKey.id)}
                   >
                     Revoke

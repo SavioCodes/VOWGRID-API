@@ -1,6 +1,7 @@
 import { Button } from '@vowgrid/ui';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { VerifyEmailForm } from '@/components/auth/verify-email-form';
+import { CsrfTokenField } from '@/components/security/csrf-token-field';
 import { getCurrentSession } from '@/lib/vowgrid/auth';
 import { requestEmailVerificationAction } from '@/lib/vowgrid/auth-actions';
 
@@ -23,6 +24,7 @@ export default async function VerifyEmailPage({
         <VerifyEmailForm token={token} />
       ) : session ? (
         <form action={requestEmailVerificationAction} className="space-y-5">
+          <CsrfTokenField />
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
               Verification

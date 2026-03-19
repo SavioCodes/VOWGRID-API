@@ -5,6 +5,7 @@ import { BillingStatusBadge } from '@/components/vowgrid/billing-status-badge';
 import { IntegrationBanner } from '@/components/vowgrid/integration-banner';
 import { PageHeader } from '@/components/vowgrid/page-header';
 import { UsageMeter } from '@/components/vowgrid/usage-meter';
+import { CsrfTokenField } from '@/components/security/csrf-token-field';
 import {
   billingPlans,
   formatApprovalsMode,
@@ -182,6 +183,7 @@ export default async function BillingPage() {
                 </div>
                 {account.subscription ? (
                   <form action={cancelSubscriptionAction} className="space-y-3">
+                    <CsrfTokenField />
                     <input type="hidden" name="immediate" value="false" />
                     <Button
                       type="submit"
@@ -341,6 +343,7 @@ export default async function BillingPage() {
                         {plan.selfServeCheckout ? (
                           <>
                             <form action={startCheckoutAction}>
+                              <CsrfTokenField />
                               <input type="hidden" name="planKey" value={plan.key} />
                               <input type="hidden" name="billingCycle" value="monthly" />
                               <Button
@@ -354,6 +357,7 @@ export default async function BillingPage() {
                               </Button>
                             </form>
                             <form action={startCheckoutAction}>
+                              <CsrfTokenField />
                               <input type="hidden" name="planKey" value={plan.key} />
                               <input type="hidden" name="billingCycle" value="yearly" />
                               <Button
