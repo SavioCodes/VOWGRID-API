@@ -61,7 +61,7 @@ jobs:
       - name: Copy blue green assets
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_DEPLOY_USER }}@${{ secrets.PRODUCTION_DEPLOY_HOST }} "mkdir -p '${{ secrets.PRODUCTION_DEPLOY_PATH }}/infra'"
-          scp -o StrictHostKeyChecking=no infra/docker-compose.bluegreen.yml infra/Caddyfile.bluegreen infra/.env.bluegreen.example infra/api.env.example infra/web.env.example ${{ secrets.PRODUCTION_DEPLOY_USER }}@${{ secrets.PRODUCTION_DEPLOY_HOST }}:${{ secrets.PRODUCTION_DEPLOY_PATH }}/infra/
+          scp -o StrictHostKeyChecking=no infra/docker-compose.bluegreen.yml infra/Caddyfile.bluegreen infra/.env.bluegreen.example infra/api.env.example infra/web.env.example infra/scripts/deploy-bluegreen.sh ${{ secrets.PRODUCTION_DEPLOY_USER }}@${{ secrets.PRODUCTION_DEPLOY_HOST }}:${{ secrets.PRODUCTION_DEPLOY_PATH }}/infra/
 
       - name: Deploy selected slot and switch traffic
         run: |
@@ -71,18 +71,9 @@ jobs:
             test -f infra/.env.bluegreen && \
             test -f infra/api.env && \
             test -f infra/web.env && \
+            chmod +x infra/deploy-bluegreen.sh && \
             export VOWGRID_API_IMAGE='${{ env.API_IMAGE }}' && \
             export VOWGRID_WEB_IMAGE='${{ env.WEB_IMAGE }}' && \
             export TARGET_SLOT='${{ env.TARGET_SLOT }}' && \
-            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml pull && \
-            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml up -d postgres redis api-\$TARGET_SLOT web-\$TARGET_SLOT && \
-            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml run --rm api-\$TARGET_SLOT pnpm migrate && \
-            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml exec -T api-\$TARGET_SLOT wget -qO- http://127.0.0.1:4000/v1/health >/dev/null && \
-            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml exec -T web-\$TARGET_SLOT wget -qO- http://127.0.0.1:3000 >/dev/null && \
-            if grep -q '^VOWGRID_ACTIVE_SLOT=' infra/.env.bluegreen; then \
-              sed -i \"s/^VOWGRID_ACTIVE_SLOT=.*/VOWGRID_ACTIVE_SLOT=\$TARGET_SLOT/\" infra/.env.bluegreen; \
-            else \
-              printf '\nVOWGRID_ACTIVE_SLOT=%s\n' \"\$TARGET_SLOT\" >> infra/.env.bluegreen; \
-            fi && \
-            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml up -d caddy
+            ./infra/deploy-bluegreen.sh
           "
