@@ -17,6 +17,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Detect staging deploy configuration
+        run: |
+          if [ -n "${{ secrets.STAGING_DEPLOY_SSH_KEY }}" ] && \
+             [ -n "${{ secrets.STAGING_DEPLOY_USER }}" ] && \
+             [ -n "${{ secrets.STAGING_DEPLOY_HOST }}" ] && \
+             [ -n "${{ secrets.STAGING_DEPLOY_PATH }}" ]; then
+            echo "STAGING_DEPLOY_ENABLED=true" >> "$GITHUB_ENV"
+            echo "Staging deploy secrets detected."
+          else
+            echo "STAGING_DEPLOY_ENABLED=false" >> "$GITHUB_ENV"
+            echo "Staging deploy secrets are missing; remote deployment will be skipped."
+          fi
+
       - name: Set image tags
         run: |
           OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
@@ -27,6 +40,7 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Log in to GHCR
+        if: env.STAGING_DEPLOY_ENABLED == 'true'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -34,6 +48,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push API image
+        if: env.STAGING_DEPLOY_ENABLED == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -44,6 +59,7 @@ jobs:
             ghcr.io/${{ env.OWNER_LOWER }}/vowgrid-api-api:staging
 
       - name: Build and push Web image
+        if: env.STAGING_DEPLOY_ENABLED == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -54,16 +70,19 @@ jobs:
             ghcr.io/${{ env.OWNER_LOWER }}/vowgrid-api-web:staging
 
       - name: Configure SSH agent
+        if: env.STAGING_DEPLOY_ENABLED == 'true'
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.STAGING_DEPLOY_SSH_KEY }}
 
       - name: Copy release assets
+        if: env.STAGING_DEPLOY_ENABLED == 'true'
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_DEPLOY_USER }}@${{ secrets.STAGING_DEPLOY_HOST }} "mkdir -p '${{ secrets.STAGING_DEPLOY_PATH }}/infra'"
           scp -o StrictHostKeyChecking=no -r infra/docker-compose.release.yml infra/Caddyfile infra/.env.production.example infra/api.env.example infra/web.env.example infra/observability ${{ secrets.STAGING_DEPLOY_USER }}@${{ secrets.STAGING_DEPLOY_HOST }}:${{ secrets.STAGING_DEPLOY_PATH }}/infra/
 
       - name: Deploy staging stack
+        if: env.STAGING_DEPLOY_ENABLED == 'true'
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_DEPLOY_USER }}@${{ secrets.STAGING_DEPLOY_HOST }} "
             set -eu && \
@@ -80,3 +99,7 @@ jobs:
             docker compose --env-file infra/.env -f infra/docker-compose.release.yml exec -T api wget -qO- http://127.0.0.1:4000/v1/health >/dev/null && \
             docker compose --env-file infra/.env -f infra/docker-compose.release.yml exec -T web wget -qO- http://127.0.0.1:3000 >/dev/null
           "
+
+      - name: Skip remote staging deployment
+        if: env.STAGING_DEPLOY_ENABLED != 'true'
+        run: echo "Staging deploy skipped because deploy secrets are not configured for this repository/environment."
