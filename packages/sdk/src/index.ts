@@ -1,7 +1,7 @@
 import type {
   ApiResponse,
   ApprovalDecisionInput,
-  ApprovalRequestResponse,
+  ApprovalDecisionResultResponse,
   AuditEventResponse,
   BillingAccountResponse,
   BillingCheckoutResponse,
@@ -22,6 +22,7 @@ import type {
   RollbackInput,
   SimulationResultResponse,
   SubmitForApprovalInput,
+  SubmitForApprovalResponse,
 } from '@vowgrid/contracts';
 
 type ClientAuth =
@@ -206,17 +207,20 @@ export class VowGridClient {
   }
 
   submitForApproval(intentId: string, input: SubmitForApprovalInput) {
-    return this.request<ApprovalRequestResponse>(`/v1/intents/${intentId}/submit-for-approval`, {
+    return this.request<SubmitForApprovalResponse>(`/v1/intents/${intentId}/submit-for-approval`, {
       method: 'POST',
       body: JSON.stringify(input),
     });
   }
 
   reviewApproval(approvalRequestId: string, input: ApprovalDecisionInput) {
-    return this.request<ApprovalRequestResponse>(`/v1/approvals/${approvalRequestId}/decisions`, {
-      method: 'POST',
-      body: JSON.stringify(input),
-    });
+    return this.request<ApprovalDecisionResultResponse>(
+      `/v1/approvals/${approvalRequestId}/decisions`,
+      {
+        method: 'POST',
+        body: JSON.stringify(input),
+      },
+    );
   }
 
   queueExecution(intentId: string) {

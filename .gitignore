@@ -60,6 +60,7 @@ web-live-output*.txt
 .codex-*.pid
 .codex-*.out
 .codex-*.err
+backups/
 
 # Local Git backup
 .git-backup/
