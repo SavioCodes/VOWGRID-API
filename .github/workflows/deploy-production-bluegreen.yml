@@ -75,26 +75,14 @@ jobs:
             export VOWGRID_WEB_IMAGE='${{ env.WEB_IMAGE }}' && \
             export TARGET_SLOT='${{ env.TARGET_SLOT }}' && \
             docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml pull && \
-            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml up -d postgres redis api-$TARGET_SLOT web-$TARGET_SLOT && \
-            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml run --rm api-$TARGET_SLOT pnpm migrate && \
-            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml exec -T api-$TARGET_SLOT wget -qO- http://127.0.0.1:4000/v1/health >/dev/null && \
-            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml exec -T web-$TARGET_SLOT wget -qO- http://127.0.0.1:3000 >/dev/null && \
-            python - <<'PY'
-from pathlib import Path
-path = Path('infra/.env.bluegreen')
-lines = path.read_text().splitlines()
-target = '${{ env.TARGET_SLOT }}'
-updated = []
-found = False
-for line in lines:
-    if line.startswith('VOWGRID_ACTIVE_SLOT='):
-        updated.append(f'VOWGRID_ACTIVE_SLOT={target}')
-        found = True
-    else:
-        updated.append(line)
-if not found:
-    updated.append(f'VOWGRID_ACTIVE_SLOT={target}')
-path.write_text('\n'.join(updated) + '\n')
-PY
+            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml up -d postgres redis api-\$TARGET_SLOT web-\$TARGET_SLOT && \
+            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml run --rm api-\$TARGET_SLOT pnpm migrate && \
+            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml exec -T api-\$TARGET_SLOT wget -qO- http://127.0.0.1:4000/v1/health >/dev/null && \
+            docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml exec -T web-\$TARGET_SLOT wget -qO- http://127.0.0.1:3000 >/dev/null && \
+            if grep -q '^VOWGRID_ACTIVE_SLOT=' infra/.env.bluegreen; then \
+              sed -i \"s/^VOWGRID_ACTIVE_SLOT=.*/VOWGRID_ACTIVE_SLOT=\$TARGET_SLOT/\" infra/.env.bluegreen; \
+            else \
+              printf '\nVOWGRID_ACTIVE_SLOT=%s\n' \"\$TARGET_SLOT\" >> infra/.env.bluegreen; \
+            fi && \
             docker compose --env-file infra/.env.bluegreen -f infra/docker-compose.bluegreen.yml up -d caddy
           "
