@@ -31,7 +31,7 @@ jobs:
       - name: Prepare environment files
         run: |
           cp apps/api/.env.development.example apps/api/.env
-          cp apps/web/.env.development.example apps/web/.env.local
+          cp apps/web/.env.example apps/web/.env.local
           cp infra/.env.development.example infra/.env
 
       - name: Start local infrastructure
@@ -106,7 +106,7 @@ jobs:
       - name: Prepare environment files
         run: |
           cp apps/api/.env.development.example apps/api/.env
-          cp apps/web/.env.development.example apps/web/.env.local
+          cp apps/web/.env.example apps/web/.env.local
           cp infra/.env.development.example infra/.env
 
       - name: Start local infrastructure
