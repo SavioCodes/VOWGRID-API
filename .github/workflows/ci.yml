@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared packages needed by seed
+        run: pnpm --filter @vowgrid/contracts build
+
       - name: Prepare environment files
         run: |
           cp apps/api/.env.development.example apps/api/.env
@@ -102,6 +105,9 @@ jobs:
 
       - name: Install Playwright browsers
         run: pnpm test:e2e:install
+
+      - name: Build shared packages needed by seed
+        run: pnpm --filter @vowgrid/contracts build
 
       - name: Prepare environment files
         run: |
