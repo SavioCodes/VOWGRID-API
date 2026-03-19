@@ -97,5 +97,40 @@ describe('connector runtime integration', () => {
     expect(validHttp.statusCode).toBe(201);
     expect(validHttp.json().data.type).toBe('http');
     expect(validHttp.json().data.rollbackSupport).toBe('partial');
+    expect(validHttp.json().data.hasConfig).toBe(true);
+    expect(validHttp.json().data.configEncrypted).toBe(true);
+
+    const storedConnector = await prisma.connector.findFirst({
+      where: {
+        workspaceId: body.workspace.id as string,
+        type: 'http',
+      },
+    });
+
+    expect(storedConnector).not.toBeNull();
+    expect(storedConnector?.config).toMatchObject({
+      __vowgridEncrypted: true,
+      algorithm: 'aes-256-gcm',
+    });
+
+    const listAfterCreate = await app.inject({
+      method: 'GET',
+      url: '/v1/connectors',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    expect(listAfterCreate.statusCode).toBe(200);
+
+    const listedConnectors = listAfterCreate.json().data.connectors as Array<{
+      hasConfig?: boolean;
+      configEncrypted?: boolean;
+      config?: unknown;
+    }>;
+
+    expect(listedConnectors[0]?.hasConfig).toBe(true);
+    expect(listedConnectors[0]?.configEncrypted).toBe(true);
+    expect(listedConnectors.every((connector) => connector.config === undefined)).toBe(true);
   });
 });

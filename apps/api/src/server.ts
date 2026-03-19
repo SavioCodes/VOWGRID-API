@@ -38,6 +38,18 @@ import { simulationRoutes } from './modules/simulations/routes.js';
 import { workspaceAdminRoutes } from './modules/workspace-admin/routes.js';
 import authPlugin from './plugins/auth.plugin.js';
 
+function buildAllowedCorsOrigins() {
+  const origins = new Set<string>();
+
+  origins.add(new URL(env.APP_WEB_BASE_URL).origin);
+
+  for (const origin of env.CORS_ALLOWED_ORIGINS) {
+    origins.add(origin);
+  }
+
+  return origins;
+}
+
 export async function buildServer() {
   initializeErrorReporting();
 
@@ -65,13 +77,42 @@ export async function buildServer() {
     },
   });
 
+  const allowedCorsOrigins = buildAllowedCorsOrigins();
+  const apiContentSecurityPolicy = {
+    directives: {
+      defaultSrc: ["'self'"],
+      baseUri: ["'self'"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", 'data:', 'https:'],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      objectSrc: ["'none'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      ...(env.NODE_ENV === 'production' ? { upgradeInsecureRequests: [] } : {}),
+    },
+  };
+
   await app.register(cors, {
-    origin: env.NODE_ENV === 'production' ? false : true,
+    origin(origin, callback) {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (env.NODE_ENV !== 'production' || allowedCorsOrigins.has(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`Origin "${origin}" is not allowed.`), false);
+    },
     credentials: true,
   });
 
   await app.register(helmet, {
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: apiContentSecurityPolicy,
   });
 
   await app.register(rateLimit, {
@@ -112,6 +153,8 @@ export async function buildServer() {
 
   await app.register(swaggerUi, {
     routePrefix: '/v1/docs',
+    staticCSP: true,
+    transformStaticCSP: (header) => `${header}; frame-ancestors 'none'; base-uri 'self'`,
     uiConfig: {
       docExpansion: 'list',
       deepLinking: true,

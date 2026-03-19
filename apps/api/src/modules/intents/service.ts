@@ -8,6 +8,7 @@ import { toPrismaNullableJsonValue } from '../../common/json.js';
 import { isValidTransition, type IntentState } from './state-machine.js';
 import type { CreateIntentInput, ListIntentsInput } from './schemas.js';
 import { emitAuditEvent } from '../audits/service.js';
+import { serializeApprovalRequest } from '../approvals/model.js';
 import { assertCanCreateIntent, trackIntentCreation } from '../billing/entitlements.js';
 
 export async function createIntent(
@@ -93,6 +94,12 @@ export async function getIntent(id: string, workspaceId: string) {
 
   return {
     ...intent,
+    approvalRequest: intent.approvalRequest
+      ? serializeApprovalRequest({
+          request: intent.approvalRequest,
+          decisions: intent.approvalRequest.decisions,
+        })
+      : null,
     policyEvaluations: policyEvaluations.map((item) => ({
       policyId: item.policyId,
       policyName: item.policy.name,

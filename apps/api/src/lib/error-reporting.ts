@@ -49,6 +49,41 @@ async function sendNewRelicLog(payload: Record<string, unknown>) {
   });
 }
 
+async function sendSlackAlert(payload: Record<string, unknown>) {
+  if (!env.SLACK_ALERT_WEBHOOK_URL) {
+    return;
+  }
+
+  const summary = [
+    `*Source:* ${String(payload.source ?? 'unknown')}`,
+    `*Environment:* ${String(payload.environment ?? env.NODE_ENV)}`,
+    `*Message:* ${String(payload.message ?? 'Operational error')}`,
+  ];
+
+  if (payload.requestId) {
+    summary.push(`*Request ID:* ${String(payload.requestId)}`);
+  }
+
+  await fetch(env.SLACK_ALERT_WEBHOOK_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      text: `VowGrid operational error: ${String(payload.message ?? 'Operational error')}`,
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: summary.join('\n'),
+          },
+        },
+      ],
+    }),
+  });
+}
+
 export async function reportOperationalError(input: {
   source: string;
   message: string;
@@ -81,6 +116,10 @@ export async function reportOperationalError(input: {
 
   if (env.NEW_RELIC_LICENSE_KEY) {
     tasks.push(sendNewRelicLog(payload));
+  }
+
+  if (env.SLACK_ALERT_WEBHOOK_URL) {
+    tasks.push(sendSlackAlert(payload));
   }
 
   if (tasks.length > 0) {

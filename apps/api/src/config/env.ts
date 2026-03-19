@@ -20,10 +20,23 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().default('redis://localhost:6379'),
   APP_WEB_BASE_URL: z.string().url().default('http://localhost:3000'),
+  CORS_ALLOWED_ORIGINS: z
+    .string()
+    .optional()
+    .transform((value) =>
+      value
+        ? value
+            .split(',')
+            .map((entry) => entry.trim())
+            .filter((entry) => entry.length > 0)
+        : [],
+    ),
 
   SESSION_SECRET: z.string().min(16).optional(),
   JWT_SECRET: z.string().min(16).optional(),
   API_KEY_SALT: z.string().min(16),
+  AUDIT_LOG_HMAC_KEY: z.string().min(16).optional(),
+  CONNECTOR_CONFIG_ENCRYPTION_KEY: z.string().min(16).optional(),
 
   MAIL_FROM_EMAIL: z.string().email().optional(),
   SMTP_HOST: z.string().min(1).optional(),
@@ -51,6 +64,7 @@ const envSchema = z.object({
   BILLING_COUPON_CATALOG_JSON: z.string().optional(),
   METRICS_AUTH_TOKEN: z.string().min(16).optional(),
   SENTRY_DSN: z.string().url().optional(),
+  SLACK_ALERT_WEBHOOK_URL: z.string().url().optional(),
   DATADOG_LOGS_API_KEY: z.string().min(1).optional(),
   DATADOG_SITE: z.string().default('datadoghq.com'),
   NEW_RELIC_LICENSE_KEY: z.string().min(1).optional(),
@@ -58,15 +72,29 @@ const envSchema = z.object({
 
   RATE_LIMIT_MAX: z.coerce.number().optional(),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().optional(),
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().optional(),
+  AUTH_RATE_LIMIT_WINDOW_MS: z.coerce.number().optional(),
+  API_KEY_DEFAULT_TTL_DAYS: z.coerce.number().int().min(1).max(3650).default(90),
+  API_KEY_MAX_TTL_DAYS: z.coerce.number().int().min(1).max(3650).default(365),
 });
 
 export type Env = Omit<
   z.infer<typeof envSchema>,
-  'SESSION_SECRET' | 'RATE_LIMIT_MAX' | 'RATE_LIMIT_WINDOW_MS'
+  | 'SESSION_SECRET'
+  | 'RATE_LIMIT_MAX'
+  | 'RATE_LIMIT_WINDOW_MS'
+  | 'AUTH_RATE_LIMIT_MAX'
+  | 'AUTH_RATE_LIMIT_WINDOW_MS'
+  | 'AUDIT_LOG_HMAC_KEY'
+  | 'CONNECTOR_CONFIG_ENCRYPTION_KEY'
 > & {
   SESSION_SECRET: string;
+  AUDIT_LOG_HMAC_KEY: string;
+  CONNECTOR_CONFIG_ENCRYPTION_KEY: string;
   RATE_LIMIT_MAX: number;
   RATE_LIMIT_WINDOW_MS: number;
+  AUTH_RATE_LIMIT_MAX: number;
+  AUTH_RATE_LIMIT_WINDOW_MS: number;
 };
 
 export function loadEnv(): Env {
@@ -87,9 +115,14 @@ export function loadEnv(): Env {
   return {
     ...result.data,
     SESSION_SECRET: sessionSecret,
+    AUDIT_LOG_HMAC_KEY: result.data.AUDIT_LOG_HMAC_KEY ?? sessionSecret,
+    CONNECTOR_CONFIG_ENCRYPTION_KEY: result.data.CONNECTOR_CONFIG_ENCRYPTION_KEY ?? sessionSecret,
     RATE_LIMIT_MAX:
-      result.data.RATE_LIMIT_MAX ?? (result.data.NODE_ENV === 'production' ? 100 : 1_000),
+      result.data.RATE_LIMIT_MAX ?? (result.data.NODE_ENV === 'production' ? 300 : 1_000),
     RATE_LIMIT_WINDOW_MS: result.data.RATE_LIMIT_WINDOW_MS ?? 60_000,
+    AUTH_RATE_LIMIT_MAX:
+      result.data.AUTH_RATE_LIMIT_MAX ?? (result.data.NODE_ENV === 'production' ? 10 : 100),
+    AUTH_RATE_LIMIT_WINDOW_MS: result.data.AUTH_RATE_LIMIT_WINDOW_MS ?? 15 * 60_000,
   };
 }
 

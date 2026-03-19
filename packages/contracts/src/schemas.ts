@@ -16,8 +16,12 @@ export type Reversibility = 'full' | 'partial' | 'none';
 export type RollbackSupport = 'supported' | 'partial' | 'unsupported';
 export type ApprovalRequestStatus = 'pending' | 'approved' | 'rejected' | 'expired';
 export type ApprovalDecisionStatus = 'approved' | 'rejected';
+export type ApprovalFlowMode = 'single_step' | 'multi_step';
+export type ApprovalStageStatus = 'pending' | 'active' | 'approved' | 'rejected';
 export type ExecutionJobStatus = 'queued' | 'processing' | 'completed' | 'failed';
 export type RollbackAttemptStatus = 'pending' | 'in_progress' | 'completed' | 'failed';
+export const APPROVAL_REVIEWER_ROLES = ['owner', 'admin', 'member', 'viewer'] as const;
+export type ApprovalReviewerRole = (typeof APPROVAL_REVIEWER_ROLES)[number];
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -75,9 +79,40 @@ export const createPolicySchema = z.object({
 
 export type CreatePolicyInput = z.infer<typeof createPolicySchema>;
 
-export const submitForApprovalSchema = z.object({
-  requiredCount: z.number().int().min(1).max(10).default(1),
+export const approvalStageSchema = z.object({
+  label: z.string().trim().min(1).max(80),
+  requiredCount: z.number().int().min(1).max(5),
+  reviewerRoles: z.array(z.enum(APPROVAL_REVIEWER_ROLES)).min(1).max(4),
 });
+
+export const submitForApprovalSchema = z
+  .object({
+    requiredCount: z.number().int().min(1).max(10).optional(),
+    stages: z.array(approvalStageSchema).min(2).max(5).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.stages) {
+      return;
+    }
+
+    const totalRequiredCount = value.stages.reduce((sum, stage) => sum + stage.requiredCount, 0);
+
+    if (totalRequiredCount > 10) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['stages'],
+        message: 'Approval stages cannot require more than 10 total approvals.',
+      });
+    }
+
+    if (value.requiredCount !== undefined && value.requiredCount !== totalRequiredCount) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['requiredCount'],
+        message: 'requiredCount must match the total approvals required by the stage chain.',
+      });
+    }
+  });
 
 export type SubmitForApprovalInput = z.infer<typeof submitForApprovalSchema>;
 
@@ -120,6 +155,8 @@ export interface ConnectorResponse {
   rollbackSupport: RollbackSupport;
   workspaceId: string;
   enabled: boolean;
+  hasConfig?: boolean;
+  configEncrypted?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -172,11 +209,23 @@ export interface ApprovalRequestResponse {
   id: string;
   intentId: string;
   status: ApprovalRequestStatus;
+  mode: ApprovalFlowMode;
   requiredCount: number;
   currentCount: number;
+  currentStageIndex: number;
+  stages?: ApprovalStageResponse[] | null;
   expiresAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ApprovalStageResponse {
+  index: number;
+  label: string;
+  requiredCount: number;
+  currentCount: number;
+  reviewerRoles: ApprovalReviewerRole[];
+  status: ApprovalStageStatus;
 }
 
 export interface ApprovalDecisionResponse {
@@ -185,6 +234,8 @@ export interface ApprovalDecisionResponse {
   userId: string;
   decision: ApprovalDecisionStatus;
   rationale?: string | null;
+  stageIndex?: number | null;
+  stageLabel?: string | null;
   createdAt: string;
 }
 
@@ -261,6 +312,9 @@ export interface AuditEventResponse {
   actorId: string;
   workspaceId: string;
   metadata?: Record<string, unknown> | null;
+  previousHash?: string | null;
+  integrityHash?: string;
+  integrityVerified?: boolean;
   createdAt: string;
 }
 

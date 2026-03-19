@@ -6,6 +6,7 @@ import { FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify
 import { prisma } from '../../lib/prisma.js';
 import { paginated } from '../../common/response.js';
 import { ValidationError } from '../../common/errors.js';
+import { verifyAuditIntegrity } from '../../lib/audit-integrity.js';
 import { z } from 'zod';
 
 const listAuditEventsSchema = z.object({
@@ -59,7 +60,17 @@ export async function auditRoutes(app: FastifyInstance): Promise<void> {
         prisma.auditEvent.count({ where }),
       ]);
 
-      return reply.send(paginated(events, total, page, pageSize));
+      return reply.send(
+        paginated(
+          events.map((event) => ({
+            ...event,
+            integrityVerified: verifyAuditIntegrity(event),
+          })),
+          total,
+          page,
+          pageSize,
+        ),
+      );
     },
   });
 }

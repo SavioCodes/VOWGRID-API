@@ -27,6 +27,7 @@ import { emitAuditEvent } from '../audits/service.js';
 import { assertCanManageInternalUsers } from '../billing/entitlements.js';
 import { hashPassword, generateOpaqueToken, hashOpaqueToken } from '../auth/security.js';
 import { sendAuthEmail } from '../auth/mailer.js';
+import { redactConnectorConfig } from '../../lib/connector-secrets.js';
 
 const MEMBER_ROLE_ORDER = ['owner', 'admin', 'member', 'viewer'] as const;
 const INVITE_TTL_DAYS = 7;
@@ -162,9 +163,16 @@ function serializeApiKey(record: {
   };
 }
 
-function parseOptionalExpiry(expiresAt?: string | null) {
+function addTtlDays(from: Date, days: number) {
+  return new Date(from.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+function resolveApiKeyExpiry(expiresAt?: string | null) {
+  const now = new Date();
+  const maxAllowedExpiry = addTtlDays(now, env.API_KEY_MAX_TTL_DAYS);
+
   if (!expiresAt) {
-    return null;
+    return addTtlDays(now, env.API_KEY_DEFAULT_TTL_DAYS);
   }
 
   const parsed = new Date(expiresAt);
@@ -177,7 +185,23 @@ function parseOptionalExpiry(expiresAt?: string | null) {
     throw new ValidationError('API key expiry must be in the future.');
   }
 
+  if (parsed > maxAllowedExpiry) {
+    throw new ValidationError(
+      `API key expiry cannot be more than ${env.API_KEY_MAX_TTL_DAYS} days in the future.`,
+    );
+  }
+
   return parsed;
+}
+
+function resolveRotatedApiKeyExpiry(existingExpiry: Date | null) {
+  const now = new Date();
+
+  if (existingExpiry && existingExpiry > now) {
+    return existingExpiry;
+  }
+
+  return addTtlDays(now, env.API_KEY_DEFAULT_TTL_DAYS);
 }
 
 async function getWorkspaceMembershipOrThrow(userId: string, workspaceId: string) {
@@ -757,7 +781,7 @@ export async function createWorkspaceApiKey(
       keyPrefix: buildApiKeyPrefix(secret),
       workspaceId,
       scopes: ['*'],
-      expiresAt: parseOptionalExpiry(input.expiresAt),
+      expiresAt: resolveApiKeyExpiry(input.expiresAt),
     },
   });
 
@@ -846,7 +870,7 @@ export async function rotateWorkspaceApiKey(
         keyPrefix: buildApiKeyPrefix(secret),
         workspaceId,
         scopes: existing.scopes,
-        expiresAt: existing.expiresAt,
+        expiresAt: resolveRotatedApiKeyExpiry(existing.expiresAt),
       },
     });
   });
@@ -1091,7 +1115,7 @@ export async function exportWorkspaceData(workspaceId: string): Promise<Workspac
       description: connector.description,
       enabled: connector.enabled,
       rollbackSupport: connector.rollbackSupport,
-      config: toPlainRecord(connector.config),
+      config: redactConnectorConfig(connector.config),
       createdAt: connector.createdAt.toISOString(),
       updatedAt: connector.updatedAt.toISOString(),
     })),
@@ -1135,6 +1159,8 @@ export async function exportWorkspaceData(workspaceId: string): Promise<Workspac
       entityType: event.entityType,
       entityId: event.entityId,
       metadata: toPlainRecord(event.metadata),
+      previousHash: event.previousHash,
+      integrityHash: event.integrityHash,
       createdAt: event.createdAt.toISOString(),
     })),
   };

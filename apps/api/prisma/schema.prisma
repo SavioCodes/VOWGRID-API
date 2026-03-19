@@ -480,8 +480,11 @@ model ApprovalRequest {
   id            String    @id @default(cuid())
   intentId      String    @unique @map("intent_id")
   status        String    @default("pending") // pending, approved, rejected, expired
+  mode          String    @default("single_step")
   requiredCount Int       @default(1) @map("required_count")
   currentCount  Int       @default(0) @map("current_count")
+  currentStageIndex Int   @default(0) @map("current_stage_index")
+  stageDefinitions Json?  @map("stage_definitions")
   expiresAt     DateTime? @map("expires_at")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
@@ -498,6 +501,8 @@ model ApprovalDecision {
   userId            String   @map("user_id")
   decision          String // approved, rejected
   rationale         String?
+  stageIndex        Int?     @map("stage_index")
+  stageLabel        String?  @map("stage_label")
   createdAt         DateTime @default(now()) @map("created_at")
 
   approvalRequest ApprovalRequest @relation(fields: [approvalRequestId], references: [id], onDelete: Cascade)
@@ -577,6 +582,8 @@ model AuditEvent {
   actorId     String   @map("actor_id")
   workspaceId String   @map("workspace_id")
   metadata    Json?
+  previousHash String?  @map("previous_hash")
+  integrityHash String  @map("integrity_hash")
   createdAt   DateTime @default(now()) @map("created_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -585,6 +592,7 @@ model AuditEvent {
   @@index([entityType, entityId])
   @@index([actorType, actorId])
   @@index([createdAt])
+  @@index([workspaceId, createdAt])
   @@map("audit_events")
 }
 

@@ -69,6 +69,7 @@ describe('workspace API key management integration', () => {
     expect(createdBody.success).toBe(true);
     expect(createdBody.data.apiKey).toMatch(/^vgk_/);
     expect(createdBody.data.record.keyPrefix).toMatch(/^vgk_/);
+    expect(createdBody.data.record.expiresAt).not.toBeNull();
 
     const listBeforeRotate = await app.inject({
       method: 'GET',
@@ -82,6 +83,22 @@ describe('workspace API key management integration', () => {
     const listedKeys = listBeforeRotate.json().data as Array<{ id: string; name: string }>;
     expect(listedKeys).toHaveLength(1);
     expect(listedKeys[0]?.name).toBe('CI automation');
+
+    const auditEvents = await app.inject({
+      method: 'GET',
+      url: '/v1/audit-events?pageSize=5',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    expect(auditEvents.statusCode).toBe(200);
+    const firstAuditEvent = auditEvents.json().data[0] as {
+      integrityHash?: string;
+      integrityVerified?: boolean;
+    };
+    expect(firstAuditEvent.integrityHash).toBeTruthy();
+    expect(typeof firstAuditEvent.integrityVerified).toBe('boolean');
 
     const createdSecret = createdBody.data.apiKey as string;
     const authWithCreatedKey = await app.inject({

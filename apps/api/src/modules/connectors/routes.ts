@@ -7,6 +7,11 @@ import { prisma } from '../../lib/prisma.js';
 import { success } from '../../common/response.js';
 import { ValidationError } from '../../common/errors.js';
 import { toPrismaNullableJsonValue } from '../../common/json.js';
+import {
+  encryptConnectorConfig,
+  hasConnectorConfig,
+  isEncryptedConnectorConfig,
+} from '../../lib/connector-secrets.js';
 import { connectorRegistry } from './framework/connector.registry.js';
 import { assertCanCreateConnector } from '../billing/entitlements.js';
 import { z } from 'zod';
@@ -59,12 +64,26 @@ export async function connectorRoutes(app: FastifyInstance): Promise<void> {
         data: {
           ...parsed.data,
           rollbackSupport: connectorRuntime.rollbackSupport,
-          config: toPrismaNullableJsonValue(parsed.data.config),
+          config: toPrismaNullableJsonValue(encryptConnectorConfig(parsed.data.config)),
           workspaceId: request.auth.workspaceId,
         },
       });
 
-      return reply.status(201).send(success(connector));
+      return reply.status(201).send(
+        success({
+          id: connector.id,
+          name: connector.name,
+          type: connector.type,
+          description: connector.description,
+          rollbackSupport: connector.rollbackSupport,
+          workspaceId: connector.workspaceId,
+          enabled: connector.enabled,
+          hasConfig: hasConnectorConfig(connector.config),
+          configEncrypted: isEncryptedConnectorConfig(connector.config),
+          createdAt: connector.createdAt,
+          updatedAt: connector.updatedAt,
+        }),
+      );
     },
   });
 
@@ -83,7 +102,24 @@ export async function connectorRoutes(app: FastifyInstance): Promise<void> {
 
       const registeredTypes = connectorRegistry.list();
 
-      return reply.send(success({ connectors, registeredTypes }));
+      return reply.send(
+        success({
+          connectors: connectors.map((connector) => ({
+            id: connector.id,
+            name: connector.name,
+            type: connector.type,
+            description: connector.description,
+            rollbackSupport: connector.rollbackSupport,
+            workspaceId: connector.workspaceId,
+            enabled: connector.enabled,
+            hasConfig: hasConnectorConfig(connector.config),
+            configEncrypted: isEncryptedConnectorConfig(connector.config),
+            createdAt: connector.createdAt,
+            updatedAt: connector.updatedAt,
+          })),
+          registeredTypes,
+        }),
+      );
     },
   });
 }

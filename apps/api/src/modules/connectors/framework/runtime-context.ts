@@ -1,3 +1,4 @@
+import { decryptConnectorConfig } from '../../../lib/connector-secrets.js';
 import type { ConnectorRuntimeContext } from './connector.interface.js';
 
 export function buildConnectorRuntimeContext(input: {
@@ -11,10 +12,7 @@ export function buildConnectorRuntimeContext(input: {
   } | null;
 }): ConnectorRuntimeContext {
   const rawConfig = input.connector?.config;
-  const config =
-    rawConfig && typeof rawConfig === 'object' && !Array.isArray(rawConfig)
-      ? (rawConfig as Record<string, unknown>)
-      : {};
+  const config = decryptConnectorConfig(rawConfig);
 
   return {
     connectorId: input.connector?.id ?? null,

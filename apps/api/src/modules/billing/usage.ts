@@ -12,22 +12,40 @@ export function getCurrentMonthlyWindow(now = new Date()) {
 
 export async function getMonthlyUsageCounter(workspaceId: string, metric: MonthlyUsageMetricKey) {
   const { start, end } = getCurrentMonthlyWindow();
-  return prisma.usageCounter.upsert({
-    where: {
-      workspaceId_metric_periodStart: {
-        workspaceId,
-        metric,
-        periodStart: start,
-      },
+  const uniqueWhere = {
+    workspaceId_metric_periodStart: {
+      workspaceId,
+      metric,
+      periodStart: start,
     },
-    update: {},
-    create: {
+  } as const;
+
+  await prisma.usageCounter.createMany({
+    data: {
       workspaceId,
       metric,
       periodStart: start,
       periodEnd: end,
     },
+    skipDuplicates: true,
   });
+
+  const counter = await prisma.usageCounter.findUnique({
+    where: uniqueWhere,
+  });
+
+  if (!counter) {
+    return prisma.usageCounter.create({
+      data: {
+        workspaceId,
+        metric,
+        periodStart: start,
+        periodEnd: end,
+      },
+    });
+  }
+
+  return counter;
 }
 
 export async function incrementMonthlyUsageCounter(
@@ -38,28 +56,46 @@ export async function incrementMonthlyUsageCounter(
 ) {
   const { start, end } = getCurrentMonthlyWindow();
   const now = new Date();
-
-  const counter = await prisma.usageCounter.upsert({
-    where: {
-      workspaceId_metric_periodStart: {
-        workspaceId,
-        metric,
-        periodStart: start,
-      },
-    },
-    update: {
-      count: { increment: amount },
-      lastIncrementAt: now,
-    },
-    create: {
+  const uniqueWhere = {
+    workspaceId_metric_periodStart: {
       workspaceId,
       metric,
       periodStart: start,
-      periodEnd: end,
-      count: amount,
-      lastIncrementAt: now,
     },
+  } as const;
+
+  const existingCounter = await prisma.usageCounter.findUnique({
+    where: uniqueWhere,
   });
+
+  let counter;
+  if (existingCounter) {
+    counter = await prisma.usageCounter.update({
+      where: uniqueWhere,
+      data: {
+        count: { increment: amount },
+        lastIncrementAt: now,
+      },
+    });
+  } else {
+    await prisma.usageCounter.createMany({
+      data: {
+        workspaceId,
+        metric,
+        periodStart: start,
+        periodEnd: end,
+      },
+      skipDuplicates: true,
+    });
+
+    counter = await prisma.usageCounter.update({
+      where: uniqueWhere,
+      data: {
+        count: { increment: amount },
+        lastIncrementAt: now,
+      },
+    });
+  }
 
   const nextData: {
     warningTriggeredAt?: Date;

@@ -1,4 +1,4 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, type FastifyRequest } from 'fastify';
 import {
   acceptWorkspaceInviteSchema,
   completeOauthSignupSchema,
@@ -12,6 +12,7 @@ import {
 } from '@vowgrid/contracts';
 import { ValidationError } from '../../common/errors.js';
 import { success } from '../../common/response.js';
+import { env } from '../../config/env.js';
 import {
   acceptWorkspaceInvite,
   completeDashboardOauth,
@@ -27,6 +28,30 @@ import {
   verifyDashboardEmailToken,
 } from './service.js';
 
+function getAuthRateLimitKey(request: FastifyRequest, suffix: string) {
+  const body = request.body as Record<string, unknown> | undefined;
+  const email =
+    typeof body?.email === 'string' && body.email.trim() !== ''
+      ? body.email.trim().toLowerCase()
+      : 'anonymous';
+  const token =
+    typeof body?.token === 'string' && body.token.trim() !== ''
+      ? body.token.trim().slice(0, 12)
+      : 'none';
+
+  return `${suffix}:${request.ip}:${email}:${token}`;
+}
+
+function publicAuthRateLimit(suffix: string) {
+  return {
+    rateLimit: {
+      max: env.AUTH_RATE_LIMIT_MAX,
+      timeWindow: env.AUTH_RATE_LIMIT_WINDOW_MS,
+      keyGenerator: (request: FastifyRequest) => getAuthRateLimitKey(request, suffix),
+    },
+  };
+}
+
 export async function authRoutes(app: FastifyInstance): Promise<void> {
   app.post('/auth/signup', {
     schema: {
@@ -36,6 +61,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         'Creates a workspace, owner account, initial trial state, and dashboard session.',
       security: [],
     },
+    config: publicAuthRateLimit('auth-signup'),
     handler: async (request, reply) => {
       const parsed = signupSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -54,6 +80,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       description: 'Creates a session token for a dashboard user.',
       security: [],
     },
+    config: publicAuthRateLimit('auth-login'),
     handler: async (request, reply) => {
       const parsed = loginSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -73,6 +100,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         'Consumes a verified provider identity from the web auth callback. Existing users receive a dashboard session; new users receive a short-lived onboarding token.',
       security: [],
     },
+    config: publicAuthRateLimit('auth-oauth-complete'),
     handler: async (request, reply) => {
       const parsed = oauthCompleteSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -92,6 +120,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         'Consumes a short-lived OAuth onboarding token, creates the first workspace, links the provider account, and opens a dashboard session.',
       security: [],
     },
+    config: publicAuthRateLimit('auth-oauth-signup'),
     handler: async (request, reply) => {
       const parsed = completeOauthSignupSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -142,6 +171,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         'Generates a password reset token and sends a recovery email when the account exists.',
       security: [],
     },
+    config: publicAuthRateLimit('auth-password-reset-request'),
     handler: async (request, reply) => {
       const parsed = passwordResetRequestSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -160,6 +190,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       description: 'Consumes a password reset token and writes the new password hash.',
       security: [],
     },
+    config: publicAuthRateLimit('auth-password-reset-confirm'),
     handler: async (request, reply) => {
       const parsed = passwordResetConfirmSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -194,6 +225,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       description: 'Consumes an email verification token and marks the user as verified.',
       security: [],
     },
+    config: publicAuthRateLimit('auth-email-verify'),
     handler: async (request, reply) => {
       const parsed = emailVerificationConfirmSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -236,6 +268,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         'Accepts an emailed workspace invite. Existing users can join directly; new users can create an account as part of acceptance.',
       security: [],
     },
+    config: publicAuthRateLimit('auth-invite-accept'),
     handler: async (request, reply) => {
       const parsed = acceptWorkspaceInviteSchema.safeParse(request.body);
       if (!parsed.success) {

@@ -1,20 +1,11 @@
-// ──────────────────────────────────────────
-// VowGrid — Approval Routes
-// ──────────────────────────────────────────
-
+import { approvalDecisionSchema, submitForApprovalSchema } from '@vowgrid/contracts';
 import { FastifyInstance } from 'fastify';
-import {
-  submitForApprovalSchema,
-  approvalDecisionSchema,
-  submitForApproval,
-  processApprovalDecision,
-} from './service.js';
-import { success } from '../../common/response.js';
 import { ValidationError } from '../../common/errors.js';
+import { success } from '../../common/response.js';
 import { getActorId, getActorType } from '../../plugins/auth.plugin.js';
+import { processApprovalDecision, submitForApproval } from './service.js';
 
 export async function approvalRoutes(app: FastifyInstance): Promise<void> {
-  // ── Submit for approval ──────────────
   app.post('/intents/:intentId/submit-for-approval', {
     schema: {
       tags: ['Approvals'],
@@ -32,7 +23,7 @@ export async function approvalRoutes(app: FastifyInstance): Promise<void> {
       const result = await submitForApproval(
         intentId,
         request.auth.workspaceId,
-        parsed.data.requiredCount,
+        parsed.data,
         getActorId(request.auth),
         getActorType(request.auth),
       );
@@ -41,12 +32,11 @@ export async function approvalRoutes(app: FastifyInstance): Promise<void> {
     },
   });
 
-  // ── Approve ──────────────────────────
   app.post('/approvals/:approvalRequestId/approve', {
     schema: {
       tags: ['Approvals'],
       summary: 'Approve an approval request',
-      description: 'Record an approval decision',
+      description: 'Record an approval decision.',
     },
     preHandler: [app.authenticate],
     handler: async (request, reply) => {
@@ -72,18 +62,18 @@ export async function approvalRoutes(app: FastifyInstance): Promise<void> {
         'approved',
         parsed.data.rationale,
         request.auth.workspaceId,
+        request.auth.role,
       );
 
       return reply.send(success(result));
     },
   });
 
-  // ── Reject ───────────────────────────
   app.post('/approvals/:approvalRequestId/reject', {
     schema: {
       tags: ['Approvals'],
       summary: 'Reject an approval request',
-      description: 'Record a rejection decision — any rejection rejects the entire request',
+      description: 'Record a rejection decision; any rejection rejects the entire request.',
     },
     preHandler: [app.authenticate],
     handler: async (request, reply) => {
@@ -109,6 +99,42 @@ export async function approvalRoutes(app: FastifyInstance): Promise<void> {
         'rejected',
         parsed.data.rationale,
         request.auth.workspaceId,
+        request.auth.role,
+      );
+
+      return reply.send(success(result));
+    },
+  });
+
+  app.post('/approvals/:approvalRequestId/decisions', {
+    schema: {
+      tags: ['Approvals'],
+      summary: 'Record an approval decision',
+      description:
+        'Record an approved or rejected decision against the current active approval stage.',
+    },
+    preHandler: [app.authenticate],
+    handler: async (request, reply) => {
+      const { approvalRequestId } = request.params as { approvalRequestId: string };
+      const parsed = approvalDecisionSchema.safeParse(request.body ?? {});
+      if (!parsed.success) {
+        throw new ValidationError('Invalid approval decision data', parsed.error.flatten());
+      }
+
+      const resolvedUserId = request.auth.userId ?? parsed.data.userId;
+      if (!resolvedUserId) {
+        throw new ValidationError(
+          'Approval decisions require a session-authenticated user or an explicit userId.',
+        );
+      }
+
+      const result = await processApprovalDecision(
+        approvalRequestId,
+        resolvedUserId,
+        parsed.data.decision,
+        parsed.data.rationale,
+        request.auth.workspaceId,
+        request.auth.role,
       );
 
       return reply.send(success(result));

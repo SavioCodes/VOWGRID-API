@@ -224,6 +224,9 @@ export interface WorkspaceExportResponse {
     entityType: string;
     entityId: string;
     metadata: Record<string, unknown> | null;
+    previousHash?: string | null;
+    integrityHash?: string;
+    integrityVerified?: boolean;
     createdAt: string;
   }>;
 }
