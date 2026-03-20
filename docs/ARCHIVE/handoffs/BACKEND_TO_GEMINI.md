@@ -185,3 +185,7 @@ const mockSimulation = {
 | Domain model     | `docs/backend/DOMAIN_MODEL.md`  |
 | Swagger UI       | `http://localhost:3000/v1/docs` |
 | Docker Compose   | `infra/docker-compose.yml`      |
+
+> Archived on 2026-03-19 during documentation cleanup.
+> This handoff reflects an earlier repository phase and is not current truth.
+> Current docs live in `README.md`, `docs/README.md`, `docs/API_REFERENCE.md`, and `docs/IMPLEMENTATION_STATUS.md`.

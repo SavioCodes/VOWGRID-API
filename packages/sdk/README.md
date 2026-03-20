@@ -34,3 +34,5 @@ This package is now structured to be publish-ready:
 - `publishConfig.access` is set to `public`
 
 The actual npm publication step still requires registry credentials outside this repository.
+
+For end-to-end usage examples against the running platform, see `docs/AGENT_INTEGRATION_GUIDE.md`.

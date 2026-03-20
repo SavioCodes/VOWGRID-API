@@ -61,3 +61,7 @@
 **Decision:** Use Zod for all input validation instead of Fastify's built-in AJV validation.
 
 **Rationale:** Zod provides better TypeScript integration, more expressive validation, and schemas that can be shared through the contracts package. The tradeoff is slightly less Swagger integration, but the validation quality is worth it.
+
+> Archived on 2026-03-19 during documentation cleanup.
+> This backend decision log is preserved for history only.
+> Current architectural truth lives in `docs/ARCHITECTURE.md` and `docs/PRODUCTION_BLUEPRINT.md`.

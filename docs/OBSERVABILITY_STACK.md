@@ -2,12 +2,16 @@
 
 VowGrid ships with a self-hosted observability path under `infra/observability`.
 
-## Components
+## Default Path
+
+First-party stack:
 
 - Prometheus
 - Alertmanager
 - Grafana
 - API metrics endpoint at `/v1/metrics`
+
+This is the default observability path for the repository. Vendor services are optional extensions, not the primary launch dependency.
 
 ## What Is Measured
 
@@ -74,15 +78,6 @@ Current bundled rules cover:
 - execution failures
 - rollback failures
 
-## Recommended Tuning
-
-Before real production:
-
-1. adjust thresholds for expected traffic
-2. define who receives which severity
-3. confirm alert noise stays manageable
-4. validate scrape auth if `METRICS_AUTH_TOKEN` is set
-
 ## Dashboards
 
 Grafana ships with a VowGrid control-plane dashboard in:
@@ -101,8 +96,62 @@ docker compose --env-file infra/.env.production.example \
 
 In the chosen topology, observability ports bind to `127.0.0.1`.
 
-## External Extensions
+## Optional Vendor Sinks
 
-For vendor sinks and external receivers, see:
+The API can forward operational errors to external sinks when configured.
 
-- `docs/OBSERVABILITY_VENDORS.md`
+### Sentry
+
+Environment:
+
+- `SENTRY_DSN`
+
+### Datadog Logs
+
+Environment:
+
+- `DATADOG_LOGS_API_KEY`
+- `DATADOG_SITE`
+
+### New Relic Logs
+
+Environment:
+
+- `NEW_RELIC_LICENSE_KEY`
+- `NEW_RELIC_LOGS_URL`
+
+### Slack
+
+Environment:
+
+- `SLACK_ALERT_WEBHOOK_URL`
+
+Current vendor sink wiring focuses on:
+
+- API request failures
+- execution worker failures
+- rollback worker failures
+
+## Recommended Rollout
+
+1. start with the self-hosted stack only
+2. add Slack if you want lightweight operator visibility
+3. add Sentry or Datadog/New Relic when you need centralized external incident tooling
+
+## What Still Needs Manual Setup
+
+- vendor account creation
+- real credentials
+- dashboards
+- alert routing policy
+- environment-specific severity thresholds
+- on-call ownership
+
+## Honest Limits
+
+VowGrid does not yet ship:
+
+- PagerDuty integration
+- Opsgenie integration
+- formal SLA/SLO error-budget automation
+- vendor-specific IaC modules for observability accounts

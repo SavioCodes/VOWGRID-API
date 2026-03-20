@@ -65,3 +65,6 @@
 2. Enterprise SSO is still not implemented.
 3. Centralized observability and alerting are still not wired.
 4. Deploy automation and Terraform need production secrets, hosts, and hardening before they should be treated as launch-ready.
+   > Archived on 2026-03-19 during documentation cleanup.
+   > This backend status snapshot is historical and has been superseded by `docs/IMPLEMENTATION_STATUS.md`.
+   > Use `docs/ARCHITECTURE.md`, `docs/API_REFERENCE.md`, and `docs/IMPLEMENTATION_STATUS.md` for current truth.

@@ -1,7 +1,7 @@
 # Final Integration Report
 
 > Historical integration report kept for traceability.
-> Current truth lives in `README.md`, `docs/IMPLEMENTATION_STATUS.md`, and `docs/PROJECT_AUDIT_REPORT.md`.
+> Current truth lives in `README.md`, `docs/README.md`, `docs/IMPLEMENTATION_STATUS.md`, and `docs/DOCUMENTATION_AUDIT_REPORT.md`.
 
 ## Scope Completed
 
@@ -57,3 +57,6 @@ What was not verified:
 - OAuth provider credentials
 - SMTP provider
 - final host and DNS
+  > Archived on 2026-03-19 during documentation cleanup.
+  > This file is historical context, not current source of truth.
+  > Current docs live in `README.md`, `docs/README.md`, and `docs/IMPLEMENTATION_STATUS.md`.

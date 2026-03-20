@@ -164,3 +164,6 @@ The current implementation actively enforces:
 - read-only mode after trial expiry or inactive subscription state
 
 Workspace count limits remain modeled, but there is still no broader organization-level self-serve provisioning flow that would actively enforce them at scale.
+
+> Archived on 2026-03-19 during documentation cleanup.
+> This domain model snapshot is historical and has been superseded by current code plus `docs/DATABASE_SCHEMA.md`.

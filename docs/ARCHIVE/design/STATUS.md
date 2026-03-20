@@ -24,3 +24,5 @@
 - Add workspace and directory endpoints so live mode can show human labels without provisional data
 - Deepen social login and enterprise SSO posture beyond GitHub/Google OAuth
 - Deepen route-level and E2E web coverage now that seeded backend data exists
+  > Archived on 2026-03-19 during documentation cleanup.
+  > This design status snapshot is historical and has been superseded by the current design docs and implementation status.

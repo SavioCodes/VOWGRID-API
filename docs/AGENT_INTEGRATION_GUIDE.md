@@ -9,8 +9,6 @@ VowGrid exposes a machine-facing API for trusted automation. The intended patter
 3. create intents instead of calling external systems directly
 4. let VowGrid handle simulation, policy, approval, execution, receipt, and rollback visibility
 
-This guide closes the gap between "the API exists" and "an engineering team can wire a real agent into it".
-
 ## Base URL
 
 Local:
@@ -110,47 +108,11 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
   return json.data as T;
 }
-
-type Intent = { id: string };
-type Simulation = { outcome: string };
-
-async function runFlow() {
-  const intent = await api<Intent>('/intents', {
-    method: 'POST',
-    body: JSON.stringify({
-      title: 'Rotate support secret',
-      action: 'rotate_secret',
-      agentId: 'cmg0000000000000000000002',
-      connectorId: 'cmg0000000000000000000004',
-      environment: 'production',
-    }),
-  });
-
-  await api(`/intents/${intent.id}/propose`, { method: 'POST' });
-  const simulation = await api<Simulation>(`/intents/${intent.id}/simulate`, { method: 'POST' });
-  await api(`/intents/${intent.id}/submit-for-approval`, { method: 'POST' });
-
-  console.log('Simulation result:', simulation.outcome);
-  console.log('Wait for approval before executing.');
-}
-
-runFlow().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
 ```
 
-## Operational Notes
+## SDK
 
-- Treat `402 Payment Required` as a commercial or entitlement block.
-- Treat `409 Conflict` as a lifecycle-state issue, not a transport failure.
-- Treat `403` and `401` as auth issues or revoked API keys.
-- Poll intent status or audit history instead of guessing whether execution finished.
-- Use receipts and audit events as the proof surfaces for downstream systems.
-
-## TypeScript SDK
-
-VowGrid now ships a workspace package at `packages/sdk` with a typed `VowGridClient`.
+VowGrid ships with a repository-local TypeScript SDK in `packages/sdk`.
 
 Minimal example:
 
@@ -168,8 +130,23 @@ const intents = await client.listIntents({ pageSize: 5 });
 console.log(plans.length, intents.length);
 ```
 
-The SDK is repository-local for now. It is not published to npm yet, so external projects should either:
+Packaging and publication status:
+
+- package name: `@vowgrid/sdk`
+- source: `packages/sdk/src/index.ts`
+- local artifact check: `pnpm sdk:pack`
+- the SDK is structured to be publish-ready, but it is not published to npm yet
+
+If you are integrating from another repo today, your practical options are:
 
 - vendor the package from this monorepo
 - use raw HTTP against `/v1`
-- generate their own client from the shared contracts
+- generate your own client from the shared contracts
+
+## Operational Notes
+
+- treat `402 Payment Required` as a commercial or entitlement block
+- treat `409 Conflict` as a lifecycle-state issue, not a transport failure
+- treat `401` and `403` as auth issues or revoked API keys
+- poll intent status or audit history instead of guessing whether execution finished
+- use receipts and audit events as the proof surfaces for downstream systems

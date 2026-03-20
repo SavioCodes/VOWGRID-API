@@ -108,3 +108,6 @@ What still depends on external setup:
 - SMTP provider
 - real domain and host
 - GitHub Actions secrets
+  > Archived on 2026-03-19 during documentation cleanup.
+  > This file is historical context, not current source of truth.
+  > Current docs live in `README.md`, `docs/README.md`, and `docs/DOCUMENTATION_AUDIT_REPORT.md`.

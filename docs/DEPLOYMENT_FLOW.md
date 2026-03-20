@@ -1,80 +1,126 @@
 # Deployment Flow
 
-## Current State
+This document describes how the repository workflows behave today. It is intentionally honest about what is automated versus what still depends on external setup.
 
-The repository now has:
+## Current Workflows
 
-- validation CI in `.github/workflows/ci.yml`
-- staging deploy automation in `.github/workflows/deploy-staging.yml`
-- production deploy automation in `.github/workflows/deploy-production.yml`
-- release Dockerfiles for `apps/api` and `apps/web`
-- release compose in `infra/docker-compose.release.yml`
-- Caddy-based TLS termination in `infra/Caddyfile`
-- optional release observability profile in `infra/docker-compose.release.yml`
-- Terraform scaffold in `infra/terraform/aws-vps`
+- `.github/workflows/ci.yml`
+- `.github/workflows/deploy-staging.yml`
+- `.github/workflows/deploy-production.yml`
+- `.github/workflows/deploy-production-bluegreen.yml`
 
-Those pieces are real, but they still depend on external setup:
+## What CI Does
 
-- GitHub Actions secrets
-- GHCR or another image registry
+The main CI workflow now validates:
+
+- dependency install
+- contracts build needed by seed
+- local env preparation from committed examples
+- local Postgres and Redis startup
+- Prisma migrate + seed
+- typecheck
+- lint
+- unit tests
+- integration tests
+- coverage
+- build
+- Playwright E2E in a separate job
+
+Latest push status is green for both:
+
+- `quality-and-integration`
+- `e2e`
+
+## Staging Deploy Behavior
+
+`deploy-staging.yml` is triggered on pushes to `main` and by manual dispatch.
+
+It now behaves in two honest modes:
+
+### Mode 1: staging secrets exist
+
+The workflow:
+
+1. logs in to GHCR
+2. builds and pushes API and web images
+3. connects to the remote host over SSH
+4. copies release assets
+5. runs the release compose deployment
+
+### Mode 2: staging secrets are missing
+
+The workflow:
+
+1. detects that remote deploy secrets are not configured
+2. skips remote deployment intentionally
+3. exits green with an explicit log message
+
+That means a green staging check does not always mean a remote staging host was updated. It only guarantees the workflow behaved correctly for the current repository configuration.
+
+## Production Deploy Behavior
+
+`deploy-production.yml` is manual only.
+
+It is a real workflow and can:
+
+1. build and push release images
+2. connect to a configured host over SSH
+3. copy release assets
+4. run migrations and reconcile the release stack
+
+But it still depends on:
+
+- `PRODUCTION_DEPLOY_SSH_KEY`
+- `PRODUCTION_DEPLOY_USER`
+- `PRODUCTION_DEPLOY_HOST`
+- `PRODUCTION_DEPLOY_PATH`
+- a prepared remote host
+- `infra/.env`, `infra/api.env`, and `infra/web.env` on that host
+
+## Blue/Green Production Behavior
+
+`deploy-production-bluegreen.yml` is also manual only.
+
+It is structurally valid and manually triggerable, and it can:
+
+1. build and push API and web images
+2. copy blue/green compose and Caddy assets
+3. deploy the selected slot
+4. switch traffic through the blue/green host-side script
+
+It still depends on the same production SSH and host prerequisites as the standard production workflow.
+
+## Release Prerequisites
+
+Before any real remote deploy, you still need:
+
+- GHCR access
 - a reachable SSH target
-- real production env files and secrets
-- infrastructure values for Terraform
-
-## Suggested Environments
-
-### Development
-
-- local Docker for Postgres and Redis
-- API via `pnpm dev:api`
-- Web via `pnpm dev:web`
-
-### Staging
-
-- production-like Postgres and Redis
-- real Mercado Pago sandbox configuration
-- `deploy-staging.yml` builds and pushes images, then deploys with Docker Compose over SSH
-- smoke E2E after each deploy
-
-### Production
-
-- single AWS Ubuntu VPS with Docker, Docker Compose, and Caddy
-- public ingress only on `80` and `443`
-- API and web exposed internally and proxied behind the same primary domain
-- remote runtime files stored under `infra/.env`, `infra/api.env`, and `infra/web.env`
-- real Mercado Pago credentials
-- protected secrets store
-- `deploy-production.yml` runs only on manual dispatch
-- optional `observability` compose profile for Prometheus, Alertmanager, and Grafana
+- Docker and Compose on the target host
+- remote env files under `infra/`
+- real provider credentials for billing/auth if those paths are expected to work in the target environment
+- DNS and TLS setup consistent with `docs/PRODUCTION_BLUEPRINT.md`
 
 ## Release Checklist
 
-1. CI passes on the branch.
-2. Prisma migrations are reviewed and applied.
-3. Env changes are documented in the committed example files.
-4. `infra/.env`, `infra/api.env`, and `infra/web.env` exist on the target host.
-   Start from `infra/.env.production.example`, `infra/api.env.example`, and `infra/web.env.example`.
-5. Billing/contact paths are configured for the target environment.
-6. Only `80` and `443` are exposed publicly at the infrastructure layer.
-7. The deploy target can complete `pnpm migrate` inside the release API image.
-8. Smoke checks cover the proxied web and API surfaces after deploy.
+1. CI is green on the branch or commit
+2. Prisma migrations are reviewed
+3. env example changes are committed when behavior changes
+4. remote `infra/.env`, `infra/api.env`, and `infra/web.env` exist
+5. billing, contact, and auth provider configuration is appropriate for the target environment
+6. only `80` and `443` are exposed publicly
+7. post-deploy smoke checks cover `/`, `/app`, `/v1/health`, and `/v1/docs`
 
 ## Terraform Scope
 
-`infra/terraform/aws-vps` is a launch-stage scaffold for a simple VPS-style deployment:
+`infra/terraform/aws-vps` is a launch-stage scaffold for the chosen VPS path.
 
-- VPC
-- subnet
-- security group
-- EC2 instance
-- cloud-init/user-data for Docker and Compose
-- reverse-proxy-friendly ingress policy (`80` and `443` only for the app surface)
+It is not a full production platform module set. You still need real values, host bootstrap, backup policy, secret handling, and provider setup around it.
 
-It is not yet a complete production platform module set. Database hardening, backups, secret distribution, TLS termination, and managed service choices still need to be designed for a real deployment target.
+## Related Docs
 
-## What Is Still Missing
-
-- reusable production modules beyond the single VPS scaffold
-- secret management beyond GitHub and host-side `infra/*.env`
-- hosted vendors or external notification receivers on top of the bundled observability stack
-- rollout, rollback, and blue/green deployment strategy
+- `docs/PRODUCTION_BLUEPRINT.md`
+- `docs/OPERATIONS.md`
+- `docs/BLUE_GREEN_DEPLOY.md`
+- `docs/GO_LIVE_CHECKLIST.md`
+- `docs/EXTERNAL_SETUP_STATUS.md`

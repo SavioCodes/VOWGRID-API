@@ -55,3 +55,6 @@ Still external:
 - Mercado Pago account credentials
 - public webhook delivery
 - live transaction validation
+  > Archived on 2026-03-19 during documentation cleanup.
+  > This file is historical context, not current source of truth.
+  > Current billing docs live under `docs/billing/` and `docs/IMPLEMENTATION_STATUS.md`.

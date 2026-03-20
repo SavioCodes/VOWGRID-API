@@ -2,76 +2,47 @@
 
 VowGrid is the trust layer between AI agents and real-world actions.
 
-Case study: https://saviocodes.github.io/saviofilho.dev/work/vowgrid-api/
-
 Core product flow:
 
 `Propose -> Simulate -> Evaluate Policy -> Approve -> Execute -> Generate Receipt -> Rollback visibility`
 
-## Architecture At A Glance
-
-```mermaid
-flowchart LR
-  Browser[Operator browser] --> Web[apps/web]
-  Web --> Contracts[packages/contracts]
-  Web --> API[apps/api]
-  API --> Prisma[Prisma]
-  Prisma --> Postgres[(PostgreSQL)]
-  API --> Redis[(Redis)]
-  API --> Workers[BullMQ workers]
-  API --> MercadoPago[Mercado Pago]
-  Web --> UI[packages/ui]
-```
-
 ## Current Reality
 
-- The core trust workflow is implemented through receipt generation, audit visibility, queue-backed execution, and queue-backed rollback.
-- Dashboard auth is now real: email/password signup and login create a session-backed dashboard experience, password reset and email verification are implemented, and GitHub/Google OAuth can be enabled with env-backed provider credentials.
-- Enterprise SSO now has a generic OIDC path in the web auth layer, so enterprise identity providers can be wired without changing the dashboard flow again.
-- Workspace access management is real: owners and admins can create, update, disable, re-enable, and invite members directly from the dashboard.
-- Multi-workspace membership and switching are implemented through accepted invites and the workspace switcher in the app shell.
-- API keys exist as the machine-to-machine auth path and can now be created, rotated, and revoked from the dashboard.
-- Billing is implemented internally with launch pricing, a backend-managed 14-day trial, usage tracking, entitlement enforcement, automatic overage invoicing on paid plans, proration previews for plan changes, invoice records, coupon support, tax profile controls, and Mercado Pago provider integration foundations.
-- Runtime connectors now include `mock`, `http`, and `github`, with configuration validation, execution support, and honest rollback capability reporting.
-- Workspace data export, audit CSV export, and member anonymization are now available from the settings area for compliance-oriented operator workflows.
-- A TypeScript SDK package now lives in `packages/sdk` for client integrations that do not want to hand-roll HTTP calls, and it is now structured to be publish-ready.
-- Approval requests can now run as single-step or staged multi-step reviewer chains instead of only raw approval counts.
-- Provisional data still exists, but only behind the explicit dev-only `/preview` route when enabled.
-- CI now validates typecheck, lint, unit tests, integration tests, coverage, build, and deep E2E paths that cover auth, invites, billing surfaces, execution, receipts, rollback, and observability assertions.
-- A Prometheus-compatible metrics endpoint exists at `/v1/metrics`, and a self-hosted observability stack now lives in `infra/observability` with Prometheus, Alertmanager, and Grafana wiring for both local and release-style environments.
-- Optional vendor sinks for Sentry, Slack, Datadog logs, and New Relic logs can now be enabled through environment variables without changing application code.
-- The chosen launch-stage production path is now explicit: AWS VPS, Docker Compose, Caddy TLS termination, one primary domain, and only `80` / `443` exposed publicly.
-- A single-host blue/green deployment path also exists for operators who want slot-based cutovers without jumping to Kubernetes.
-- Repository-managed backup and restore scripts now exist for Postgres, along with a production readiness check for external provider setup.
+- The core workflow is real end to end: intents, simulation, policy evaluation, approvals, execution, receipts, audit visibility, and queue-backed rollback.
+- Human operators use session-backed dashboard auth with signup, login, password reset, email verification, invites, and workspace switching.
+- Machine clients use workspace API keys and can integrate through raw HTTP or the repository-local TypeScript SDK in `packages/sdk`.
+- Billing is deeper than a pricing mock: plan catalog, trial, entitlements, usage tracking, overage, coupons, tax profile controls, proration preview, invoices, and Mercado Pago foundations all exist.
+- Runtime connectors currently registered by the API are `mock`, `http`, and `github`.
+- CI validates typecheck, lint, unit tests, integration tests, coverage, build, and Playwright E2E on the latest push.
 
 ## Monorepo
 
 ```text
 vowgrid/
 |-- apps/
-|   |-- api/   Fastify API, Prisma schema, auth, billing, BullMQ worker
-|   `-- web/   Next.js site, auth pages, and protected control plane
+|   |-- api/   Fastify API, Prisma schema, queues, auth, billing
+|   `-- web/   Next.js site and protected control plane
 |-- packages/
-|   |-- contracts/ Shared Zod schemas and API types
-|   |-- sdk/       TypeScript client SDK for API consumers
+|   |-- contracts/ Shared schemas and API types
+|   |-- sdk/       TypeScript client SDK
 |   `-- ui/        Shared UI primitives
-|-- docs/          Run guides, reports, backend, design, and billing docs
-`-- infra/         Docker Compose for Postgres and Redis
+|-- docs/          Canonical docs plus archive
+`-- infra/         Compose, observability, and deploy topology
 ```
 
 ## Quick Start
 
-1. Install dependencies with `pnpm install`.
-2. Copy `apps/api/.env.development.example` to `apps/api/.env`.
-3. Copy `apps/web/.env.development.example` to `apps/web/.env.local`.
-4. Optionally copy `infra/.env.development.example` to `infra/.env` if you need custom Docker ports or credentials.
-5. Start Docker Desktop, then run `pnpm docker:up`.
-6. Apply migrations with `pnpm migrate`.
-7. Seed local data with `pnpm seed`.
-8. Start the API with `pnpm dev:api`.
-9. Start the web app with `pnpm dev:web`.
+1. `pnpm install`
+2. Copy `apps/api/.env.development.example` to `apps/api/.env`
+3. Copy `apps/web/.env.example` to `apps/web/.env.local`
+4. Optionally copy `infra/.env.development.example` to `infra/.env`
+5. `pnpm docker:up`
+6. `pnpm migrate`
+7. `pnpm seed`
+8. `pnpm dev:api`
+9. `pnpm dev:web`
 
-Or use the unified dev command:
+Or use:
 
 - `pnpm start:dev`
 
@@ -87,54 +58,19 @@ Seeded local access:
 - Dashboard password: `vowgrid_local_password`
 - API key: `vowgrid_local_dev_key`
 
-## Common Scenarios
+## Documentation
 
-### Human operator path
+Start with:
 
-1. Sign up at `/signup` or log in at `/login`.
-2. Review the control plane at `/app`.
-3. Use `/forgot-password`, `/verify-email`, or social login when the current auth posture requires it.
-4. Manage workspace members, invites, workspace switching, and programmatic API keys from `/app/settings`.
-5. Review billing, usage, invoices, and trial state from `/app/billing`.
+- [Documentation guide](docs/README.md)
+- [Run guide](docs/RUN_GUIDE.md)
+- [Implementation status](docs/IMPLEMENTATION_STATUS.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [API reference](docs/API_REFERENCE.md)
 
-### Machine-to-machine path
+Historical reports and handoffs now live under:
 
-```bash
-curl -H "X-Api-Key: vowgrid_local_dev_key" \
-  http://localhost:4000/v1/intents?pageSize=5
-```
-
-### End-to-end trust workflow
-
-See `docs/REAL_WORLD_SCENARIOS.md` for common intent, billing, and enterprise paths.
-
-## Auth Model
-
-- Human dashboard access uses session-backed auth through `/v1/auth/signup`, `/v1/auth/login`, `/v1/auth/me`, and `/v1/auth/logout`.
-- Recovery and verification routes exist for password reset, email verification, invite acceptance, and workspace switching.
-- GitHub and Google OAuth flows are supported when provider credentials are configured.
-- The web app stores the session token in an HttpOnly cookie named `vowgrid_dashboard_session`.
-- Protected product routes live under `/app`.
-- Owners and admins can manage members, invites, and workspace-scoped API keys directly from the dashboard.
-- API keys remain the direct auth layer for programmatic clients.
-
-## Billing Snapshot
-
-| Plan       | Monthly        | Yearly         | Executed actions / month | Intents / month | Self-serve checkout |
-| ---------- | -------------- | -------------- | ------------------------ | --------------- | ------------------- |
-| Launch     | `R$ 79`        | `R$ 790`       | `300`                    | `2,000`         | Yes                 |
-| Pro        | `R$ 249`       | `R$ 2,490`     | `3,000`                  | `15,000`        | Yes                 |
-| Business   | `R$ 799`       | `R$ 7,990`     | `20,000`                 | `100,000`       | Yes                 |
-| Enterprise | `Sob consulta` | `Sob consulta` | Custom                   | Custom          | No                  |
-
-Launch billing notes:
-
-- Free trial: `14` days, managed internally by the VowGrid backend
-- Primary commercial metric: executed actions per month
-- Secondary usage guardrail: intents per month
-- Paid subscriptions can use automatic overage billing for intents and executed actions
-- Plan changes compute proration previews and record proration invoice line items
-- Enterprise remains sales-assisted
+- [Documentation archive](docs/ARCHIVE/README.md)
 
 ## Useful Commands
 
@@ -149,81 +85,19 @@ Launch billing notes:
 - `pnpm seed`
 - `pnpm docker:up`
 - `pnpm docker:down`
-- `pnpm docker:status`
-- `pnpm docker:logs`
 - `pnpm docker:obs:up`
-- `pnpm docker:obs:down`
-- `pnpm docker:obs:status`
-- `pnpm docker:obs:logs`
 - `pnpm docker:release:config`
 - `pnpm db:backup`
-- `pnpm db:restore -- --input backups/postgres/<file>.sql.gz`
-- `pnpm sdk:pack`
 - `pnpm ops:readiness`
 
-Useful live endpoints:
+## External Prerequisites
 
-- `GET /v1/health`
-- `GET /v1/metrics`
-- `GET /v1/docs`
+The repository is code-complete for local development and CI, but these remain external setup:
 
-## Documentation
+- Mercado Pago credentials and webhook URL
+- OAuth or OIDC provider credentials
+- SMTP provider
+- real host, DNS, and deploy secrets
+- Enterprise contact inbox or form
 
-Current docs:
-
-- `docs/RUNBOOK.md`
-- `docs/RUN_GUIDE.md`
-- `docs/OPERATIONS.md`
-- `docs/ARCHITECTURE.md`
-- `docs/TECH_CHOICES.md`
-- `docs/ENVIRONMENT_STRATEGY.md`
-- `docs/DEPLOYMENT_FLOW.md`
-- `docs/PRODUCTION_BLUEPRINT.md`
-- `docs/API_REFERENCE.md`
-- `docs/SECURITY.md`
-- `docs/TESTING.md`
-- `docs/DATABASE_SCHEMA.md`
-- `docs/OBSERVABILITY_STACK.md`
-- `docs/OBSERVABILITY_VENDORS.md`
-- `docs/GO_LIVE_CHECKLIST.md`
-- `docs/EXTERNAL_SETUP_STATUS.md`
-- `docs/AGENT_INTEGRATION_GUIDE.md`
-- `docs/SDK_GUIDE.md`
-- `docs/BACKUP_AND_RECOVERY.md`
-- `docs/CONNECTOR_IMPLEMENTATIONS.md`
-- `docs/CONNECTOR_DEV_GUIDE.md`
-- `docs/PRIVACY_AND_EXPORTS.md`
-- `docs/BLUE_GREEN_DEPLOY.md`
-- `docs/TROUBLESHOOTING.md`
-- `docs/REAL_WORLD_SCENARIOS.md`
-- `docs/ROADMAP.md`
-- `docs/AUTH_SETUP.md`
-- `docs/ACCESS_MANAGEMENT.md`
-- `docs/ENTERPRISE_HANDOFF.md`
-- `docs/ROLLBACK_PROCESSING.md`
-- `docs/IMPLEMENTATION_STATUS.md`
-- `docs/PROJECT_AUDIT_REPORT.md`
-- `docs/billing/BILLING_ARCHITECTURE.md`
-- `docs/billing/PRICING_STRATEGY.md`
-- `docs/billing/MERCADO_PAGO_SETUP.md`
-- `docs/billing/ENTITLEMENTS_AND_LIMITS.md`
-- `docs/backend/API_OVERVIEW.md`
-- `docs/backend/DOMAIN_MODEL.md`
-- `docs/backend/STATUS.md`
-
-Historical reports:
-
-- `docs/FINAL_INTEGRATION_REPORT.md`
-- `docs/FRONTEND_INTEGRATION_REPORT.md`
-- `docs/BILLING_UPDATE_REPORT.md`
-- `docs/handoffs/*`
-
-## Known Limitations
-
-- Enterprise still depends on a configured contact inbox and manual commercial handling.
-- Mercado Pago checkout still requires real provider env configuration.
-- Social login and enterprise OIDC require real provider credentials before the buttons become usable.
-- The repository now includes a readiness checker for Mercado Pago, OAuth, SMTP, and domain configuration, but it still needs real production values to pass.
-- Advanced tax handling is now configurable at the customer profile level, but full jurisdiction-specific compliance workflows and fiscal issuance are still not implemented.
-- The self-hosted observability stack is included, and vendor-specific sinks can be enabled, but external receivers, dashboards, and on-call routing still require environment-specific setup.
-- Deploy automation, Terraform scaffolding, and blue/green workflow files now encode concrete production paths, but they still require real GitHub secrets, DNS, registry setup, remote env files, and target infrastructure values before they can be treated as production-ready.
+See [External setup status](docs/EXTERNAL_SETUP_STATUS.md) and [Go-live checklist](docs/GO_LIVE_CHECKLIST.md) for the operational gaps.

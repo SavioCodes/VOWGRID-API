@@ -72,3 +72,6 @@ Agent creates Intent (draft)
 3. **BullMQ** for execution — reliable, retryable, observable job processing
 4. **Pure domain functions** (state machine, policy engine) — testable without mocks
 5. **Non-blocking audit** — audit failures don't break main flows
+   > Archived on 2026-03-19 during documentation cleanup.
+   > This backend architecture snapshot is historical and contains outdated assumptions.
+   > Use `docs/ARCHITECTURE.md`, `docs/API_REFERENCE.md`, and `docs/IMPLEMENTATION_STATUS.md` for current truth.

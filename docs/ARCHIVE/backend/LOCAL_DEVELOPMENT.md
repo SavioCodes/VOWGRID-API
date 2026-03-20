@@ -56,3 +56,5 @@ After `pnpm seed`, the repo contains:
 - If `pnpm docker:up` fails, start Docker Desktop first.
 - The API now defaults to port `4000` to avoid colliding with the Next.js web app on `3000`.
 - For body-less `POST` routes, omit `Content-Type` or send `{}` as the request body if your client insists on JSON.
+  > Archived on 2026-03-19 during documentation cleanup.
+  > This backend local-development note is historical and has been superseded by `docs/RUN_GUIDE.md`.

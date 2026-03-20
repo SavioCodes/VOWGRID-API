@@ -57,3 +57,6 @@ Frontend verification includes:
 - invite/workspace-switch E2E
 - password-reset E2E
 - workflow/receipt/billing/metrics E2E
+  > Archived on 2026-03-19 during documentation cleanup.
+  > This file is historical context, not current source of truth.
+  > Current docs live in `README.md`, `docs/README.md`, and `docs/IMPLEMENTATION_STATUS.md`.
