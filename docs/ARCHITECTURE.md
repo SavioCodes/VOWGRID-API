@@ -103,9 +103,9 @@ VowGrid has two primary entry paths.
 ```mermaid
 sequenceDiagram
   participant User as Operator
-  participant Web as apps/web
-  participant API as apps/api
-  participant DB as PostgreSQL
+  participant Web as Web app
+  participant API as API
+  participant DB as Postgres
 
   User->>Web: Visit login, signup, billing, or /app
   Web->>API: Call auth and product routes
@@ -123,9 +123,9 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-  participant Client as Agent or backend integration
-  participant API as apps/api
-  participant DB as PostgreSQL
+  participant Client as Agent client
+  participant API as API
+  participant DB as Postgres
 
   Client->>API: Request with X-Api-Key
   API->>DB: Resolve workspace API key and workspace state
@@ -144,24 +144,24 @@ This is the core product path:
 
 ```mermaid
 sequenceDiagram
-  participant Actor as Operator or agent
-  participant API as apps/api
-  participant DB as PostgreSQL
-  participant Queue as BullMQ via Redis
-  participant Worker as Execution / rollback worker
-  participant Connector as Registered connector
+  participant User as Operator or machine client
+  participant Api as API
+  participant Db as Postgres
+  participant Jobs as Job queue
+  participant Exec as Worker
+  participant Target as Connector
 
-  Actor->>API: Create or update intent
-  API->>DB: Persist draft and workflow state
-  Actor->>API: Propose / simulate / submit for approval
-  API->>DB: Persist simulation and approval state
-  Actor->>API: Execute or rollback
-  API->>DB: Create execution or rollback record
-  API->>Queue: Enqueue async job
-  Queue->>Worker: Deliver job
-  Worker->>Connector: Perform side effect
-  Worker->>DB: Persist receipt, audit event, and final state
-  Actor->>API: Query intent, receipt, audit, or rollback history
+  User->>Api: Create or update intent
+  Api->>Db: Persist draft and workflow state
+  User->>Api: Propose, simulate, or submit for approval
+  Api->>Db: Persist simulation and approval state
+  User->>Api: Execute or rollback
+  Api->>Db: Create execution or rollback record
+  Api->>Jobs: Enqueue async job
+  Jobs->>Exec: Deliver job
+  Exec->>Target: Perform side effect
+  Exec->>Db: Persist receipt, audit event, and final state
+  User->>Api: Query intent, receipt, audit, or rollback history
 ```
 
 Important boundaries:

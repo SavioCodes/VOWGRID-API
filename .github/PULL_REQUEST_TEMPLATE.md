@@ -4,6 +4,11 @@
 - why it changed
 - any important tradeoffs
 
+## Documentation And Release Notes
+
+- [ ] canonical docs updated when behavior, setup, or public routes changed
+- [ ] `CHANGELOG.md` updated if this should be part of the next tagged release
+
 ## Verification
 
 - [ ] `pnpm typecheck`

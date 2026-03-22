@@ -60,3 +60,12 @@ This directory is organized around a small set of current, canonical docs. If yo
 - [Archive guide](ARCHIVE/README.md)
 
 Archived docs are historical context only. They are not current sources of truth.
+
+## Repository Management
+
+- [Changelog](../CHANGELOG.md)
+- [Contributing guide](../CONTRIBUTING.md)
+- [Roadmap](ROADMAP.md)
+- [GitHub releases](https://github.com/SavioCodes/VOWGRID-API/releases)
+- [GitHub tags](https://github.com/SavioCodes/VOWGRID-API/tags)
+- [GitHub issues](https://github.com/SavioCodes/VOWGRID-API/issues)

@@ -1,1 +1,8 @@
 blank_issues_enabled: false
+contact_links:
+  - name: Documentation guide
+    url: https://github.com/SavioCodes/VOWGRID-API/blob/main/docs/README.md
+    about: Start here for setup, status, deployment, auth, billing, and troubleshooting docs.
+  - name: Security policy
+    url: https://github.com/SavioCodes/VOWGRID-API/blob/main/docs/SECURITY.md
+    about: Read the current security posture, constraints, and reporting guidance before opening a public issue.

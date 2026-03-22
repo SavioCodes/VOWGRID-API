@@ -1,0 +1,43 @@
+name: Operational readiness task
+description: Track real-world deployment, provider, DNS, secret, or launch-readiness work
+title: "[Ops]: "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Deploy and host
+        - Billing provider
+        - Auth provider
+        - Observability
+        - Backup and recovery
+        - Enterprise handling
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Current gap
+      description: Describe the external or operational gap that still blocks the expected outcome.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Target outcome
+      description: What would make this operationally done?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Verification or evidence
+      description: List the commands, URLs, screenshots, or provider-console checks that should prove the task is complete.
+  - type: textarea
+    id: docs
+    attributes:
+      label: Related docs
+      description: Link the relevant docs, setup guides, or checklists.

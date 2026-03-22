@@ -72,6 +72,14 @@ Historical reports and handoffs now live under:
 
 - [Documentation archive](docs/ARCHIVE/README.md)
 
+## Releases And Backlog
+
+- [Changelog](CHANGELOG.md)
+- [GitHub releases](https://github.com/SavioCodes/VOWGRID-API/releases)
+- [GitHub tags](https://github.com/SavioCodes/VOWGRID-API/tags)
+- [GitHub issues](https://github.com/SavioCodes/VOWGRID-API/issues)
+- [Roadmap](docs/ROADMAP.md)
+
 ## Useful Commands
 
 - `pnpm typecheck`
