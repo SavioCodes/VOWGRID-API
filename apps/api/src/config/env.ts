@@ -128,7 +128,15 @@ export type Env = Omit<
 };
 
 export function loadEnv(): Env {
-  const result = envSchema.safeParse(process.env);
+  const normalizedProcessEnv = {
+    ...process.env,
+    DATABASE_URL:
+      process.env.DATABASE_URL?.trim() ||
+      process.env.POSTGRES_PRISMA_URL?.trim() ||
+      process.env.POSTGRES_URL?.trim(),
+  };
+
+  const result = envSchema.safeParse(normalizedProcessEnv);
   if (!result.success) {
     console.error('Invalid environment variables:');
     console.error(result.error.format());

@@ -19,6 +19,34 @@ One-command startup:
 
 - `pnpm start:dev`
 
+## Managed Postgres And Redis
+
+The API can now run against managed data stores without renaming everything by hand.
+
+Runtime precedence:
+
+- `DATABASE_URL`
+- `POSTGRES_PRISMA_URL`
+- `POSTGRES_URL`
+
+Prisma CLI precedence:
+
+- `DATABASE_URL`
+- `POSTGRES_URL_NON_POOLING`
+- `POSTGRES_PRISMA_URL`
+- `POSTGRES_URL`
+
+Practical examples:
+
+- Supabase Postgres can be wired through `POSTGRES_PRISMA_URL` and `POSTGRES_URL_NON_POOLING`
+- managed Redis can be wired directly through `REDIS_URL`
+
+To start only the API against managed services, set those env values in `apps/api/.env` and then run:
+
+- `pnpm dev:api`
+
+You do not need local Docker Postgres or Redis for that mode.
+
 ## Environment File Pattern
 
 Tracked example files:
@@ -44,6 +72,12 @@ Release hosts also expect:
 
 - `infra/api.env`
 - `infra/web.env`
+
+Managed provider aliases accepted by the API:
+
+- `POSTGRES_PRISMA_URL`
+- `POSTGRES_URL`
+- `POSTGRES_URL_NON_POOLING` for Prisma CLI
 
 ## Local URLs
 
@@ -169,6 +203,7 @@ Important operational truth:
 
 - `Deploy Staging` may pass by intentionally skipping remote deployment when staging SSH secrets are not configured
 - production deploy workflows and the blue/green path exist, but still require real SSH secrets, host wiring, DNS, and remote env files
+- the release compose can now prefer `VOWGRID_DATABASE_URL` and `VOWGRID_REDIS_URL` when you want managed data stores
 - `pnpm ops:readiness` only becomes meaningful after real production-facing env values are filled
 
 See:

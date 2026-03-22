@@ -68,6 +68,18 @@ const mergedEnv = {
 
 const checks = [
   {
+    label: 'Database connection string',
+    ok:
+      hasValue(mergedEnv.VOWGRID_DATABASE_URL) ||
+      hasValue(mergedEnv.DATABASE_URL) ||
+      hasValue(mergedEnv.POSTGRES_PRISMA_URL) ||
+      hasValue(mergedEnv.POSTGRES_URL),
+  },
+  {
+    label: 'Redis connection string',
+    ok: hasValue(mergedEnv.VOWGRID_REDIS_URL) || hasValue(mergedEnv.REDIS_URL),
+  },
+  {
     label: 'Mercado Pago access token',
     ok: hasValue(mergedEnv.MERCADO_PAGO_ACCESS_TOKEN),
   },

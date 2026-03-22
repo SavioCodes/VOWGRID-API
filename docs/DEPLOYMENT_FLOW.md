@@ -76,6 +76,7 @@ But it still depends on:
 - `PRODUCTION_DEPLOY_PATH`
 - a prepared remote host
 - `infra/.env`, `infra/api.env`, and `infra/web.env` on that host
+- managed data store URLs if you are not using the bundled Postgres and Redis containers for the API
 
 ## Blue/Green Production Behavior
 
@@ -98,6 +99,7 @@ Before any real remote deploy, you still need:
 - a reachable SSH target
 - Docker and Compose on the target host
 - remote env files under `infra/`
+- `VOWGRID_DATABASE_URL` and `VOWGRID_REDIS_URL` in `infra/.env` if you want managed data stores
 - real provider credentials for billing/auth if those paths are expected to work in the target environment
 - DNS and TLS setup consistent with `docs/PRODUCTION_BLUEPRINT.md`
 

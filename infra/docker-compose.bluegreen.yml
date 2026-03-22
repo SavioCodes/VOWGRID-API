@@ -66,8 +66,8 @@ services:
     env_file:
       - ${VOWGRID_API_ENV_FILE:-./api.env.example}
     environment:
-      DATABASE_URL: postgresql://${VOWGRID_POSTGRES_USER}:${VOWGRID_POSTGRES_PASSWORD}@postgres:5432/${VOWGRID_POSTGRES_DB}?schema=public
-      REDIS_URL: redis://redis:6379
+      DATABASE_URL: ${VOWGRID_DATABASE_URL:-postgresql://${VOWGRID_POSTGRES_USER}:${VOWGRID_POSTGRES_PASSWORD}@postgres:5432/${VOWGRID_POSTGRES_DB}?schema=public}
+      REDIS_URL: ${VOWGRID_REDIS_URL:-redis://redis:6379}
       APP_WEB_BASE_URL: ${VOWGRID_WEB_BASE_URL}
       MERCADO_PAGO_RETURN_URL: ${VOWGRID_WEB_BASE_URL}/app/billing
     expose:
@@ -90,8 +90,8 @@ services:
     env_file:
       - ${VOWGRID_API_ENV_FILE:-./api.env.example}
     environment:
-      DATABASE_URL: postgresql://${VOWGRID_POSTGRES_USER}:${VOWGRID_POSTGRES_PASSWORD}@postgres:5432/${VOWGRID_POSTGRES_DB}?schema=public
-      REDIS_URL: redis://redis:6379
+      DATABASE_URL: ${VOWGRID_DATABASE_URL:-postgresql://${VOWGRID_POSTGRES_USER}:${VOWGRID_POSTGRES_PASSWORD}@postgres:5432/${VOWGRID_POSTGRES_DB}?schema=public}
+      REDIS_URL: ${VOWGRID_REDIS_URL:-redis://redis:6379}
       APP_WEB_BASE_URL: ${VOWGRID_WEB_BASE_URL}
       MERCADO_PAGO_RETURN_URL: ${VOWGRID_WEB_BASE_URL}/app/billing
     expose:

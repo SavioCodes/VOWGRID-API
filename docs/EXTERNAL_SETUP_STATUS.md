@@ -45,6 +45,9 @@ This document separates repository-complete work from setup that must be finishe
 - configure GitHub Actions secrets
 - configure image registry access
 - place `infra/.env`, `infra/api.env`, and `infra/web.env` on target host
+- if using managed Postgres, set `VOWGRID_DATABASE_URL` or provide `POSTGRES_PRISMA_URL`
+- if using managed Redis, set `VOWGRID_REDIS_URL` or provide `REDIS_URL`
+- replace any temporary public tunnel with a permanent DNS-backed production endpoint
 
 ## Enterprise
 
@@ -59,3 +62,8 @@ Use these checks:
 - `https://<domain>/v1/health`
 - `https://<domain>/v1/docs`
 - provider-specific credential validation in their console
+
+Managed data verification completed locally for the current setup:
+
+- Supabase Postgres accepted Prisma connectivity
+- managed Redis accepted `PING`

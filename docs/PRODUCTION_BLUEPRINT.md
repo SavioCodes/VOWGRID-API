@@ -15,6 +15,13 @@ VowGrid now has a single recommended production topology:
 
 This is intentionally simple and operationally clear for the current stage of the product.
 
+Managed data stores are now also a supported mode for the API:
+
+- `VOWGRID_DATABASE_URL` can point at a managed Postgres provider such as Supabase
+- `VOWGRID_REDIS_URL` can point at a managed Redis provider
+- the API runtime also accepts `POSTGRES_PRISMA_URL` and `POSTGRES_URL` directly
+- Prisma CLI falls back to `POSTGRES_URL_NON_POOLING` when available
+
 ## Why This Path
 
 - It matches the repository's existing Compose and Terraform scaffolding.
@@ -52,7 +59,7 @@ Recommended remote layout:
 The release compose now expects:
 
 - `infra/.env`
-  - compose-level values such as image tags, DB credentials, primary domain, and optional `COMPOSE_PROFILES`
+  - compose-level values such as image tags, bundled DB credentials, optional managed DB/Redis URLs, primary domain, and optional `COMPOSE_PROFILES`
 - `infra/api.env`
   - API secrets and provider credentials
 - `infra/web.env`
@@ -68,13 +75,26 @@ Recommended bootstrap on a new host:
 
 For repository-side validation, the compose file falls back to the committed production example env files under `infra/`.
 
+### Managed Postgres and Redis
+
+If you want the API to use Supabase Postgres and a managed Redis instance instead of the bundled host containers:
+
+1. Set `VOWGRID_DATABASE_URL` in `infra/.env` to the Prisma-safe pooled connection string.
+2. Set `VOWGRID_REDIS_URL` in `infra/.env` to the managed Redis connection string.
+3. Leave `DATABASE_URL` and `REDIS_URL` blank in `infra/api.env` unless you want to override them there.
+4. Keep `POSTGRES_URL_NON_POOLING` available for Prisma CLI if your provider exposes it.
+
+The release compose will prefer the managed URLs when present and fall back to the bundled host services when they are not.
+
 ## Deploy Flow
 
 1. GitHub Actions builds and pushes the API and web images.
 2. GitHub Actions copies `docker-compose.release.yml`, `Caddyfile`, committed release env examples, and `infra/observability` to the host.
 3. The host uses `infra/.env` for compose variables and `infra/api.env` / `infra/web.env` for service env injection.
-4. The workflow starts Postgres and Redis, runs Prisma migrations in the release API image, then reconciles the full stack.
+4. The workflow starts the bundled Postgres and Redis services, runs Prisma migrations in the release API image, then reconciles the full stack.
 5. The workflow verifies the API and web containers locally on the host.
+
+If managed URLs are configured, the API still uses them even though the bundled Postgres and Redis containers may still be started by the workflow.
 
 ## Blue/Green Option
 

@@ -20,6 +20,12 @@ The current launch path is intentionally simple:
 
 This is suitable for launch validation, internal demos, and early production usage. It is not yet a multi-node or multi-region architecture.
 
+The API also supports a managed-data variation of this model:
+
+- `VOWGRID_DATABASE_URL` in `infra/.env` to point the API at managed Postgres
+- `VOWGRID_REDIS_URL` in `infra/.env` to point the API at managed Redis
+- `POSTGRES_PRISMA_URL` and `POSTGRES_URL_NON_POOLING` as direct provider exports for Prisma-based workflows
+
 ## Service Inventory
 
 | Service        | Role                                               | Health source                           |
@@ -40,6 +46,8 @@ On the target host, keep runtime configuration under `infra/`:
 - `infra/.env`
 - `infra/api.env`
 - `infra/web.env`
+
+If you are using managed Postgres or Redis, keep those connection strings in `infra/.env` so Compose can inject them into the API service.
 
 Recommended deployment directory:
 
@@ -115,6 +123,8 @@ If any of these fail, stop the rollout.
    - operator login
    - one seed-free smoke workflow in the dashboard
 
+When `VOWGRID_DATABASE_URL` or `VOWGRID_REDIS_URL` are set, verify the API is talking to the managed stores before considering the release good.
+
 ### Blue/green path
 
 Use `docs/BLUE_GREEN_DEPLOY.md` when you need safer cutover and rollback on the same host.
@@ -127,6 +137,8 @@ Use `docs/BLUE_GREEN_DEPLOY.md` when you need safer cutover and rollback on the 
 - `GET /v1/docs` loads the Swagger UI
 - `GET /v1/metrics` is reachable by the configured scraper
 - `docker compose ps` shows healthy `postgres`, `redis`, `api`, and `web`
+
+If managed stores are in use, `postgres` and `redis` containers are no longer the source of truth for API data-path health.
 
 ### Warning signs
 
